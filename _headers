@@ -1,0 +1,5 @@
+# Fotos e fontes ficam guardadas no navegador; o resto sempre confere se mudou.
+/fontes/*
+  Cache-Control: public, max-age=31536000, immutable
+/fotos/*
+  Cache-Control: public, max-age=604800

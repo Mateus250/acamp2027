@@ -1,0 +1,354 @@
+/* ============================================================
+   IMERSOS · código da página
+   Para trocar datas, local, valores, lotes, WhatsApp, PIX e preletores,
+   edite o bloco CONFIG logo abaixo e suba a pasta de novo no Netlify.
+   ============================================================ */
+/* ===== EDITE AQUI: tudo que muda de um acampamento para outro ===== */
+const CONFIG = {
+  preview: false,                                  // true = mostra o aviso de prévia; mude para false ao publicar de verdade
+  church: 'Igreja Presbiteriana Independente Parque Itajaí',
+  churchShort: 'IPI Itajaí',                       // nome curto que aparece no topo da página
+  camp: 'Imersos',
+  edition: 'Acampamento de Carnaval 2027',
+  dates: 'Carnaval 2027 · datas a confirmar',
+  campStart: '2027-02-06',                         // primeiro dia do acampamento: usado na contagem regressiva e para saber se a pessoa será menor de idade
+  place: 'Espaço SET – Indaiatuba',
+  departure: 'Saída e chegada: a confirmar com a organização.',
+  whatsapp: '5519999999999',                       // recebe as inscrições. Só números, com 55 e DDD
+  proofContacts: [                                 // quem recebe os comprovantes: nome que aparece no botão e número (só números, com 55 e DDD)
+    { name: 'Contato 1', number: '5519999999999' },
+    { name: 'Contato 2', number: '5519999999999' }
+  ],
+  pixKey: 'cantinaipi@gmail.com',
+  pixMerchant: 'IPI PARQUE ITAJAI',                // nome que vai dentro do código PIX (até 25 letras, sem acento)
+  pixCity: 'CAMPINAS',                             // cidade que vai dentro do código PIX (até 15 letras, sem acento)
+  pixName: '',                                     // opcional: nome que aparece para quem paga; deixe vazio para não mostrar
+  maxInstallments: 3,
+  lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 49500, until: '2027-01-20' } ],  // preço em centavos
+  bring: 'Roupas leves e de frio, toalha, itens de higiene, Bíblia, caderno, tênis e protetor solar.',
+  includes: 'Hospedagem, alimentação, camiseta e todas as atividades.',
+  speakers: [                                      // preletores: troque nome, descrição e foto. photo vazio = arte de demonstração
+    { name: 'Preletor a confirmar', role: 'Nome e foto serão divulgados pela organização', photo: '' },
+    { name: 'Preletora a confirmar', role: 'Nome e foto serão divulgados pela organização', photo: '' },
+    { name: 'Preletor a confirmar', role: 'Nome e foto serão divulgados pela organização', photo: '' },
+    { name: 'Louvor a confirmar', role: 'Ministério de louvor do acampamento', photo: '' }
+  ],
+  coupons: [                                       // cupons de desconto por igreja. Para criar ou mudar, peça ao Claude (o código fica guardado em forma secreta)
+    { hash: 'd849395107c5b4f3f5d2fe1390554d07ada11c144cd44bec1dcdf5f5917728b2', church: 'Igreja de teste', type: 'percent', value: 50 },
+    { hash: '610d4e968b2f85242b587016cdcc606b367063b32af7d8ec38c549086fe1fe56', church: 'Igreja de teste', type: 'price', value: 40000 }
+  ],
+  minAge: null                                     // ex.: 13 para exigir idade mínima; null = sem limite
+};
+/* ================================================================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(c % 100).padStart(2, '0');
+const todayBR = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+const fmtD = (iso) => iso.slice(8) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4);
+
+/* código PIX (BR Code estático do Banco Central) */
+const pixField = (id, v) => id + String(v.length).padStart(2, '0') + v;
+const pixAscii = (s, n) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 ]/g, '').toUpperCase().trim().slice(0, n);
+const crc16 = (s) => { let c = 0xFFFF; for (let i = 0; i < s.length; i++) { c ^= s.charCodeAt(i) << 8; for (let j = 0; j < 8; j++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return c.toString(16).toUpperCase().padStart(4, '0'); };
+const pixPayload = (key, cents, name, city, txid) => { const p = pixField('00', '01') + pixField('26', pixField('00', 'br.gov.bcb.pix') + pixField('01', key)) + pixField('52', '0000') + pixField('53', '986') + (cents > 0 ? pixField('54', (cents / 100).toFixed(2)) : '') + pixField('58', 'BR') + pixField('59', pixAscii(name, 25)) + pixField('60', pixAscii(city, 15)) + pixField('62', pixField('05', (txid || '***').replace(/[^A-Za-z0-9]/g, '').slice(0, 25) || '***')) + '6304'; return p + crc16(p); };
+const activeLot = () => { const t = todayBR(); return CONFIG.lots.find((l) => t <= l.until) || CONFIG.lots[CONFIG.lots.length - 1]; };
+const lotOpen = () => CONFIG.lots.some((l) => todayBR() <= l.until);
+
+/* conteúdo vindo da configuração */
+if (CONFIG.preview) $('#preview').hidden = false;
+document.title = CONFIG.camp + ' · ' + CONFIG.edition;
+$('#word').textContent = CONFIG.camp.toUpperCase();
+$('#kicker').textContent = CONFIG.edition;
+$('#lede').textContent = 'Cinco dias para desligar o barulho e ir fundo.';
+$('#facts').innerHTML = '<li>' + CONFIG.dates + '<span>quando</span></li><li>' + CONFIG.place + '<span>onde</span></li><li>' + brl(activeLot().price) + '<span>' + activeLot().name + '</span></li>';
+$('#infolist').innerHTML = [['Quando', CONFIG.dates], ['Onde', CONFIG.place], ['Saída', CONFIG.departure], ['Está incluso', CONFIG.includes], ['O que levar', CONFIG.bring]].map((r) => '<dt>' + r[0] + '</dt><dd></dd>').join('');
+[...document.querySelectorAll('#infolist dd')].forEach((dd, i) => (dd.textContent = [CONFIG.dates, CONFIG.place, CONFIG.departure, CONFIG.includes, CONFIG.bring][i]));
+$('#church').textContent = CONFIG.church; $('#churchtop').textContent = CONFIG.churchShort || CONFIG.church;
+$('#fwa').href = 'https://wa.me/' + CONFIG.whatsapp;
+$('#lots').innerHTML = CONFIG.lots.map((l) => { const on = l === activeLot() && lotOpen(); return '<div class="lot' + (on ? ' on' : '') + '">' + (on ? '<div class="tagnow">Aberto agora</div>' : '') + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">Até ' + fmtD(l.until) + '</div></div>'; }).join('');
+$('#payhow').textContent = 'Você paga por PIX, à vista ou em até ' + CONFIG.maxInstallments + ' parcelas. A organização confere cada pagamento e confirma sua vaga.';
+$('#formintro').textContent = 'Preencha em um minuto. No final, você paga por PIX e manda o comprovante pelo WhatsApp.';
+$('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do ' + CONFIG.camp + ' apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
+const faqs = [['Posso pagar em parcelas?', 'Sim, no PIX, em até ' + CONFIG.maxInstallments + ' vezes. A primeira parcela é paga na inscrição e as demais a cada 30 dias.'], ['Quando minha vaga está garantida?', 'Depois que a organização confere o seu primeiro pagamento. Até lá, a vaga não é reservada.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Faça o PIX e mande o comprovante para um dos contatos que aparecem no fim da inscrição. Guarde o seu código.']];
+$('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></details>').join('');
+[...document.querySelectorAll('#faq details')].forEach((d, i) => { d.querySelector('summary').textContent = faqs[i][0]; d.querySelector('p').textContent = faqs[i][1]; });
+
+/* opções de pagamento */
+/* cupons de desconto: o código digitado é comparado com uma "impressão digital", então não dá para ler os cupons no código da página */
+let coupon = null;
+const sha256 = async (t) => { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); };
+const normCode = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (100 - c.value) / 100) : c.type === 'off' ? Math.max(0, price - c.value) : c.type === 'price' ? c.value : price);
+const finalPrice = () => (coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
+const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
+const plans = () => { const price = finalPrice(); const o = [{ id: 'avista', t: 'PIX à vista', s: brl(price) + ' agora', first: price, n: 1 }]; for (let n = 2; n <= CONFIG.maxInstallments; n++) { const base = Math.floor(price / n), first = base + (price - base * n); o.push({ id: 'p' + n, t: 'PIX em ' + n + ' parcelas', s: 'Hoje ' + brl(first) + ', depois ' + (n - 1) + 'x de ' + brl(base) + ' a cada 30 dias', first, n }); } return o; };
+let P = plans();
+const renderPlans = () => { const sel = ($('input[name=plan]:checked') || {}).value; P = plans(); $('#payopts').innerHTML = P.map((p, i) => '<label class="opt"><input type="radio" name="plan" value="' + p.id + '"' + ((sel ? p.id === sel : i === 0) ? ' checked' : '') + '><span class="b">' + p.t + '<small>' + p.s + '</small></span></label>').join(''); };
+renderPlans();
+const curPlan = () => P.find((p) => p.id === ($('input[name=plan]:checked') || {}).value) || P[0];
+const renderSum = () => { const p = curPlan(), l = activeLot(), tot = finalPrice(); $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : '') + '<div>Para pagar hoje: <b>' + brl(p.first) + '</b></div>'; };
+/* campo do cupom */
+(() => {
+  const cIn = $('#cupom'), cBtn = $('#cupomBtn'), cMsg = $('#cupomMsg'); if (!cIn) return;
+  const say = (t, cls) => { cMsg.textContent = t; cMsg.className = 'cupom-msg' + (cls ? ' ' + cls : ''); };
+  const setC = (c) => { coupon = c; renderPlans(); renderSum(); };
+  cBtn.addEventListener('click', async () => {
+    if (coupon) { setC(null); cIn.value = ''; cIn.disabled = false; cBtn.textContent = 'Aplicar'; say(''); cIn.focus(); return; }
+    const code = normCode(cIn.value); if (!code) { say('Digite o cupom.', 'bad'); return; }
+    let h = ''; try { h = await sha256(code); } catch (e) { say('Não foi possível conferir o cupom neste navegador.', 'bad'); return; }
+    const c = (CONFIG.coupons || []).find((x) => x.hash === h && (!x.until || todayBR() <= x.until));
+    if (!c) { say('Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad'); return; }
+    setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say('Cupom de ' + c.church + ' aplicado: ' + couponLabel(c) + '.', 'ok');
+  });
+  cIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); cBtn.click(); } });
+})();
+renderSum(); $('#payopts').addEventListener('change', renderSum);
+
+/* menor de idade */
+const ageAt = (birth, ref) => { const b = new Date(birth + 'T00:00:00'), r = new Date(ref + 'T00:00:00'); let a = r.getFullYear() - b.getFullYear(); if (r < new Date(r.getFullYear(), b.getMonth(), b.getDate())) a--; return a; };
+const f = $('#f');
+f.elements.noshirt.addEventListener('change', () => { f.elements.shirt.disabled = f.elements.noshirt.checked; if (f.elements.noshirt.checked) { f.elements.shirt.value = ''; setErr('shirt', ''); } });
+const PAIS = ['dad', 'dadphone', 'mom', 'momphone'];
+const syncAdult = () => { const on = f.elements.adult.checked; PAIS.forEach((n) => { f.elements[n].disabled = on; if (on) setErr(n, ''); }); $('#pais').classList.toggle('off', on); };
+f.elements.adult.addEventListener('change', syncAdult);
+f.elements.birth.addEventListener('change', () => { const b = f.elements.birth.value; if (!b) return; const a = ageAt(b, CONFIG.campStart); if (a >= 0 && a <= 110) { f.elements.adult.checked = a >= 18; syncAdult(); } });
+
+/* envio */
+const setErr = (k, m) => { const e = $('[data-e=' + k + ']'); if (e) e.textContent = m || ''; const el = f.elements[k]; if (el && el.classList) el.classList.toggle('bad', !!m); };
+const digits = (s) => s.replace(/\D/g, '');
+f.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  ['name', 'phone', 'birth', 'shirt', 'dad', 'dadphone', 'mom', 'momphone', 'consent'].forEach((k) => setErr(k, ''));
+  const v = { name: f.elements.name.value.trim(), phone: f.elements.phone.value.trim(), birth: f.elements.birth.value, shirt: f.elements.shirt.value, dad: f.elements.dad.value.trim(), dadphone: f.elements.dadphone.value.trim(), mom: f.elements.mom.value.trim(), momphone: f.elements.momphone.value.trim(), notes: f.elements.notes.value.trim() };
+  let first = null; const bad = (k, m) => { setErr(k, m); first = first || f.elements[k]; };
+  if (v.name.split(/\s+/).filter(Boolean).length < 2) bad('name', 'Digite seu nome completo.');
+  if (digits(v.phone).length < 10) bad('phone', 'Digite o WhatsApp com DDD.');
+  if (!v.birth) bad('birth', 'Informe a data de nascimento.');
+  else { const a = ageAt(v.birth, CONFIG.campStart); if (a < 0 || a > 110) bad('birth', 'Confira a data de nascimento.'); else if (CONFIG.minAge && a < CONFIG.minAge) bad('birth', 'O acampamento é para quem tem ' + CONFIG.minAge + ' anos ou mais.'); else if (a < 18 && f.elements.adult.checked) bad('birth', 'Pela data de nascimento, você terá ' + a + ' anos no acampamento. Desmarque "Sou maior de 18 anos" e preencha os dados do pai ou da mãe.');
+    else if (a < 18) {
+      const full = (x) => x.split(/\s+/).filter(Boolean).length >= 2, okPh = (x) => digits(x).length >= 10;
+      const check = (kn, kp, quem) => { const nm = v[kn], ph = v[kp]; if (!nm && !ph) return false; if (!full(nm)) bad(kn, 'Digite o nome completo ' + quem + '.'); else if (!okPh(ph)) bad(kp, 'Informe o celular ' + quem + ' com DDD.'); return full(nm) && okPh(ph); };
+      const okDad = check('dad', 'dadphone', 'do pai'), okMom = check('mom', 'momphone', 'da mãe');
+      if (!okDad && !okMom && !first) bad('dad', 'Preencha o nome e o celular do pai ou da mãe.');
+    } }
+  if (!v.shirt && !f.elements.noshirt.checked) bad('shirt', 'Escolha o tamanho ou marque que não quer camiseta agora.');
+  if (!f.elements.consent.checked) bad('consent', 'Marque a caixa para continuar.');
+  if (first) { first.focus(); return; }
+  const p = curPlan(), l = activeLot();
+  const code = 'IMR-' + (Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 4)).toUpperCase();
+  const minor = ageAt(v.birth, CONFIG.campStart) < 18;
+  const msg = ['Olá! Quero me inscrever no ' + CONFIG.camp.toUpperCase() + ' · ' + CONFIG.edition + '.', '', 'Código: ' + code, 'Nome: ' + v.name, 'WhatsApp: ' + v.phone, 'Nascimento: ' + fmtD(v.birth), minor && v.dad ? 'Pai: ' + v.dad + (v.dadphone ? ' (' + v.dadphone + ')' : '') : null, minor && v.mom ? 'Mãe: ' + v.mom + (v.momphone ? ' (' + v.momphone + ')' : '') : null, 'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt), v.notes ? 'Observações: ' + v.notes : null, 'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + coupon.church + ')' : ''), 'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)].filter((x) => x !== null).join('\n');
+  $('#code').textContent = code;
+  const proofMsg = encodeURIComponent('Olá! Segue o comprovante do pagamento da inscrição ' + code + ' (' + v.name + '). Valor: ' + brl(p.first) + '.' + (coupon ? ' Cupom: ' + coupon.church + '.' : ''));
+  const pw = $('#waProofs'); pw.textContent = '';
+  (CONFIG.proofContacts && CONFIG.proofContacts.length ? CONFIG.proofContacts : [{ name: 'organização', number: CONFIG.whatsapp }]).forEach((c) => { const a = document.createElement('a'); a.className = 'btn wa'; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.href = 'https://wa.me/' + c.number + '?text=' + proofMsg; a.textContent = 'Enviar para ' + c.name; pw.appendChild(a); });
+  $('#payline').textContent = 'Valor de hoje: ' + brl(p.first) + (p.n > 1 ? ' (as outras parcelas são combinadas pelo WhatsApp).' : '.');
+  $('#pixkey').textContent = CONFIG.pixKey; $('#pixname').textContent = CONFIG.pixName ? 'Favorecido: ' + CONFIG.pixName : '';
+  f.classList.add('hide'); const d = $('#done'); d.classList.remove('hide'); d.focus(); d.scrollIntoView({ block: 'start' }); setTimeout(() => { if (window.__burst) window.__burst(innerWidth / 2, Math.min(innerHeight * 0.65, innerHeight / 2 + 60)); }, 450);
+  const copy = async (txt, btn, ok) => { try { await navigator.clipboard.writeText(txt); const o = btn.textContent; btn.textContent = ok; setTimeout(() => (btn.textContent = o), 1800); } catch (e) { const r = document.createRange(); r.selectNodeContents(btn === $('#copypix') ? $('#pixkey') : btn === $('#copycode') ? $('#pixcode') : $('#code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Selecionado: copie (Ctrl+C)'; } };
+  $('#copypix').onclick = () => copy(CONFIG.pixKey, $('#copypix'), 'chave copiada');
+  /* PIX Copia e Cola e QR Code com o valor de hoje (padrão do Banco Central, sem intermediário) */
+  const pixStr = pixPayload(CONFIG.pixKey, p.first, CONFIG.pixMerchant || CONFIG.church, CONFIG.pixCity || 'CAMPINAS', code);
+  $('#pixcode').textContent = pixStr;
+  $('#copycode').onclick = () => copy(pixStr, $('#copycode'), 'Código copiado!');
+  const qrBox = $('#qr'); qrBox.textContent = ''; qrBox.style.display = '';
+  try { const q = qrcode(0, 'M'); q.addData(pixStr); q.make(); const n = q.getModuleCount(); let d = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + c + ' ' + r + 'h1v1h-1z'; qrBox.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + ' ' + (n + 4) + '" shape-rendering="crispEdges" aria-hidden="true"><rect x="-2" y="-2" width="' + (n + 4) + '" height="' + (n + 4) + '" fill="#fff"/><path d="' + d + '" fill="#06212E"/></svg>'; } catch (e) { qrBox.style.display = 'none'; }
+});
+
+/* profundímetro e barra fixa */
+const gdot = $('#gdot'), gnum = $('#gnum'), bar = $('#bar');
+const onScroll = () => { const h = document.documentElement.scrollHeight - innerHeight; const pr = h > 0 ? Math.min(1, Math.max(0, scrollY / h)) : 0; gdot.style.top = 'calc(' + (pr * 100) + '% - 20px)'; const dY = scrollY - (onScroll.last || 0); if (dY > 2) gdot.classList.remove('up'); else if (dY < -2) gdot.classList.add('up'); onScroll.last = scrollY; document.body.classList.toggle('scrolled', scrollY > 40); gnum.firstChild.nodeValue = Math.round(pr * 30) + ' m'; const ins = $('#inscricao').getBoundingClientRect(); bar.classList.toggle('show', scrollY > innerHeight * 0.6 && !(ins.top < innerHeight * 0.7 && ins.bottom > 0)); };
+addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); onScroll();
+
+/* ===== CONTAGEM E COMPARTILHAR ===== */
+(() => {
+  /* contagem regressiva */
+  const target = new Date(CONFIG.campStart + 'T00:00:00-03:00').getTime();
+  const els = { D: $('#cdD'), H: $('#cdH'), M: $('#cdM'), S: $('#cdS') }; const prev = {};
+  const put = (k, v) => { if (prev[k] === v) return; prev[k] = v; const e = els[k]; e.textContent = v; e.classList.remove('tk'); void e.offsetWidth; e.classList.add('tk'); };
+  const tick = () => { const diff = target - Date.now(); if (isNaN(target)) { $('#countwrap').classList.add('hide'); return false; } if (diff <= 0) { $('#count').classList.add('hide'); $('#cdcap').textContent = 'O ' + CONFIG.camp + ' já começou!'; return false; } const s = Math.floor(diff / 1000); put('D', String(Math.floor(s / 86400))); put('H', String(Math.floor(s % 86400 / 3600)).padStart(2, '0')); put('M', String(Math.floor(s % 3600 / 60)).padStart(2, '0')); put('S', String(s % 60).padStart(2, '0')); return true; };
+  if (tick()) { const iv = setInterval(() => { if (!tick()) clearInterval(iv); }, 1000); }
+
+  /* chamar um amigo */
+  const text = 'Bora mergulhar no ' + CONFIG.camp.toUpperCase() + '? ' + CONFIG.edition + '. Inscrições aqui:';
+  const url = () => location.href.split('#')[0];
+  document.querySelectorAll('.shareBtn').forEach((a) => {
+    a.href = 'https://wa.me/?text=' + encodeURIComponent(text + ' ' + url());
+    a.addEventListener('click', async (e) => { if (!navigator.share) return; e.preventDefault(); try { await navigator.share({ title: CONFIG.camp, text, url: url() }); } catch (x) { /* a pessoa fechou o menu */ } });
+  });
+})();
+
+/* ===== CONHEÇA O LUGAR: fotos passando sozinhas ===== */
+(() => {
+  const view = $('#lgView'), belt = $('#lgBelt'); if (!view) return;
+  const originals = [...belt.children];
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* tela cheia */
+  const lb = $('#lb'), lbImg = $('#lbImg'), lbCap = $('#lbCap'); let cur = 0, paused = false, lastFocus = null;
+  const show = (i) => { cur = (i + originals.length) % originals.length; const im = originals[cur].querySelector('img'); lbImg.src = im.src; lbImg.alt = im.alt; lbCap.textContent = im.alt; };
+  const openLb = (i) => { lastFocus = document.activeElement; show(i); lb.classList.remove('hide'); document.body.style.overflow = 'hidden'; paused = true; lb.querySelector('.lb-x').focus(); };
+  const closeLb = () => { lb.classList.add('hide'); document.body.style.overflow = ''; paused = false; if (lastFocus) lastFocus.focus(); };
+  lb.querySelector('.lb-x').addEventListener('click', closeLb);
+  lb.querySelector('.lb-p').addEventListener('click', () => show(cur - 1));
+  lb.querySelector('.lb-n').addEventListener('click', () => show(cur + 1));
+  lb.addEventListener('click', (e) => { if (e.target === lb) closeLb(); });
+  addEventListener('keydown', (e) => { if (lb.classList.contains('hide')) return; if (e.key === 'Escape') closeLb(); if (e.key === 'ArrowRight') show(cur + 1); if (e.key === 'ArrowLeft') show(cur - 1); });
+  let moved = 0;
+  belt.addEventListener('click', (e) => { const b = e.target.closest('.lg-open'); if (!b) return; if (moved > 8) { moved = 0; return; } openLb(Number(b.dataset.i)); });
+  if (reduce) { view.classList.add('static'); return; }
+  /* repete as fotos até cobrir bem a tela, para o giro não ter emenda */
+  const addCopy = () => originals.forEach((o) => { const c = o.cloneNode(true); c.setAttribute('aria-hidden', 'true'); c.querySelector('button').tabIndex = -1; belt.appendChild(c); });
+  addCopy(); while (belt.scrollWidth < innerWidth * 2.2 && belt.children.length < originals.length * 8) addCopy();
+  let off = 0, half = 0, visible = false, raf = 0, last = 0, hover = false, dragging = false, sx = 0, so = 0, touchPause = 0;
+  const per = () => { let w = 0; const gap = parseFloat(getComputedStyle(belt).columnGap) || 16; for (let k = 0; k < originals.length; k++) w += belt.children[k].getBoundingClientRect().width + gap; return w; };
+  const measure = () => { half = per(); };
+  const speed = () => (innerWidth < 760 ? 26 : 34);
+  const tick = (t) => {
+    const dt = Math.min(0.05, (t - last) / 1000); last = t;
+    if (!paused && !hover && !dragging && t > touchPause) off += speed() * dt;
+    if (half > 0) off = ((off % half) + half) % half;
+    belt.style.transform = 'translate3d(' + (-off).toFixed(1) + 'px,0,0)';
+    raf = visible ? requestAnimationFrame(tick) : 0;
+  };
+  const start = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } };
+  if ('IntersectionObserver' in window) new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) { belt.querySelectorAll('img[loading="lazy"]').forEach((im) => { im.loading = 'eager'; }); measure(); start(); } }, { rootMargin: '300px 0px' }).observe(view);
+  else { visible = true; start(); }
+  addEventListener('resize', measure); belt.querySelectorAll('img').forEach((im) => { if (!im.complete) im.addEventListener('load', measure, { once: true }); });
+  measure();
+  view.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hover = true; });
+  view.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hover = false; });
+  view.addEventListener('pointerdown', (e) => { dragging = true; sx = e.clientX; so = off; moved = 0; view.classList.add('drag'); });
+  addEventListener('pointermove', (e) => { if (!dragging) return; const dx = e.clientX - sx; moved = Math.max(moved, Math.abs(dx)); off = so - dx; }, { passive: true });
+  const end = (e) => { if (!dragging) return; dragging = false; view.classList.remove('drag'); if (e.pointerType !== 'mouse') touchPause = performance.now() + 2500; };
+  addEventListener('pointerup', end); addEventListener('pointercancel', end);
+})();
+
+/* ===== PRELETORES ===== */
+(() => {
+  const track = $('#spTrack'), prev = $('#spPrev'), next = $('#spNext');
+  const wavesD = 'M0 20 C 120 4, 240 36, 360 20 S 600 4, 720 20 S 960 36, 1080 20 S 1320 4, 1440 20';
+  const art = () => { let lines = ''; for (let k = 0; k < 9; k++) lines += '<path d="' + wavesD + '" transform="translate(0 ' + (k * 26) + ')" stroke="rgba(230,246,243,.22)" stroke-width="1" fill="none"/>'; return '<div class="sp-art" aria-hidden="true"><div class="glow"></div><svg viewBox="0 0 1440 240" preserveAspectRatio="none">' + lines + '</svg></div>'; };
+  CONFIG.speakers.forEach((sp, i) => {
+    const c = document.createElement('article'); c.className = 'sp-card'; c.setAttribute('role', 'listitem'); c.style.setProperty('--d', i);
+    if (sp.photo) { const im = document.createElement('img'); im.src = sp.photo; im.alt = 'Foto de ' + sp.name; im.loading = 'lazy'; c.appendChild(im); }
+    else { c.insertAdjacentHTML('beforeend', art()); const b = document.createElement('span'); b.className = 'sp-badge'; b.textContent = 'conteúdo de demonstração'; c.appendChild(b); }
+    const info = document.createElement('div'); info.className = 'sp-info'; const h = document.createElement('h3'); h.textContent = sp.name; const p = document.createElement('p'); p.textContent = sp.role || ''; info.append(h, p); c.appendChild(info);
+    track.appendChild(c);
+  });
+  /* alinha o primeiro cartão com o texto da página */
+  const align = () => { const wl = Math.round($('#preletores .wrap').getBoundingClientRect().left); track.style.paddingLeft = wl + 'px'; track.style.scrollPaddingLeft = wl + 'px'; };
+  const step = () => { const c = track.querySelector('.sp-card'); return c ? c.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 18) : 300; };
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const upd = () => {
+    const max = track.scrollWidth - track.clientWidth - 2;
+    prev.disabled = track.scrollLeft <= 2; next.disabled = track.scrollLeft >= max;
+    if (reduce) return;
+    const tl = track.getBoundingClientRect().left + parseFloat(track.style.paddingLeft || 0);
+    track.querySelectorAll('.sp-card').forEach((c) => { const r = c.getBoundingClientRect(); const off = (r.left - tl) / r.width; const k = Math.max(-1, Math.min(0, off)); c.style.transform = 'scale(' + (1 + k * 0.08).toFixed(3) + ')'; c.style.opacity = (1 + k * 0.55).toFixed(3); });
+  };
+  prev.addEventListener('click', () => track.scrollBy({ left: -step(), behavior: reduce ? 'auto' : 'smooth' }));
+  next.addEventListener('click', () => track.scrollBy({ left: step(), behavior: reduce ? 'auto' : 'smooth' }));
+  track.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { e.preventDefault(); next.click(); } if (e.key === 'ArrowLeft') { e.preventDefault(); prev.click(); } });
+  let pend = false; track.addEventListener('scroll', () => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; upd(); }); }, { passive: true });
+  addEventListener('resize', () => { align(); upd(); }); align(); upd();
+})();
+
+/* ===== MOVIMENTO ===== */
+(() => {
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const w = $('#word');
+  /* título em letras, para cada uma poder balançar */
+  const txt = CONFIG.camp.toUpperCase(); w.setAttribute('aria-label', CONFIG.camp); w.textContent = '';
+  const letters = [...txt].map((c, i) => { const o = document.createElement('span'); o.className = 'ch'; o.setAttribute('aria-hidden', 'true'); o.style.setProperty('--i', i); const n = document.createElement('i'); n.textContent = c; o.appendChild(n); w.appendChild(o); return { el: o, py: 0, tg: 0 }; });
+  if (reduce) return;
+  document.documentElement.classList.add('js');
+
+  /* faixa em movimento */
+  const belt = $('#belt'), items = [CONFIG.camp.toUpperCase(), 'Mergulhe fundo', CONFIG.dates.toUpperCase(), 'Vem imergir'];
+  const seq = () => { for (let r = 0; r < 3; r++) items.forEach((t) => { const sp = document.createElement('span'); sp.textContent = t + ' ≈'; belt.appendChild(sp); }); };
+  seq(); [...belt.children].forEach((c) => belt.appendChild(c.cloneNode(true)));
+  const beltAnim = belt.getAnimations ? belt.getAnimations()[0] : null;
+
+  /* revelações ao rolar */
+  document.querySelectorAll('main h2').forEach((h) => { const t = h.textContent; h.setAttribute('aria-label', t); h.textContent = ''; t.split(' ').forEach((wd, i) => { const s = document.createElement('span'); s.className = 'wd'; s.setAttribute('aria-hidden', 'true'); const u = document.createElement('span'); u.textContent = wd; u.style.setProperty('--k', i); s.appendChild(u); h.appendChild(s); h.appendChild(document.createTextNode(' ')); }); h.classList.add('rv-h'); });
+  const mark = (sel, step) => document.querySelectorAll(sel).forEach((el, i) => { el.classList.add('rv'); el.style.setProperty('--d', step ? i : 0); });
+  mark('#tema p', true); mark('.dive li', true); mark('#infolist dt, #infolist dd', true); mark('.lot', true); mark('#payhow'); mark('#formintro'); mark('.formcard'); mark('details', true); mark('#spTrack'); mark('#lgView');
+  const count = (el) => { const target = parseInt(el.textContent, 10) || 0; const t0 = performance.now(); const tick = (t) => { const k = Math.min(1, (t - t0) / 900); el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3))) + ' m'; if (k < 1) requestAnimationFrame(tick); }; el.textContent = '0 m'; requestAnimationFrame(tick); };
+  const watch = [...document.querySelectorAll('.rv, .rv-h, .depth')];
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (!e.isIntersecting) return; e.target.classList.add('in'); if (e.target.classList.contains('depth')) count(e.target); io.unobserve(e.target); }), { threshold: 0.18, rootMargin: '0px 0px -6% 0px' });
+    watch.forEach((el) => io.observe(el));
+  } else watch.forEach((el) => el.classList.add('in'));
+
+  /* letras reagem ao dedo ou ao mouse */
+  let px = -9999, py = -9999;
+  addEventListener('pointermove', (e) => { px = e.clientX; py = e.clientY; }, { passive: true });
+  addEventListener('pointerleave', () => { px = py = -9999; });
+
+  /* bolhas e "neve marinha": sobem mais rápido quando você rola para baixo */
+  const cv = $('#fx'), cx = cv.getContext ? cv.getContext('2d') : null;
+  let W = 0, H = 0, dpr = 1; const N = innerWidth < 760 ? 14 : 30; const P = [];
+  const size = () => { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; if (cx) cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+  size(); addEventListener('resize', size);
+  for (let i = 0; i < N; i++) { const snow = Math.random() < 0.38; P.push({ x: Math.random() * W, y: Math.random() * H, r: snow ? 0.8 + Math.random() * 1.6 : 2 + Math.random() * 7, v: snow ? 6 + Math.random() * 10 : 14 + Math.random() * 34, ph: Math.random() * 6.28, snow }); }
+  const drops = [], rings = []; let tilt = 0;
+  const pop = (p) => { for (let k = 0; k < 8; k++) { const a = Math.random() * 6.283, sp = 40 + Math.random() * 80; drops.push({ x: p.x, y: p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2, a: 1 }); } p.y = H + 20; p.x = Math.random() * W; if (navigator.vibrate) { try { navigator.vibrate(8); } catch (x) { /* sem vibração */ } } };
+  addEventListener('pointerdown', (e) => { if (e.target.closest && e.target.closest('a,button,input,select,textarea,label,summary,.opt,.formcard')) return; let best = null, bd = 1e9; P.forEach((p) => { if (p.snow) return; const d = Math.hypot(p.x - e.clientX, p.y - e.clientY); if (d < p.r + 26 && d < bd) { best = p; bd = d; } }); if (best) pop(best); else rings.push({ x: e.clientX, y: e.clientY, r: 6, a: 1 }); }, { passive: true });
+  window.__burst = (x, y) => { for (let k = 0; k < 34; k++) { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, sp = 120 + Math.random() * 260; drops.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 2 + Math.random() * 5, a: 1, ring: true }); } rings.push({ x, y, r: 10, a: 1 }); };
+  if ('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission !== 'function') addEventListener('deviceorientation', (e) => { if (e.gamma != null) tilt += (Math.max(-30, Math.min(30, e.gamma)) / 30 - tilt) * 0.2; }, { passive: true });
+  let lastY = scrollY, vel = 0, last = performance.now(), rate = 1;
+  const dz = $('#dz'), mDisp = $('#mDisp'), mBlur = $('#mBlur'), mTurb = $('#mTurb'); let melting = false, lastMp = -1, lastScrollAt = 0;
+  addEventListener('scroll', () => { lastScrollAt = performance.now(); }, { passive: true });
+  /* modo leve: celular fraco, economia de dados ou quadros lentos nos primeiros segundos */
+  let lite = false, sampled = 0, slow = 0;
+  const goLite = () => { if (lite) return; lite = true; document.documentElement.classList.add('lite'); dz.style.filter = 'none'; melting = false; if (cx) cx.clearRect(0, 0, W, H); cv.style.display = 'none'; };
+  if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.connection && navigator.connection.saveData)) goLite();
+  const rays = document.querySelector('.rays'); let docH = document.documentElement.scrollHeight;
+  addEventListener('resize', () => { docH = document.documentElement.scrollHeight; }); setInterval(() => { docH = document.documentElement.scrollHeight; }, 2000);
+  /* no celular, quando o dedo sai da tela as letras voltam ao lugar */
+  const release = (e) => { if (e.pointerType !== 'mouse') px = py = -9999; };
+  addEventListener('pointerup', release, { passive: true }); addEventListener('pointercancel', release, { passive: true });
+  const frame = (t) => {
+    const dt = Math.min(0.05, (t - last) / 1000); last = t;
+    vel += ((scrollY - lastY) - vel) * 0.12; lastY = scrollY;
+    /* parallax suave do herói */
+    /* leituras primeiro: evita o navegador recalcular a página várias vezes por quadro */
+    const heroOn = scrollY < innerHeight * 1.3;
+    const lettersLive = heroOn && (px > -9000 || letters.some((L) => Math.abs(L.py) > 0.05));
+    const rects = lettersLive ? letters.map((L) => L.el.getBoundingClientRect()) : null;
+    const depth = Math.min(1, scrollY / Math.max(1, docH - innerHeight));
+    /* parallax suave do herói; os raios de sol apagam conforme você desce */
+    /* mede os primeiros quadros de rolagem: se estiverem lentos, liga o modo leve */
+    if (!lite && t > 1200 && sampled < 90 && t - lastScrollAt < 180) { sampled++; if (dt > 0.022) slow++; if (sampled === 90 && slow > 30) goLite(); }
+    /* a água embaralha e apaga o topo conforme a pessoa rola; só mexe enquanto rola */
+    if (heroOn) {
+      const mp = Math.min(1, Math.max(0, scrollY / (innerHeight * 0.72)));
+      const rolando = t - lastScrollAt < 180;
+      if (mp > 0.004) {
+        dz.style.visibility = mp > 0.985 ? 'hidden' : '';
+        if (lite) { dz.style.opacity = (1 - Math.pow(mp, 1.4) * 0.95).toFixed(3); }
+        else if (mp !== lastMp || rolando) {
+          if (!melting) { dz.style.filter = 'url(#melt)'; melting = true; }
+          mDisp.setAttribute('scale', (Math.pow(mp, 1.25) * 120).toFixed(1));
+          mBlur.setAttribute('stdDeviation', (mp * mp * 7).toFixed(2));
+          if (rolando) mTurb.setAttribute('baseFrequency', (0.007 + 0.0025 * Math.sin(t / 820)).toFixed(4) + ' ' + (0.03 + 0.01 * Math.sin(t / 1150 + 1.3)).toFixed(4));
+          dz.style.opacity = (1 - Math.pow(mp, 1.4) * 0.95).toFixed(3);
+        }
+        lastMp = mp;
+      } else if (melting || lastMp > 0) { dz.style.filter = 'none'; dz.style.opacity = ''; dz.style.visibility = ''; mDisp.setAttribute('scale', '0'); melting = false; lastMp = 0; }
+    }
+    if (heroOn) { w.style.transform = 'translate3d(0,' + (scrollY * 0.22).toFixed(1) + 'px,0)'; if (rays) { rays.style.transform = 'translate3d(0,' + (scrollY * 0.12).toFixed(1) + 'px,0) rotate(' + (tilt * 3).toFixed(2) + 'deg)'; rays.style.opacity = Math.max(0, 1 - scrollY / (innerHeight * 0.95)).toFixed(3); } }
+    /* faixa acelera com a rolagem */
+    if (beltAnim) { const tr = 1 + Math.min(5, Math.abs(vel) * 0.25); rate += (tr - rate) * 0.08; beltAnim.playbackRate = rate; }
+    /* letras */
+    if (lettersLive) letters.forEach((L, k) => { const r = rects[k]; const cxp = r.left + r.width / 2, cyp = r.top + r.height / 2 - L.py; const dx = px - cxp, dy = py - cyp; const dist = Math.hypot(dx, dy); const inf = Math.max(0, 1 - dist / 190); L.tg = -(inf * inf) * 46 * (dy > 0 ? 1 : -0.6); L.py += (L.tg - L.py) * 0.12; L.el.style.setProperty('--py', L.py.toFixed(2) + 'px'); });
+    /* partículas */
+    if (cx && !lite) { cx.clearRect(0, 0, W, H); const boost = vel * 22; const bubA = (0.42 * (1 - 0.45 * depth)).toFixed(3), snowA = (0.18 + 0.24 * depth).toFixed(3); P.forEach((p) => { p.y -= (p.v + boost) * dt; p.x += Math.sin(t / 1400 + p.ph) * 12 * dt + tilt * (p.snow ? 14 : 34) * dt; const ddx = p.x - px, ddy = p.y - py, dd = Math.hypot(ddx, ddy); if (dd < 90 && dd > 0) { p.x += (ddx / dd) * (90 - dd) * 0.05; p.y += (ddy / dd) * (90 - dd) * 0.05; } if (p.y < -12) { p.y = H + 12; p.x = Math.random() * W; } else if (p.y > H + 14) { p.y = -10; p.x = Math.random() * W; } if (p.x < -10) p.x = W + 10; else if (p.x > W + 10) p.x = -10;
+      if (p.snow) { cx.fillStyle = 'rgba(230,246,243,' + snowA + ')'; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.283); cx.fill(); } else { cx.strokeStyle = 'rgba(230,246,243,' + bubA + ')'; cx.lineWidth = 1.2; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.283); cx.stroke(); cx.strokeStyle = 'rgba(255,255,255,0.55)'; cx.beginPath(); cx.arc(p.x, p.y, p.r * 0.62, 3.6, 4.5); cx.stroke(); } }); }
+    if (cx) {
+      for (let i = rings.length - 1; i >= 0; i--) { const g = rings[i]; g.r += 150 * dt; g.a -= 1.25 * dt; if (g.a <= 0) { rings.splice(i, 1); continue; } cx.strokeStyle = 'rgba(255,210,122,' + (g.a * 0.85).toFixed(2) + ')'; cx.lineWidth = 2; cx.beginPath(); cx.arc(g.x, g.y, g.r, 0, 6.283); cx.stroke(); }
+      for (let i = drops.length - 1; i >= 0; i--) { const q = drops[i]; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.985; q.vy = q.vy * 0.985 - 40 * dt; q.a -= 1.35 * dt; if (q.a <= 0) { drops.splice(i, 1); continue; } if (q.ring) { cx.strokeStyle = 'rgba(255,226,160,' + q.a.toFixed(2) + ')'; cx.lineWidth = 1.6; cx.beginPath(); cx.arc(q.x, q.y, q.r, 0, 6.283); cx.stroke(); } else { cx.fillStyle = 'rgba(230,246,243,' + q.a.toFixed(2) + ')'; cx.beginPath(); cx.arc(q.x, q.y, q.r, 0, 6.283); cx.fill(); } }
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+})();
