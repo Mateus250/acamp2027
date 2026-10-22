@@ -14,10 +14,10 @@ const CONFIG = {
   campStart: '2027-02-06',                         // primeiro dia do acampamento: usado na contagem regressiva e para saber se a pessoa será menor de idade
   place: 'Espaço SET – Indaiatuba',
   departure: 'Saída e chegada: a confirmar com a organização.',
-  whatsapp: '5519999999999',                       // recebe as inscrições. Só números, com 55 e DDD
+  whatsapp: '',                                    // WhatsApp de dúvidas (rodapé). Só números, com 55 e DDD. Vazio = não mostra
   proofContacts: [                                 // quem recebe os comprovantes: nome que aparece no botão e número (só números, com 55 e DDD)
-    { name: 'Contato 1', number: '5519999999999' },
-    { name: 'Contato 2', number: '5519999999999' }
+    { name: '(19) 99209-1360', number: '5519992091360' },
+    { name: '(19) 99254-7677', number: '5519992547677' }
   ],
   pixKey: 'cantinaipi@gmail.com',
   pixMerchant: 'IPI PARQUE ITAJAI',                // nome que vai dentro do código PIX (até 25 letras, sem acento)
@@ -33,13 +33,15 @@ const CONFIG = {
     { name: 'Preletor a confirmar', role: 'Nome e foto serão divulgados pela organização', photo: '' },
     { name: 'Louvor a confirmar', role: 'Ministério de louvor do acampamento', photo: '' }
   ],
-  coupons: [                                       // cupons de desconto por igreja. Para criar ou mudar, peça ao Claude (o código fica guardado em forma secreta)
-    { hash: 'd849395107c5b4f3f5d2fe1390554d07ada11c144cd44bec1dcdf5f5917728b2', church: 'Igreja de teste', type: 'percent', value: 50 },
-    { hash: '610d4e968b2f85242b587016cdcc606b367063b32af7d8ec38c549086fe1fe56', church: 'Igreja de teste', type: 'price', value: 40000 }
-  ],
+  // cupons de desconto e links de pagamento no cartão: cadastre no painel /admin, em Ajustes
+  emailOn: false,                                  // mude para true quando o e-mail automático estiver ligado no Supabase
   minAge: null                                     // ex.: 13 para exigir idade mínima; null = sem limite
 };
 /* ================================================================== */
+/* banco de dados (Supabase): as inscrições caem direto no painel /admin */
+const SB_URL = 'https://xhtnhhdpiuqdquacooau.supabase.co', SB_KEY = 'sb_publishable_stUBkyPTyqHtCla_seKJRw_k_LW2S_i';
+const SB = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } }) : null;
+let sending = false;
 const $ = (s, r) => (r || document).querySelector(s);
 const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(c % 100).padStart(2, '0');
 const todayBR = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
@@ -63,7 +65,7 @@ $('#facts').innerHTML = '<li>' + CONFIG.dates + '<span>quando</span></li><li>' +
 $('#infolist').innerHTML = [['Quando', CONFIG.dates], ['Onde', CONFIG.place], ['Saída', CONFIG.departure], ['Está incluso', CONFIG.includes], ['O que levar', CONFIG.bring]].map((r) => '<dt>' + r[0] + '</dt><dd></dd>').join('');
 [...document.querySelectorAll('#infolist dd')].forEach((dd, i) => (dd.textContent = [CONFIG.dates, CONFIG.place, CONFIG.departure, CONFIG.includes, CONFIG.bring][i]));
 $('#church').textContent = CONFIG.church; $('#churchtop').textContent = CONFIG.churchShort || CONFIG.church;
-$('#fwa').href = 'https://wa.me/' + CONFIG.whatsapp;
+if (CONFIG.whatsapp) $('#fwa').href = 'https://wa.me/' + CONFIG.whatsapp; else $('#fwaLine').classList.add('hide');
 $('#lots').innerHTML = CONFIG.lots.map((l) => { const on = l === activeLot() && lotOpen(); return '<div class="lot' + (on ? ' on' : '') + '">' + (on ? '<div class="tagnow">Aberto agora</div>' : '') + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">Até ' + fmtD(l.until) + '</div></div>'; }).join('');
 $('#payhow').textContent = 'Você paga por PIX, à vista ou em até ' + CONFIG.maxInstallments + ' parcelas. A organização confere cada pagamento e confirma sua vaga.';
 $('#formintro').textContent = 'Preencha em um minuto. No final, você paga por PIX e manda o comprovante pelo WhatsApp.';
@@ -75,12 +77,12 @@ $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></deta
 /* opções de pagamento */
 /* cupons de desconto: o código digitado é comparado com uma "impressão digital", então não dá para ler os cupons no código da página */
 let coupon = null;
-const sha256 = async (t) => { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); };
+let cardLinks = [];   // vem do painel: [{ valor: centavos, url }]
 const normCode = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (100 - c.value) / 100) : c.type === 'off' ? Math.max(0, price - c.value) : c.type === 'price' ? c.value : price);
 const finalPrice = () => (coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
 const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
-const plans = () => { const price = finalPrice(); const o = [{ id: 'avista', t: 'PIX à vista', s: brl(price) + ' agora', first: price, n: 1 }]; for (let n = 2; n <= CONFIG.maxInstallments; n++) { const base = Math.floor(price / n), first = base + (price - base * n); o.push({ id: 'p' + n, t: 'PIX em ' + n + ' parcelas', s: 'Hoje ' + brl(first) + ', depois ' + (n - 1) + 'x de ' + brl(base) + ' a cada 30 dias', first, n }); } return o; };
+const plans = () => { const price = finalPrice(); const o = [{ id: 'avista', t: 'PIX à vista', s: brl(price) + ' agora', first: price, n: 1 }]; for (let n = 2; n <= CONFIG.maxInstallments; n++) { const base = Math.floor(price / n), first = base + (price - base * n); o.push({ id: 'p' + n, t: 'PIX em ' + n + ' parcelas', s: 'Hoje ' + brl(first) + ', depois ' + (n - 1) + 'x de ' + brl(base) + ' a cada 30 dias', first, n }); } const link = (cardLinks.find((x) => x.valor === price) || {}).url; if (link) o.push({ id: 'cartao', t: 'Cartão de crédito', s: brl(price) + ' à vista ou parcelado no cartão (com acréscimo da operadora)', first: price, n: 1, card: link }); return o; };
 let P = plans();
 const renderPlans = () => { const sel = ($('input[name=plan]:checked') || {}).value; P = plans(); $('#payopts').innerHTML = P.map((p, i) => '<label class="opt"><input type="radio" name="plan" value="' + p.id + '"' + ((sel ? p.id === sel : i === 0) ? ' checked' : '') + '><span class="b">' + p.t + '<small>' + p.s + '</small></span></label>').join(''); };
 renderPlans();
@@ -94,14 +96,21 @@ const renderSum = () => { const p = curPlan(), l = activeLot(), tot = finalPrice
   cBtn.addEventListener('click', async () => {
     if (coupon) { setC(null); cIn.value = ''; cIn.disabled = false; cBtn.textContent = 'Aplicar'; say(''); cIn.focus(); return; }
     const code = normCode(cIn.value); if (!code) { say('Digite o cupom.', 'bad'); return; }
-    let h = ''; try { h = await sha256(code); } catch (e) { say('Não foi possível conferir o cupom neste navegador.', 'bad'); return; }
-    const c = (CONFIG.coupons || []).find((x) => x.hash === h && (!x.until || todayBR() <= x.until));
+    if (!SB) { say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
+    cBtn.disabled = true; say('Conferindo…');
+    let c = null;
+    try { const { data, error } = await SB.rpc('validar_cupom', { p_codigo: code }); if (error) throw error; const r = Array.isArray(data) ? data[0] : data; if (r) c = { church: r.igreja, type: r.tipo, value: r.valor }; }
+    catch (e) { console.error(e); cBtn.disabled = false; say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
+    cBtn.disabled = false;
     if (!c) { say('Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad'); return; }
     setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say('Cupom de ' + c.church + ' aplicado: ' + couponLabel(c) + '.', 'ok');
   });
   cIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); cBtn.click(); } });
 })();
 renderSum(); $('#payopts').addEventListener('change', renderSum);
+/* links de cartão cadastrados no painel */
+(async () => { if (!SB) return; try { const { data } = await SB.from('config').select('dados').eq('id', 1).maybeSingle(); const l = data && data.dados && data.dados.linksCartao; if (Array.isArray(l)) { cardLinks = l.filter((x) => x && x.url && x.valor > 0); renderPlans(); renderSum(); } } catch (e) { console.error(e); } })();
+const step1 = $('#done .steps > li'), step1Pix = step1 ? step1.innerHTML : '';
 
 /* menor de idade */
 const ageAt = (birth, ref) => { const b = new Date(birth + 'T00:00:00'), r = new Date(ref + 'T00:00:00'); let a = r.getFullYear() - b.getFullYear(); if (r < new Date(r.getFullYear(), b.getMonth(), b.getDate())) a--; return a; };
@@ -115,13 +124,14 @@ f.elements.birth.addEventListener('change', () => { const b = f.elements.birth.v
 /* envio */
 const setErr = (k, m) => { const e = $('[data-e=' + k + ']'); if (e) e.textContent = m || ''; const el = f.elements[k]; if (el && el.classList) el.classList.toggle('bad', !!m); };
 const digits = (s) => s.replace(/\D/g, '');
-f.addEventListener('submit', (ev) => {
+f.addEventListener('submit', async (ev) => {
   ev.preventDefault();
-  ['name', 'phone', 'birth', 'shirt', 'dad', 'dadphone', 'mom', 'momphone', 'consent'].forEach((k) => setErr(k, ''));
-  const v = { name: f.elements.name.value.trim(), phone: f.elements.phone.value.trim(), birth: f.elements.birth.value, shirt: f.elements.shirt.value, dad: f.elements.dad.value.trim(), dadphone: f.elements.dadphone.value.trim(), mom: f.elements.mom.value.trim(), momphone: f.elements.momphone.value.trim(), notes: f.elements.notes.value.trim() };
+  ['name', 'phone', 'email', 'birth', 'shirt', 'dad', 'dadphone', 'mom', 'momphone', 'consent'].forEach((k) => setErr(k, ''));
+  const v = { name: f.elements.name.value.trim(), phone: f.elements.phone.value.trim(), email: f.elements.email.value.trim().toLowerCase(), birth: f.elements.birth.value, shirt: f.elements.shirt.value, dad: f.elements.dad.value.trim(), dadphone: f.elements.dadphone.value.trim(), mom: f.elements.mom.value.trim(), momphone: f.elements.momphone.value.trim(), notes: f.elements.notes.value.trim() };
   let first = null; const bad = (k, m) => { setErr(k, m); first = first || f.elements[k]; };
   if (v.name.split(/\s+/).filter(Boolean).length < 2) bad('name', 'Digite seu nome completo.');
   if (digits(v.phone).length < 10) bad('phone', 'Digite o WhatsApp com DDD.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.email)) bad('email', 'Digite um e-mail válido. É para lá que vão a confirmação e o seu código.');
   if (!v.birth) bad('birth', 'Informe a data de nascimento.');
   else { const a = ageAt(v.birth, CONFIG.campStart); if (a < 0 || a > 110) bad('birth', 'Confira a data de nascimento.'); else if (CONFIG.minAge && a < CONFIG.minAge) bad('birth', 'O acampamento é para quem tem ' + CONFIG.minAge + ' anos ou mais.'); else if (a < 18 && f.elements.adult.checked) bad('birth', 'Pela data de nascimento, você terá ' + a + ' anos no acampamento. Desmarque "Sou maior de 18 anos" e preencha os dados do pai ou da mãe.');
     else if (a < 18) {
@@ -137,12 +147,41 @@ f.addEventListener('submit', (ev) => {
   const code = 'IMR-' + (Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 4)).toUpperCase();
   const minor = ageAt(v.birth, CONFIG.campStart) < 18;
   const msg = ['Olá! Quero me inscrever no ' + CONFIG.camp.toUpperCase() + ' · ' + CONFIG.edition + '.', '', 'Código: ' + code, 'Nome: ' + v.name, 'WhatsApp: ' + v.phone, 'Nascimento: ' + fmtD(v.birth), minor && v.dad ? 'Pai: ' + v.dad + (v.dadphone ? ' (' + v.dadphone + ')' : '') : null, minor && v.mom ? 'Mãe: ' + v.mom + (v.momphone ? ' (' + v.momphone + ')' : '') : null, 'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt), v.notes ? 'Observações: ' + v.notes : null, 'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + coupon.church + ')' : ''), 'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)].filter((x) => x !== null).join('\n');
+  /* grava a inscrição no banco antes de mostrar o PIX */
+  if (sending) return;
+  const total = finalPrice(), hoje = todayBR(), base = Math.floor(total / p.n);
+  const addMonths = (iso, k) => { const [y, m, dd] = iso.split('-').map(Number); const t = new Date(y, m - 1 + k, 1); t.setDate(Math.min(dd, new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate())); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
+  const parcelas = []; for (let i = 0; i < p.n; i++) parcelas.push({ n: i + 1, valor: i === 0 ? p.first : base, venc: addMonths(hoje, i), pago: 0, dataPag: '' });
+  const resp = minor ? [v.dad ? 'Pai: ' + v.dad : '', v.mom ? 'Mãe: ' + v.mom : ''].filter(Boolean).join(' / ') : '';
+  const respTel = minor ? [v.dadphone, v.momphone].filter(Boolean).join(' / ') : '';
+  const obs = [v.notes, coupon ? 'Cupom: ' + coupon.church + ' (' + couponLabel(coupon) + ')' : ''].filter(Boolean).join(' · ');
+  const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: l.name, opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
+  const btn = $('#submit'), oldTxt = btn.textContent; sending = true; btn.disabled = true; btn.textContent = 'Enviando…';
+  let errBox = $('#sendErr'); if (!errBox) { errBox = document.createElement('div'); errBox.id = 'sendErr'; errBox.className = 'err'; errBox.setAttribute('role', 'alert'); errBox.style.marginTop = '14px'; btn.insertAdjacentElement('afterend', errBox); }
+  errBox.textContent = '';
+  let salvo = false;
+  try { if (SB) { const { error } = await SB.from('acampantes').insert(row); salvo = !error; if (error) console.error(error); } } catch (e) { console.error(e); }
+  sending = false; btn.disabled = false; btn.textContent = oldTxt;
+  if (!salvo) {
+    errBox.innerHTML = 'Não conseguimos registrar sua inscrição agora. Confira sua internet e toque em <b>Enviar inscrição</b> de novo. Se continuar, <a target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">mande sua inscrição pelo WhatsApp</a>.';
+    errBox.querySelector('a').href = 'https://wa.me/' + (CONFIG.whatsapp || CONFIG.proofContacts[0].number) + '?text=' + encodeURIComponent(msg);
+    return;
+  }
   $('#code').textContent = code;
   const proofMsg = encodeURIComponent('Olá! Segue o comprovante do pagamento da inscrição ' + code + ' (' + v.name + '). Valor: ' + brl(p.first) + '.' + (coupon ? ' Cupom: ' + coupon.church + '.' : ''));
   const pw = $('#waProofs'); pw.textContent = '';
   (CONFIG.proofContacts && CONFIG.proofContacts.length ? CONFIG.proofContacts : [{ name: 'organização', number: CONFIG.whatsapp }]).forEach((c) => { const a = document.createElement('a'); a.className = 'btn wa'; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.href = 'https://wa.me/' + c.number + '?text=' + proofMsg; a.textContent = 'Enviar para ' + c.name; pw.appendChild(a); });
+  if (p.card) {
+    step1.innerHTML = '<b>Pague com cartão.</b> Toque no botão, escolha em quantas vezes quer pagar e digite os dados do cartão. O valor é ' + brl(p.first) + '; se parcelar, a tela de pagamento mostra o acréscimo antes de você confirmar.<br><a class="btn dark" id="cardBtn" target="_blank" rel="noopener noreferrer" style="margin-top:12px">Pagar com cartão</a>';
+    $('#cardBtn').href = p.card;
+    f.classList.add('hide'); const dc = $('#done'); dc.classList.remove('hide'); dc.focus(); dc.scrollIntoView({ block: 'start' }); setTimeout(() => { if (window.__burst) window.__burst(innerWidth / 2, Math.min(innerHeight * 0.65, innerHeight / 2 + 60)); }, 450);
+    return;
+  }
+  step1.innerHTML = step1Pix;
   $('#payline').textContent = 'Valor de hoje: ' + brl(p.first) + (p.n > 1 ? ' (as outras parcelas são combinadas pelo WhatsApp).' : '.');
   $('#pixkey').textContent = CONFIG.pixKey; $('#pixname').textContent = CONFIG.pixName ? 'Favorecido: ' + CONFIG.pixName : '';
+  $('#emailNote').textContent = CONFIG.emailOn ? 'Também enviamos o código para ' + v.email + ' (confira a caixa de spam).' : '';
+  $('#csCode').value = code; $('#csTel').value = v.phone;
   f.classList.add('hide'); const d = $('#done'); d.classList.remove('hide'); d.focus(); d.scrollIntoView({ block: 'start' }); setTimeout(() => { if (window.__burst) window.__burst(innerWidth / 2, Math.min(innerHeight * 0.65, innerHeight / 2 + 60)); }, 450);
   const copy = async (txt, btn, ok) => { try { await navigator.clipboard.writeText(txt); const o = btn.textContent; btn.textContent = ok; setTimeout(() => (btn.textContent = o), 1800); } catch (e) { const r = document.createRange(); r.selectNodeContents(btn === $('#copypix') ? $('#pixkey') : btn === $('#copycode') ? $('#pixcode') : $('#code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Selecionado: copie (Ctrl+C)'; } };
   $('#copypix').onclick = () => copy(CONFIG.pixKey, $('#copypix'), 'chave copiada');
@@ -250,6 +289,44 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   track.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { e.preventDefault(); next.click(); } if (e.key === 'ArrowLeft') { e.preventDefault(); prev.click(); } });
   let pend = false; track.addEventListener('scroll', () => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; upd(); }); }, { passive: true });
   addEventListener('resize', () => { align(); upd(); }); align(); upd();
+})();
+
+/* ===== CONSULTE SUA INSCRIÇÃO ===== */
+(() => {
+  const form = $('#csForm'); if (!form) return;
+  const msg = $('#csMsg'), res = $('#csRes'), btn = $('#csBtn');
+  const say = (t, bad) => { msg.textContent = t; msg.className = 'cs-msg' + (bad ? ' bad' : ''); };
+  const ROT = { pago: 'Pago', parcial: 'Parcialmente pago', pendente: 'Pagamento pendente', atrasado: 'Parcela atrasada' };
+  const stParc = (p) => (p.valor > 0 && p.pago >= p.valor ? 'pago' : p.venc && p.venc < todayBR() ? 'atrasado' : p.pago > 0 ? 'parcial' : 'pendente');
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  /* chegou pelo link do e-mail: ?consulta=IMR-XXXXXX */
+  const q = new URLSearchParams(location.search).get('consulta');
+  if (q) { $('#csCode').value = q.toUpperCase(); setTimeout(() => { $('#consulta').scrollIntoView({ block: 'start' }); $('#csTel').focus(); }, 600); }
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = $('#csCode').value.trim(), tel = digits($('#csTel').value);
+    res.classList.add('hide');
+    if (code.replace(/[^A-Za-z0-9]/g, '').length < 6) return say('Digite o código da inscrição, como aparece no fim da inscrição ou no e-mail.', true);
+    if (tel.length < 10) return say('Digite o WhatsApp usado na inscrição, com DDD.', true);
+    if (!SB) return say('Não foi possível consultar agora. Tente de novo em instantes.', true);
+    btn.disabled = true; say('Consultando…');
+    let r = null;
+    try { const { data, error } = await SB.rpc('consultar_inscricao', { p_codigo: code, p_tel: tel }); if (error) throw error; r = Array.isArray(data) ? data[0] : data; }
+    catch (err) { console.error(err); btn.disabled = false; return say('Não foi possível consultar agora. Tente de novo em instantes.', true); }
+    btn.disabled = false;
+    if (!r) return say('Não encontramos uma inscrição com esse código e esse WhatsApp. Confira os dois e tente de novo.', true);
+    const parc = (r.parcelas || []).map((p) => ({ n: p.n, valor: Number(p.valor) || 0, pago: Number(p.pago) || 0, venc: p.venc || '' }));
+    const total = parc.reduce((t, p) => t + p.valor, 0), pago = parc.reduce((t, p) => t + Math.min(p.pago, p.valor), 0);
+    const st = total > 0 && pago >= total ? 'pago' : parc.some((p) => stParc(p) === 'atrasado') ? 'atrasado' : pago > 0 ? 'parcial' : 'pendente';
+    say('');
+    res.innerHTML = '<div class="cs-head"><b>Oi, ' + esc(r.nome) + '!</b><span class="cs-st ' + st + '">' + ROT[st] + '</span></div>' +
+      '<div>' + esc(r.lote || '') + (r.opcao_nome ? ' · ' + esc(r.opcao_nome) : '') + '</div>' +
+      '<div class="cs-bar" role="img" aria-label="Pago ' + brl(pago) + ' de ' + brl(total) + '"><i style="width:' + (total ? Math.round(pago / total * 100) : 0) + '%"></i></div>' +
+      '<div><b>' + brl(pago) + '</b> pagos de <b>' + brl(total) + '</b>' + (total > pago ? ' · falta ' + brl(total - pago) : '') + '</div>' +
+      (parc.length > 1 ? '<ul class="cs-parc">' + parc.map((p) => { const s = stParc(p); return '<li><span>Parcela ' + p.n + ' · ' + brl(p.valor) + (p.venc ? ' · vence ' + fmtD(p.venc) : '') + '</span><span class="cs-st ' + s + '">' + (s === 'pago' ? 'Paga' : s === 'atrasado' ? 'Atrasada' : s === 'parcial' ? 'Parcial' : 'Em aberto') + '</span></li>'; }).join('') + '</ul>' : '') +
+      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? A equipe confere os comprovantes à mão; pode levar um tempinho.</p>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
+    res.classList.remove('hide');
+  });
 })();
 
 /* ===== MOVIMENTO ===== */

@@ -1,0 +1,34 @@
+IMERSOS · site em pastas para o Netlify
+=======================================
+
+COMO SUBIR
+1. Descompacte o .zip.
+2. No Netlify, abra o site > Deploys e arraste a PASTA "imersos-site" inteira
+   (não arraste os arquivos soltos, nem o .zip).
+
+O QUE TEM AQUI
+- index.html ........ a página
+- estilo.css ........ cores, tamanhos e layout
+- app.js ............ funcionamento da página. No começo dele fica o CONFIG:
+                      datas, local, lotes, parcelas, WhatsApp, PIX e preletores
+- qrcode.min.js ..... gera o QR Code do PIX
+- admin/ ............ painel da organização (login, pagamentos, gastos)
+- fotos/ ............ fotos da chácara (para trocar, use o MESMO nome de arquivo)
+- fontes/ ........... fontes Unbounded e Figtree (o site não depende do Google)
+- _headers .......... configuração do Netlify: guarda fotos e fontes no celular
+                      de quem visita, para abrir mais rápido na volta
+
+PARA TIRAR O AVISO DE PRÉVIA
+No app.js, troque  preview: true  por  preview: false
+
+INSCRIÇÕES
+Cada inscrição feita na página é salva no banco (Supabase) e aparece
+no painel da organização: acampimersos.com.br/admin
+
+CUPONS E LINKS DE CARTÃO
+Ficam no painel /admin, aba Ajustes. Criar, pausar ou remover vale na hora,
+sem subir o site de novo.
+
+ABRIR NO COMPUTADOR
+Dê dois cliques no index.html. Se as fontes não aparecerem assim, é normal:
+alguns navegadores bloqueiam fontes abertas direto do disco. No Netlify elas funcionam.
