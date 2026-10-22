@@ -11,7 +11,7 @@ function handler(event) {
 
     // Se acessar /admin ou /admin/, redireciona internamente para /admin.html
     if (uri === '/admin' || uri === '/admin/') {
-        request.uri = '/admin.html';
+        request.uri = '/admin/index.html';
         return request;
     }
 
