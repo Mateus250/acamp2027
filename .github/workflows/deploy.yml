@@ -1,0 +1,68 @@
+name: Deploy to AWS S3 & CloudFront
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Sync Static Assets (Fonts & Images with Long Cache)
+        run: |
+          if [ -d "fontes" ]; then
+            echo "Sincronizando fontes com cache imutavel..."
+            aws s3 sync fontes/ s3://${{ secrets.S3_BUCKET_NAME }}/fontes/ \
+              --cache-control "public, max-age=31536000, immutable"
+          fi
+
+          if [ -d "fotos" ]; then
+            echo "Sincronizando fotos..."
+            aws s3 sync fotos/ s3://${{ secrets.S3_BUCKET_NAME }}/fotos/ \
+              --cache-control "public, max-age=604800"
+          fi
+
+      - name: Sync Application Files (HTML, JS, CSS)
+        run: |
+          echo "Sincronizando arquivos da aplicacao..."
+          aws s3 sync . s3://${{ secrets.S3_BUCKET_NAME }}/ \
+            --delete \
+            --exclude ".git*" \
+            --exclude ".github*" \
+            --exclude "terraform*" \
+            --exclude ".idea*" \
+            --exclude ".agents*" \
+            --exclude ".gemini*" \
+            --exclude "_headers" \
+            --exclude "*.md" \
+            --exclude "fontes/*" \
+            --exclude "fotos/*" \
+            --cache-control "public, max-age=0, must-revalidate"
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          echo "Criando invalidacao no CloudFront..."
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query "Invalidation.Id" \
+            --output text)
+          echo "Invalidacao criada com sucesso! ID: $INVALIDATION_ID"

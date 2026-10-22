@@ -1,0 +1,20 @@
+# Arquivo de exemplo para variáveis do Terraform
+# Para usar, crie uma cópia chamada 'terraform.tfvars' e ajuste os valores conforme necessário.
+
+aws_region   = "us-east-1"
+project_name = "acamp2027"
+environment  = "prod"
+
+# Opcional: Especifique um nome fixo para o bucket S3 (deve ser único globalmente na AWS).
+# Se deixar comentado ou vazio, o Terraform gerará acamp2027-prod-xxxxxx com sufixo aleatório.
+# bucket_name = "acamp2027-prod-web"
+
+# Classe de preço CloudFront:
+# PriceClass_100: EUA/Europa/Canadá
+# PriceClass_200: Inclui América do Sul/Brasil (recomendado para baixa latência)
+# PriceClass_All: Todos os pontos de presença globais
+price_class = "PriceClass_200"
+
+# Opcional: Caso utilize domínio próprio (ex: acamp.minhaigreja.com.br)
+# custom_domain       = "acamp.minhaigreja.com.br"
+# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
