@@ -10,8 +10,8 @@ const CONFIG = {
   churchShort: 'IPI Itajaí',                       // nome curto que aparece no topo da página
   camp: 'Imersos',
   edition: 'Acampamento de Carnaval 2027',
-  dates: 'Carnaval 2027 · datas a confirmar',
-  campStart: '2027-02-06',                         // primeiro dia do acampamento: usado na contagem regressiva e para saber se a pessoa será menor de idade
+  dates: '5 a 9 de fevereiro de 2027',
+  campStart: '2027-02-05',                         // primeiro dia do acampamento: usado na contagem regressiva e para saber se a pessoa será menor de idade
   place: 'Espaço SET – Indaiatuba',
   departure: 'Saída e chegada: a confirmar com a organização.',
   whatsapp: '',                                    // WhatsApp de dúvidas (rodapé). Só números, com 55 e DDD. Vazio = não mostra
@@ -61,12 +61,20 @@ document.title = CONFIG.camp + ' · ' + CONFIG.edition;
 $('#word').textContent = CONFIG.camp.toUpperCase();
 $('#kicker').textContent = CONFIG.edition;
 $('#lede').textContent = 'Cinco dias para desligar o barulho e ir fundo.';
-$('#facts').innerHTML = '<li>' + CONFIG.dates + '<span>quando</span></li><li>' + CONFIG.place + '<span>onde</span></li><li>' + brl(activeLot().price) + '<span>' + activeLot().name + '</span></li>';
-$('#infolist').innerHTML = [['Quando', CONFIG.dates], ['Onde', CONFIG.place], ['Saída', CONFIG.departure], ['Está incluso', CONFIG.includes], ['O que levar', CONFIG.bring]].map((r) => '<dt>' + r[0] + '</dt><dd></dd>').join('');
-[...document.querySelectorAll('#infolist dd')].forEach((dd, i) => (dd.textContent = [CONFIG.dates, CONFIG.place, CONFIG.departure, CONFIG.includes, CONFIG.bring][i]));
+$('#infolist').innerHTML = [['Quando', CONFIG.dates], ['Onde', CONFIG.place], ['O que levar', CONFIG.bring]].map((r) => '<dt>' + r[0] + '</dt><dd></dd>').join('');
+[...document.querySelectorAll('#infolist dd')].forEach((dd, i) => (dd.textContent = [CONFIG.dates, CONFIG.place, CONFIG.bring][i]));
+/* o mapinha fica junto do "Onde" */
+(() => { const box = $('#mapaBox'), dd = document.querySelectorAll('#infolist dd')[1]; if (box && dd) { dd.appendChild(box); box.classList.remove('hide'); } })();
 $('#church').textContent = CONFIG.church; $('#churchtop').textContent = CONFIG.churchShort || CONFIG.church;
 if (CONFIG.whatsapp) $('#fwa').href = 'https://wa.me/' + CONFIG.whatsapp; else $('#fwaLine').classList.add('hide');
-$('#lots').innerHTML = CONFIG.lots.map((l) => { const on = l === activeLot() && lotOpen(); return '<div class="lot' + (on ? ' on' : '') + '">' + (on ? '<div class="tagnow">Aberto agora</div>' : '') + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">Até ' + fmtD(l.until) + '</div></div>'; }).join('');
+/* lotes: todos com etiqueta, para os cartões ficarem alinhados */
+const dayAfter = (iso) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+$('#lots').innerHTML = CONFIG.lots.map((l, i) => {
+  const on = l === activeLot() && lotOpen(), past = todayBR() > l.until && !on, prev = CONFIG.lots[i - 1];
+  const tg = on ? '<div class="tagnow">Aberto agora</div>' : past ? '<div class="tagnow off">Encerrado</div>' : '<div class="tagnow next">Em breve</div>';
+  const sub = on || past ? 'Até ' + fmtD(l.until) : prev ? 'A partir de ' + fmtD(dayAfter(prev.until)) : 'Até ' + fmtD(l.until);
+  return '<div class="lot' + (on ? ' on' : '') + '">' + tg + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">' + sub + '</div></div>';
+}).join('');
 $('#payhow').textContent = 'Você paga por PIX, à vista ou em até ' + CONFIG.maxInstallments + ' parcelas. A organização confere cada pagamento e confirma sua vaga.';
 $('#formintro').textContent = 'Preencha em um minuto. No final, você paga por PIX e manda o comprovante pelo WhatsApp.';
 $('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do ' + CONFIG.camp + ' apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
@@ -223,7 +231,7 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   /* tela cheia */
   const lb = $('#lb'), lbImg = $('#lbImg'), lbCap = $('#lbCap'); let cur = 0, paused = false, lastFocus = null;
-  const show = (i) => { cur = (i + originals.length) % originals.length; const im = originals[cur].querySelector('img'); lbImg.src = im.src; lbImg.alt = im.alt; lbCap.textContent = im.alt; };
+  const show = (i) => { cur = (i + originals.length) % originals.length; const im = originals[cur].querySelector('img'); lbImg.src = im.src; lbImg.alt = im.alt; lbCap.textContent = ''; };
   const openLb = (i) => { lastFocus = document.activeElement; show(i); lb.classList.remove('hide'); document.body.style.overflow = 'hidden'; paused = true; lb.querySelector('.lb-x').focus(); };
   const closeLb = () => { lb.classList.add('hide'); document.body.style.overflow = ''; paused = false; if (lastFocus) lastFocus.focus(); };
   lb.querySelector('.lb-x').addEventListener('click', closeLb);

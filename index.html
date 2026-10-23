@@ -39,7 +39,6 @@
     <p class="kicker" id="kicker"></p>
     <h1 class="word" id="word">IMERSOS</h1>
     <p class="lede" id="lede"></p>
-    <ul class="facts" id="facts"></ul>
     </div>
     <a class="btn pulse" href="#inscricao" id="cta1">Quero me inscrever</a>
     <div class="cue" aria-hidden="true"><span class="cb"><i></i><i></i><i></i></span><span>Role para mergulhar</span></div>
@@ -61,10 +60,10 @@
   <h2>Onde a gente vai mergulhar</h2>
   <p class="lg-sub">Conheça o Espaço SET, em Indaiatuba: cinco dias de louvor, Palavra, aventura e comunhão.</p>
 </div>
-<div class="lg-view" id="lgView" role="region" aria-label="Fotos da chácara"><div class="lg-belt" id="lgBelt"><figure class="lg-item"><button type="button" class="lg-open" data-i="0" aria-label="Ver foto maior: Piscina e deck no fim da tarde"><img src="fotos/piscina-deck.webp" loading="lazy" alt="Piscina e deck no fim da tarde" width="680" height="510" decoding="async"></button><figcaption>Piscina e deck no fim da tarde</figcaption></figure><figure class="lg-item"><button type="button" class="lg-open" data-i="1" aria-label="Ver foto maior: Parquinho e passarelas de madeira"><img src="fotos/parquinho.webp" loading="lazy" alt="Parquinho e passarelas de madeira" width="680" height="382" decoding="async"></button><figcaption>Parquinho e passarelas de madeira</figcaption></figure><figure class="lg-item"><button type="button" class="lg-open" data-i="2" aria-label="Ver foto maior: Piscina com área coberta"><img src="fotos/piscina-coberta.webp" loading="lazy" alt="Piscina com área coberta" width="680" height="510" decoding="async"></button><figcaption>Piscina com área coberta</figcaption></figure><figure class="lg-item"><button type="button" class="lg-open" data-i="3" aria-label="Ver foto maior: Vista aérea: campo, piscina e área de lazer"><img src="fotos/vista-aerea.webp" loading="lazy" alt="Vista aérea: campo, piscina e área de lazer" width="904" height="512" decoding="async"></button><figcaption>Vista aérea: campo, piscina e área de lazer</figcaption></figure></div></div>
+<div class="lg-view" id="lgView" role="region" aria-label="Fotos da chácara"><div class="lg-belt" id="lgBelt"><figure class="lg-item"><button type="button" class="lg-open" data-i="0" aria-label="Ver foto maior: Piscina e deck no fim da tarde"><img src="fotos/piscina-deck.webp" loading="lazy" alt="Piscina e deck no fim da tarde" width="680" height="510" decoding="async"></button></figure><figure class="lg-item"><button type="button" class="lg-open" data-i="1" aria-label="Ver foto maior: Parquinho e passarelas de madeira"><img src="fotos/parquinho.webp" loading="lazy" alt="Parquinho e passarelas de madeira" width="680" height="382" decoding="async"></button></figure><figure class="lg-item"><button type="button" class="lg-open" data-i="2" aria-label="Ver foto maior: Piscina com área coberta"><img src="fotos/piscina-coberta.webp" loading="lazy" alt="Piscina com área coberta" width="680" height="510" decoding="async"></button></figure><figure class="lg-item"><button type="button" class="lg-open" data-i="3" aria-label="Ver foto maior: Vista aérea: campo, piscina e área de lazer"><img src="fotos/vista-aerea.webp" loading="lazy" alt="Vista aérea: campo, piscina e área de lazer" width="904" height="512" decoding="async"></button></figure></div></div>
 <div class="wrap"><p class="lg-hint">Toque numa foto para ver maior.</p></div>
-<div class="wrap"><a class="mapa" href="https://www.google.com/maps/search/?api=1&amp;query=Espa%C3%A7o+SET+Eventos+Indaiatuba&amp;query_place_id=ChIJf0Of54BJz5QR5fKGLepUTnA" target="_blank" rel="noopener noreferrer" aria-label="Abrir o Espaço SET Eventos, em Indaiatuba, no Google Maps">
-  <div class="mapa-art"><svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<div id="mapaBox" class="mapa hide">
+  <a class="mapa-art" href="https://www.google.com/maps/search/?api=1&amp;query=Espa%C3%A7o+SET+Eventos+Indaiatuba&amp;query_place_id=ChIJf0Of54BJz5QR5fKGLepUTnA" target="_blank" rel="noopener noreferrer" aria-label="Ver o Espaço SET Eventos no Google Maps"><svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
 <rect width="400" height="260" fill="#0B495B"/>
 <g stroke="rgba(230,246,243,.10)" stroke-width="1"><path d="M20 0 V260"/><path d="M60 0 V260"/><path d="M100 0 V260"/><path d="M140 0 V260"/><path d="M180 0 V260"/><path d="M220 0 V260"/><path d="M260 0 V260"/><path d="M300 0 V260"/><path d="M340 0 V260"/><path d="M380 0 V260"/><path d="M0 20 H400"/><path d="M0 60 H400"/><path d="M0 100 H400"/><path d="M0 140 H400"/><path d="M0 180 H400"/><path d="M0 220 H400"/></g>
 <path d="M-10 190 C 80 170 120 120 200 130 S 330 90 410 60" fill="none" stroke="rgba(143,220,235,.35)" stroke-width="10" stroke-linecap="round"/>
@@ -74,10 +73,11 @@
 <circle class="onda o1" cx="260" cy="110" r="16" fill="none" stroke="#FFD27A" stroke-width="2.5"/>
 <circle class="onda o2" cx="260" cy="110" r="16" fill="none" stroke="#FFD27A" stroke-width="2.5"/>
 <g class="pino"><path d="M260 112 C 244 92 238 82 238 70 A 22 22 0 0 1 282 70 C 282 82 276 92 260 112 Z" fill="#FFD27A"/><circle cx="260" cy="70" r="8" fill="#0B495B"/></g>
-</svg></div>
-  <div class="mapa-info"><span class="mapa-k">Onde fica</span><b class="mapa-t">Espaço SET Eventos</b><span class="mapa-c">Indaiatuba, SP</span><span class="btn mapa-b">Abrir no Google Maps</span></div>
-</a>
-<p class="mapa-alt">Prefere o Waze? <a href="https://waze.com/ul?ll=-23.159499%2C-47.171628&amp;navigate=yes" target="_blank" rel="noopener noreferrer">Abrir no Waze</a></p></div>
+</svg></a>
+  <div class="mapa-info"><b class="mapa-t">Espaço SET Eventos</b><span class="mapa-c">Indaiatuba, SP</span>
+    <div class="mapa-acts"><a class="btn mapa-b" href="https://www.google.com/maps/search/?api=1&amp;query=Espa%C3%A7o+SET+Eventos+Indaiatuba&amp;query_place_id=ChIJf0Of54BJz5QR5fKGLepUTnA" target="_blank" rel="noopener noreferrer">Google Maps</a><a class="btn ghost mapa-b" href="https://waze.com/ul?ll=-23.159499%2C-47.171628&amp;navigate=yes" target="_blank" rel="noopener noreferrer">Waze</a></div>
+  </div>
+</div>
 </section>
 <hr class="rule">
 <section id="preletores"><div class="wrap">
