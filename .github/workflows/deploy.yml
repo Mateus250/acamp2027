@@ -26,39 +26,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.16.6"
-
-      - name: Terraform Apply (Infraestrutura, CloudFront & Lambda)
-        working-directory: terraform
-        env:
-          TF_VAR_infinitepay_api_key: ${{ secrets.INFINITEPAY_API_KEY }}
-          TF_VAR_supabase_service_role_key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          TF_VAR_supabase_url: ${{ secrets.SUPABASE_URL || 'https://xhtnhhdpiuqdquacooau.supabase.co' }}
-          TF_VAR_site_url: ${{ secrets.SITE_URL || 'https://acampimersos.com.br' }}
-        run: |
-          echo "Inicializando Terraform com backend remoto S3..."
-          terraform init
-          echo "Aplicando plano de infraestrutura e atualizando a Lambda..."
-          terraform apply -auto-approve -input=false
-
       - name: Determine S3 Bucket & CloudFront ID
         id: vars
         run: |
           BUCKET="${{ secrets.S3_BUCKET_NAME }}"
           if [ -z "$BUCKET" ]; then
-            BUCKET=$(cd terraform && terraform output -raw s3_bucket_name)
+            BUCKET="acamp2027-prod-073hd7"
           fi
           echo "bucket_name=$BUCKET" >> $GITHUB_OUTPUT
 
           DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
           if [ -z "$DIST_ID" ]; then
-            DIST_ID=$(cd terraform && terraform output -raw cloudfront_distribution_id)
+            DIST_ID="E1DUN67TRI2Z0V"
           fi
           echo "dist_id=$DIST_ID" >> $GITHUB_OUTPUT
 
+      # -------------------------------------------------------------
+      # 1. DEPLOY DO FRONTEND (S3)
+      # -------------------------------------------------------------
       - name: Sync Static Assets (Fonts & Images with Long Cache)
         run: |
           BUCKET="${{ steps.vars.outputs.bucket_name }}"
@@ -74,10 +59,10 @@ jobs:
               --cache-control "public, max-age=604800"
           fi
 
-      - name: Sync Application Files (HTML, JS, CSS)
+      - name: Sync Application Files (Frontend HTML, JS, CSS)
         run: |
           BUCKET="${{ steps.vars.outputs.bucket_name }}"
-          echo "Sincronizando arquivos da aplicacao..."
+          echo "Sincronizando arquivos do frontend..."
           aws s3 sync . s3://$BUCKET/ \
             --delete \
             --exclude ".git*" \
@@ -92,6 +77,30 @@ jobs:
             --exclude "fotos/*" \
             --cache-control "public, max-age=0, must-revalidate"
 
+      # -------------------------------------------------------------
+      # 2. DEPLOY DO BACKEND (TERRAFORM APPLY & LAMBDA)
+      # -------------------------------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.6"
+
+      - name: Terraform Apply (Deploy da Lambda & Infraestrutura)
+        working-directory: terraform
+        env:
+          TF_VAR_infinitepay_api_key: ${{ secrets.INFINITEPAY_API_KEY }}
+          TF_VAR_supabase_service_role_key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TF_VAR_supabase_url: ${{ secrets.SUPABASE_URL || 'https://xhtnhhdpiuqdquacooau.supabase.co' }}
+          TF_VAR_site_url: ${{ secrets.SITE_URL || 'https://acampimersos.com.br' }}
+        run: |
+          echo "Inicializando Terraform com backend remoto S3..."
+          terraform init
+          echo "Executando Terraform Apply para atualizar a Lambda e configuracoes de borda..."
+          terraform apply -auto-approve -input=false
+
+      # -------------------------------------------------------------
+      # 3. INVALIDAÇÃO DE CACHE (CLOUDFRONT)
+      # -------------------------------------------------------------
       - name: Invalidate CloudFront Cache
         run: |
           DIST_ID="${{ steps.vars.outputs.dist_id }}"
