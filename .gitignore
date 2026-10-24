@@ -23,6 +23,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 *tfplan*
+*.zip
 
 # Antigravity / Gemini CLI
 .agents/

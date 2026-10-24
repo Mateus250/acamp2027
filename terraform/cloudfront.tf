@@ -1,17 +1,28 @@
-# CloudFront Function para reescrever URLs limpas (como /admin para /admin.html)
+# CloudFront Function para reescrever URLs limpas (como /admin para /admin.html e /checkout para /checkout.html)
 resource "aws_cloudfront_function" "url_rewrite" {
   name    = "${var.project_name}-${var.environment}-url-rewrite"
   runtime = "cloudfront-js-2.0"
-  comment = "Reescreve URLs amigaveis na borda (ex: /admin para /admin.html)"
+  comment = "Reescreve URLs amigaveis na borda (ex: /admin para /admin.html, /checkout para /checkout.html)"
   publish = true
   code    = <<-EOF
 function handler(event) {
     var request = event.request;
     var uri = request.uri;
 
-    // Se acessar /admin ou /admin/, redireciona internamente para /admin.html
+    // Nao altera rotas de API
+    if (uri.startsWith('/api')) {
+        return request;
+    }
+
+    // Se acessar /admin ou /admin/, redireciona internamente para /admin/index.html
     if (uri === '/admin' || uri === '/admin/') {
         request.uri = '/admin/index.html';
+        return request;
+    }
+
+    // Se acessar /checkout ou /checkout/, redireciona internamente para /checkout.html
+    if (uri === '/checkout' || uri === '/checkout/') {
+        request.uri = '/checkout.html';
         return request;
     }
 
@@ -59,7 +70,35 @@ module "cloudfront" {
       domain_name           = module.s3_bucket.s3_bucket_bucket_regional_domain_name
       origin_access_control = "s3_oac"
     }
+    lambda_api = {
+      domain_name = replace(replace(aws_lambda_function_url.api.function_url, "https://", ""), "/", "")
+      custom_origin_config = {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "https-only"
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+    }
   }
+
+  # Rota para chamadas de API (Checkout e Webhook da InfinitePay)
+  ordered_cache_behavior = [
+    {
+      path_pattern           = "/api/*"
+      target_origin_id       = "lambda_api"
+      viewer_protocol_policy = "redirect-to-https"
+      allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = true
+      use_forwarded_values   = false
+
+      # AWS Managed Cache Policy: CachingDisabled (ID: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad)
+      cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+
+      # AWS Managed Origin Request Policy: AllViewerExceptHostHeader (ID: b684b08a-5e13-4170-9704-05a201c738e1)
+      origin_request_policy_id = "b684b08a-5e13-4170-9704-05a201c738e1"
+    }
+  ]
 
   default_cache_behavior = {
     target_origin_id       = "s3_oac"

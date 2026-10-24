@@ -21,3 +21,20 @@ custom_domains = [
   "acampimersos.com.br",
   "acampamentoipi.com.br",
 ]
+
+# URL pública do site (usada para os callbacks da InfinitePay)
+site_url = "https://acampimersos.com.br"
+
+# ==============================================================================
+# INTEGRAÇÃO INFINITEPAY & SUPABASE
+# ==============================================================================
+# API Key gerada no aplicativo da InfinitePay (Configurações > Checkout Integrado)
+# Formato: inchk_xxxxxxxxxxxxxxxxxxxxxxxx
+infinitepay_api_key = "inchk_sua_chave_aqui"
+
+# URL do seu projeto no Supabase
+supabase_url = "https://xhtnhhdpiuqdquacooau.supabase.co"
+
+# Service Role Secret do Supabase (Project Settings > API > service_role secret)
+# Necessária para que a Lambda atualize a tabela 'acampantes' ao confirmar o pagamento
+supabase_service_role_key = "sua_chave_service_role_aqui"

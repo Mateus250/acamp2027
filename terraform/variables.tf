@@ -36,3 +36,29 @@ variable "custom_domains" {
     "acampamentoipi.com.br",
   ]
 }
+
+variable "infinitepay_api_key" {
+  type        = string
+  description = "API Key da InfinitePay (inchk_...) para gerar checkouts e consultar pagamentos"
+  sensitive   = true
+  default     = ""
+}
+
+variable "supabase_url" {
+  type        = string
+  description = "URL do projeto Supabase"
+  default     = "https://xhtnhhdpiuqdquacooau.supabase.co"
+}
+
+variable "supabase_service_role_key" {
+  type        = string
+  description = "Chave service_role secreta do Supabase para atualizar o status dos acampantes no webhook"
+  sensitive   = true
+  default     = ""
+}
+
+variable "site_url" {
+  type        = string
+  description = "URL base pública do site para redirects e webhooks"
+  default     = "https://acampimersos.com.br"
+}

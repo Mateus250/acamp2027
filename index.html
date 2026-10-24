@@ -148,6 +148,11 @@
       <h3>Falta pouco!</h3>
       <p>Seu código de inscrição:</p>
       <div class="code" id="code"></div>
+      <div style="margin: 16px 0;">
+        <a id="btnGoCheckout" href="checkout.html" class="btn" style="width:100%;background:linear-gradient(135deg, #00D09C 0%, #009975 100%);color:#03211A;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;box-shadow:0 6px 20px rgba(0,208,156,0.35);">
+          💳 Pagar com Cartão (até 12x) ou Pix (InfinitePay)
+        </a>
+      </div>
       <ol class="steps">
         <li><b>Faça o PIX.</b> <span id="payline"></span><div class="pixbox"><div id="qr" class="qr" role="img" aria-label="QR Code do PIX com o valor"></div><div class="pixcc"><div class="pixlabel">PIX Copia e Cola</div><div id="pixcode" class="pixcode"></div><button type="button" class="btn dark" id="copycode">Copiar código PIX</button><p class="pixhow">No app do seu banco, abra <b>Pix → Pix Copia e Cola</b> e cole o código. O valor já vem preenchido: confira o valor e o nome antes de confirmar.</p></div></div><div class="pixalt">Prefere digitar? Chave PIX: <span id="pixkey"></span><button type="button" id="copypix" class="linkbtn">copiar chave</button></div><div id="pixname" style="margin-top:6px;font-size:.92rem"></div></li>
         <li><b>Mande o comprovante.</b> Escolha <b>um</b> dos contatos abaixo, anexe a foto ou o PDF do comprovante e envie. A equipe confere o pagamento e confirma sua vaga.<div id="waProofs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px"></div></li>

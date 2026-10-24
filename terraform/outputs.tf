@@ -45,3 +45,13 @@ output "website_urls" {
     for d in var.custom_domains : "https://${d}"
   ] : ["https://${module.cloudfront.cloudfront_distribution_domain_name}"]
 }
+
+output "lambda_api_function_url" {
+  description = "URL direta da Lambda Function URL"
+  value       = aws_lambda_function_url.api.function_url
+}
+
+output "infinitepay_webhook_url" {
+  description = "URL do Webhook a ser informada na InfinitePay"
+  value       = "${var.site_url}/api/webhook"
+}

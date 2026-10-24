@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    IMERSOS · código da página
    Para trocar datas, local, valores, lotes, WhatsApp, PIX e preletores,
    edite o bloco CONFIG logo abaixo e suba a pasta de novo no Netlify.
@@ -332,7 +332,7 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
       '<div class="cs-bar" role="img" aria-label="Pago ' + brl(pago) + ' de ' + brl(total) + '"><i style="width:' + (total ? Math.round(pago / total * 100) : 0) + '%"></i></div>' +
       '<div><b>' + brl(pago) + '</b> pagos de <b>' + brl(total) + '</b>' + (total > pago ? ' · falta ' + brl(total - pago) : '') + '</div>' +
       (parc.length > 1 ? '<ul class="cs-parc">' + parc.map((p) => { const s = stParc(p); return '<li><span>Parcela ' + p.n + ' · ' + brl(p.valor) + (p.venc ? ' · vence ' + fmtD(p.venc) : '') + '</span><span class="cs-st ' + s + '">' + (s === 'pago' ? 'Paga' : s === 'atrasado' ? 'Atrasada' : s === 'parcial' ? 'Parcial' : 'Em aberto') + '</span></li>'; }).join('') + '</ul>' : '') +
-      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? A equipe confere os comprovantes à mão; pode levar um tempinho.</p>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
+      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? A equipe confere os comprovantes à mão; pode levar um tempinho.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || code) + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
     res.classList.remove('hide');
   });
 })();
