@@ -54,7 +54,77 @@ export const handler = async (event) => {
   } = process.env;
 
   // -------------------------------------------------------------------------
-  // 1. POST /checkout (ou /api/checkout) -> Cria link na API da InfinitePay
+  // 1. GET /inscricoes (ou /api/inscricoes) -> Teste de acesso e lista de inscrições
+  // -------------------------------------------------------------------------
+  if (method === 'GET' && (path === '/inscricoes' || path === '/teste' || path === '/health')) {
+    try {
+      if (!SUPABASE_SERVICE_ROLE_KEY) {
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            ok: false,
+            banco_conectado: false,
+            error: 'SUPABASE_SERVICE_ROLE_KEY não configurada no ambiente da Lambda.'
+          })
+        };
+      }
+
+      const searchUrl = `${SUPABASE_URL}/rest/v1/acampantes?select=*`;
+      const searchRes = await fetch(searchUrl, {
+        headers: {
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+        }
+      });
+
+      if (!searchRes.ok) {
+        const errText = await searchRes.text();
+        return {
+          statusCode: searchRes.status,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            ok: false,
+            banco_conectado: false,
+            error: `Erro ao conectar com Supabase: ${searchRes.statusText}`,
+            details: errText
+          })
+        };
+      }
+
+      const inscricoes = await searchRes.json();
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          ok: true,
+          banco_conectado: true,
+          total_inscricoes: Array.isArray(inscricoes) ? inscricoes.length : 0,
+          configuracao: {
+            supabase_url: SUPABASE_URL,
+            infinitepay_configurada: Boolean(INFINITEPAY_API_KEY),
+            site_url: SITE_URL
+          },
+          inscricoes
+        }, null, 2)
+      };
+    } catch (err) {
+      console.error('Erro ao buscar inscrições:', err);
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          ok: false,
+          banco_conectado: false,
+          error: err.message
+        })
+      };
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. POST /checkout (ou /api/checkout) -> Cria link na API da InfinitePay
   // -------------------------------------------------------------------------
   if (method === 'POST' && (path === '/checkout' || path === '')) {
     try {
@@ -146,7 +216,7 @@ export const handler = async (event) => {
   }
 
   // -------------------------------------------------------------------------
-  // 2. POST /webhook (ou /api/webhook) -> Recebe notificação da InfinitePay
+  // 3. POST /webhook (ou /api/webhook) -> Recebe notificação da InfinitePay
   // -------------------------------------------------------------------------
   if (method === 'POST' && path === '/webhook') {
     try {
@@ -256,7 +326,7 @@ export const handler = async (event) => {
   }
 
   // -------------------------------------------------------------------------
-  // 3. GET /status (ou /api/status?codigo=IMR-XXXX) -> Consulta status da inscrição
+  // 4. GET /status (ou /api/status?codigo=IMR-XXXX) -> Consulta status da inscrição
   // -------------------------------------------------------------------------
   if (method === 'GET' && path === '/status') {
     try {
