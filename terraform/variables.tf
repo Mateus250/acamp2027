@@ -28,14 +28,11 @@ variable "price_class" {
   default     = "PriceClass_200"
 }
 
-variable "custom_domain" {
-  type        = string
-  description = "Domínio customizado (ex: acamp.minhaigreja.com.br). Deixe vazio para usar apenas o domínio padrão do CloudFront."
-  default     = ""
-}
-
-variable "acm_certificate_arn" {
-  type        = string
-  description = "ARN do certificado SSL no AWS Certificate Manager (deve ser criado em us-east-1). Obrigatório caso informe custom_domain."
-  default     = ""
+variable "custom_domains" {
+  type        = list(string)
+  description = "Domínios customizados atendidos pela distribuição CloudFront. O primeiro é o domínio principal do certificado ACM; os demais entram como SANs. Deixe vazio para usar apenas o domínio padrão do CloudFront."
+  default = [
+    "acampimersos.com.br",
+    "acampamentoipi.com.br",
+  ]
 }

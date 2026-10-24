@@ -40,7 +40,8 @@ module "cloudfront" {
   price_class         = var.price_class
   default_root_object = "index.html"
 
-  aliases = length(var.custom_domain) > 0 ? [var.custom_domain] : []
+  # Todos os domínios customizados (ex: acampimersos.com.br e acampamentoipi.com.br)
+  aliases = var.custom_domains
 
   # Origin Access Control (OAC) gerenciado de forma segura pelo módulo
   create_origin_access_control = true
@@ -100,11 +101,13 @@ module "cloudfront" {
     restriction_type = "none"
   }
 
-  viewer_certificate = length(var.custom_domain) > 0 ? {
-    acm_certificate_arn      = var.acm_certificate_arn
+  # Usa o ARN vindo do recurso de validação para garantir que o certificado
+  # já esteja emitido (ISSUED) antes de ser associado à distribuição.
+  viewer_certificate = local.use_custom_domain ? {
+    acm_certificate_arn      = aws_acm_certificate_validation.site[0].certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
-  } : {
+    } : {
     cloudfront_default_certificate = true
   }
 }

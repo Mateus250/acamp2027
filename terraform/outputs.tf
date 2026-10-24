@@ -19,11 +19,29 @@ output "cloudfront_distribution_arn" {
 }
 
 output "cloudfront_domain_name" {
-  description = "Domínio público gerado pelo CloudFront (ex: dxxxxxxxxxxxx.cloudfront.net)"
+  description = "Domínio público gerado pelo CloudFront (ex: dxxxxxxxxxxxx.cloudfront.net). Aponte os domínios customizados para ele (CNAME/ALIAS)."
   value       = module.cloudfront.cloudfront_distribution_domain_name
 }
 
-output "website_url" {
-  description = "URL completa para acessar a aplicação"
-  value       = length(var.custom_domain) > 0 ? "https://${var.custom_domain}" : "https://${module.cloudfront.cloudfront_distribution_domain_name}"
+output "acm_certificate_arn" {
+  description = "ARN do certificado ACM usado pelo CloudFront"
+  value       = try(aws_acm_certificate.site[0].arn, null)
+}
+
+output "acm_validation_records" {
+  description = "Registros CNAME que devem existir no DNS de cada domínio para validar o certificado ACM"
+  value = local.use_custom_domain ? {
+    for o in aws_acm_certificate.site[0].domain_validation_options : o.domain_name => {
+      type  = o.resource_record_type
+      name  = o.resource_record_name
+      value = o.resource_record_value
+    }
+  } : {}
+}
+
+output "website_urls" {
+  description = "URLs para acessar a aplicação"
+  value = local.use_custom_domain ? [
+    for d in var.custom_domains : "https://${d}"
+  ] : ["https://${module.cloudfront.cloudfront_distribution_domain_name}"]
 }

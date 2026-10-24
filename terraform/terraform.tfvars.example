@@ -15,6 +15,9 @@ environment  = "prod"
 # PriceClass_All: Todos os pontos de presença globais
 price_class = "PriceClass_200"
 
-# Opcional: Caso utilize domínio próprio (ex: acamp.minhaigreja.com.br)
-# custom_domain       = "acamp.minhaigreja.com.br"
-# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+# Domínios customizados (o primeiro é o principal do certificado ACM; os demais viram SANs).
+# Use [] para servir apenas pelo domínio padrão do CloudFront.
+custom_domains = [
+  "acampimersos.com.br",
+  "acampamentoipi.com.br",
+]

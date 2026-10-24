@@ -24,3 +24,17 @@ provider "aws" {
     }
   }
 }
+
+# Provider fixo em us-east-1 (exigido para certificados ACM usados pelo CloudFront)
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    }
+  }
+}
