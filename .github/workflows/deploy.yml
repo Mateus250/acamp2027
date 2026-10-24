@@ -1,4 +1,4 @@
-name: Deploy to AWS S3 & CloudFront
+name: Deploy to AWS S3, CloudFront & Lambda
 
 on:
   push:
@@ -26,24 +26,59 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.6"
+
+      - name: Terraform Apply (Infraestrutura, CloudFront & Lambda)
+        working-directory: terraform
+        env:
+          TF_VAR_infinitepay_api_key: ${{ secrets.INFINITEPAY_API_KEY }}
+          TF_VAR_supabase_service_role_key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TF_VAR_supabase_url: ${{ secrets.SUPABASE_URL || 'https://xhtnhhdpiuqdquacooau.supabase.co' }}
+          TF_VAR_site_url: ${{ secrets.SITE_URL || 'https://acampimersos.com.br' }}
+        run: |
+          echo "Inicializando Terraform com backend remoto S3..."
+          terraform init
+          echo "Aplicando plano de infraestrutura e atualizando a Lambda..."
+          terraform apply -auto-approve -input=false
+
+      - name: Determine S3 Bucket & CloudFront ID
+        id: vars
+        run: |
+          BUCKET="${{ secrets.S3_BUCKET_NAME }}"
+          if [ -z "$BUCKET" ]; then
+            BUCKET=$(cd terraform && terraform output -raw s3_bucket_name)
+          fi
+          echo "bucket_name=$BUCKET" >> $GITHUB_OUTPUT
+
+          DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
+          if [ -z "$DIST_ID" ]; then
+            DIST_ID=$(cd terraform && terraform output -raw cloudfront_distribution_id)
+          fi
+          echo "dist_id=$DIST_ID" >> $GITHUB_OUTPUT
+
       - name: Sync Static Assets (Fonts & Images with Long Cache)
         run: |
+          BUCKET="${{ steps.vars.outputs.bucket_name }}"
           if [ -d "fontes" ]; then
             echo "Sincronizando fontes com cache imutavel..."
-            aws s3 sync fontes/ s3://${{ secrets.S3_BUCKET_NAME }}/fontes/ \
+            aws s3 sync fontes/ s3://$BUCKET/fontes/ \
               --cache-control "public, max-age=31536000, immutable"
           fi
 
           if [ -d "fotos" ]; then
             echo "Sincronizando fotos..."
-            aws s3 sync fotos/ s3://${{ secrets.S3_BUCKET_NAME }}/fotos/ \
+            aws s3 sync fotos/ s3://$BUCKET/fotos/ \
               --cache-control "public, max-age=604800"
           fi
 
       - name: Sync Application Files (HTML, JS, CSS)
         run: |
+          BUCKET="${{ steps.vars.outputs.bucket_name }}"
           echo "Sincronizando arquivos da aplicacao..."
-          aws s3 sync . s3://${{ secrets.S3_BUCKET_NAME }}/ \
+          aws s3 sync . s3://$BUCKET/ \
             --delete \
             --exclude ".git*" \
             --exclude ".github*" \
@@ -59,9 +94,10 @@ jobs:
 
       - name: Invalidate CloudFront Cache
         run: |
-          echo "Criando invalidacao no CloudFront..."
+          DIST_ID="${{ steps.vars.outputs.dist_id }}"
+          echo "Criando invalidacao no CloudFront para $DIST_ID..."
           INVALIDATION_ID=$(aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id $DIST_ID \
             --paths "/*" \
             --query "Invalidation.Id" \
             --output text)

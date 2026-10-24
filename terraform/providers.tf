@@ -1,6 +1,14 @@
 terraform {
   required_version = ">= 1.5.0"
 
+  # Estado remoto centralizado no S3 para permitir deploys contínuos via GitHub Actions
+  backend "s3" {
+    bucket  = "acamp2027-terraform-state-prod"
+    key     = "production/terraform.tfstate"
+    region  = "us-east-1"
+    encrypt = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"

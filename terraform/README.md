@@ -1,6 +1,6 @@
-# Infraestrutura com Terraform: AWS S3 + CloudFront (Módulos da Comunidade)
+# Infraestrutura com Terraform: AWS S3 + CloudFront + Lambda (API & InfinitePay)
 
-Este diretório contém a infraestrutura como código (IaC) para hospedar a aplicação web estática do acampamento com alta performance, segurança e baixa latência, utilizando os módulos oficiais mantidos pela comunidade (`terraform-aws-modules`).
+Este diretório contém a infraestrutura como código (IaC) para hospedar a aplicação web do acampamento e a API backend serverless com alta performance, segurança e baixa latência, utilizando os módulos oficiais mantidos pela comunidade (`terraform-aws-modules`).
 
 ## 🧱 Arquitetura e Módulos Utilizados
 
@@ -14,10 +14,14 @@ Este diretório contém a infraestrutura como código (IaC) para hospedar a apli
   - **Cache Otimizado**: Política gerenciada `CachingOptimized` da AWS com compressão gzip/brotli automática.
   - **Edge Locations**: Configurado por padrão em `PriceClass_200` (inclui pontos de presença no Brasil/América do Sul).
   - **Single Page Application (SPA)**: Respostas 403 e 404 redirecionadas para `/index.html` com código 200.
-- **Definições Gerais**:
-  - `providers.tf`: Provider AWS e Random com tags automáticas de projeto.
-  - `variables.tf`: Variáveis de entrada (região, ambiente, domínio customizado, certificado ACM).
-  - `outputs.tf`: Exportações necessárias para a pipeline do GitHub Actions.
+  - **Roteamento de API (`/api/*`)**: Encaminhamento direto para a Lambda com cache desabilitado.
+- **Lambda & API Serverless (`lambda.tf` e `lambda/index.mjs`)**:
+  - Runtime Node.js 20.x nativo.
+  - Geração de checkout na API da InfinitePay.
+  - Webhook oficial para confirmação automática de pagamentos e baixa no Supabase.
+- **Remote State no S3 (`providers.tf`)**:
+  - Estado armazenado com versionamento e criptografia no bucket `acamp2027-terraform-state-prod`.
+  - Permite que o pipeline do GitHub Actions execute `terraform apply` de forma segura e compartilhada.
 
 ---
 
@@ -25,34 +29,26 @@ Este diretório contém a infraestrutura como código (IaC) para hospedar a apli
 
 ### 1. Pré-requisitos
 - [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) (>= 1.5.0) instalado.
-- [AWS CLI](https://aws.amazon.com/cli/) instalado e configurado (`aws configure`) com credenciais que tenham permissões para S3 e CloudFront.
+- [AWS CLI](https://aws.amazon.com/cli/) instalado e configurado (`aws configure`) com credenciais que tenham permissões para S3, CloudFront, Lambda e IAM.
 
-### 2. Inicializar o Terraform e Baixar os Módulos
+### 2. Inicializar o Terraform
 No terminal, entre no diretório `terraform/`:
 ```bash
 cd terraform
 terraform init
 ```
 
-### 3. Configurar Variáveis (Opcional)
-Se desejar customizar região, nome ou domínio, crie um arquivo `terraform.tfvars` baseado no exemplo:
+### 3. Configurar Variáveis
+Crie um arquivo `terraform.tfvars` baseado no exemplo `terraform.tfvars.example`:
 ```bash
 cp terraform.tfvars.example terraform.tfvars
 ```
+Preencha a `infinitepay_api_key` e a `supabase_service_role_key`.
 
 ### 4. Planejar e Aplicar
 ```bash
 terraform plan
 terraform apply
-```
-Digite `yes` para confirmar a criação.
-
-Ao finalizar, o Terraform exibirá os `outputs`:
-```text
-cloudfront_distribution_id = "E1XXXXXXXXXXXX"
-cloudfront_domain_name     = "d111111abcdef8.cloudfront.net"
-s3_bucket_name             = "acamp2027-prod-xxxxxx"
-website_url                = "https://d111111abcdef8.cloudfront.net"
 ```
 
 ---
@@ -62,24 +58,30 @@ website_url                = "https://d111111abcdef8.cloudfront.net"
 No repositório do seu projeto no GitHub, acesse:
 **Settings > Secrets and variables > Actions > New repository secret**
 
-Adicione as seguintes secrets com os valores gerados pelo Terraform:
+Adicione as seguintes secrets:
 
 | Secret | Descrição | Exemplo de Valor |
 |---|---|---|
 | `AWS_ACCESS_KEY_ID` | Chave de acesso do usuário IAM na AWS | `AKIAIOSFODNN7EXAMPLE` |
 | `AWS_SECRET_ACCESS_KEY` | Chave secreta do usuário IAM na AWS | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
 | `AWS_REGION` | Região AWS utilizada | `us-east-1` |
-| `S3_BUCKET_NAME` | Nome do bucket gerado no output `s3_bucket_name` | `acamp2027-prod-xxxxxx` |
-| `CLOUDFRONT_DISTRIBUTION_ID` | ID gerado no output `cloudfront_distribution_id` | `E1XXXXXXXXXXXX` |
+| `INFINITEPAY_API_KEY` | Chave de API da InfinitePay (`inchk_...`) | `inchk_xxxxxxxxxxxxxxxx` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave `service_role` secreta do Supabase | `eyJhbGciOi...` |
+| `S3_BUCKET_NAME` | *(Opcional)* Nome do bucket S3 (fallback automático via Terraform output) | `acamp2027-prod-xxxxxx` |
+| `CLOUDFRONT_DISTRIBUTION_ID` | *(Opcional)* ID da distribuição CloudFront (fallback automático via Terraform output) | `E1XXXXXXXXXXXX` |
 
 ---
 
-## 📦 Como Funciona o Deploy
+## 📦 Como Funciona o Deploy Automático
 
-Assim que você fizer um `git push` na branch `main` (ou acionar o workflow manualmente em **Actions > Deploy to AWS S3 & CloudFront > Run workflow**):
+Ao realizar um `git push` na branch `main`:
 
-1. O GitHub Actions realiza checkout do projeto.
-2. Sincroniza fontes (`/fontes`) com cabeçalho `Cache-Control: public, max-age=31536000, immutable`.
-3. Sincroniza fotos (`/fotos`) com cabeçalho `Cache-Control: public, max-age=604800`.
-4. Sincroniza os arquivos de aplicação (`index.html`, `app.js`, `estilo.css`, `qrcode.min.js`) com `Cache-Control: public, max-age=0, must-revalidate`.
-5. Executa a invalidação de cache no CloudFront (`aws cloudfront create-invalidation --paths "/*"`), garantindo que as alterações fiquem disponíveis instantaneamente para todos os usuários.
+1. O GitHub Actions faz checkout do código e autentica na AWS.
+2. **Executa o Terraform**:
+   - Conecta ao S3 Remote Backend (`acamp2027-terraform-state-prod`).
+   - Empacota o código atualizado da Lambda (`lambda/index.mjs`).
+   - Executa `terraform apply -auto-approve`, atualizando a Lambda, as variáveis de ambiente e as configurações do CloudFront.
+3. Sincroniza fontes (`/fontes`) com cache imutável.
+4. Sincroniza fotos (`/fotos`) com cache de 7 dias.
+5. Sincroniza os arquivos web (`index.html`, `checkout.html`, `app.js`, `estilo.css`, etc.).
+6. Executa a invalidação global no CloudFront (`/*`), deixando todo o frontend e as rotas de API imediatamente atualizados.
