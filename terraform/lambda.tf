@@ -62,3 +62,19 @@ resource "aws_lambda_function_url" "api" {
     max_age       = 86400
   }
 }
+
+# Permissões públicas para invocação da Lambda Function URL
+resource "aws_lambda_permission" "url" {
+  statement_id           = "FunctionURLAllowPublicAccess"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.api.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
+resource "aws_lambda_permission" "invoke" {
+  statement_id  = "LambdaInvokePublicAccess"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "*"
+}

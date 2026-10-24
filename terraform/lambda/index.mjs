@@ -31,6 +31,8 @@ function todayISO() {
   return now.toISOString().slice(0, 10);
 }
 
+const DEFAULT_ANON_KEY = 'sb_publishable_stUBkyPTyqHtCla_seKJRw_k_LW2S_i';
+
 export const handler = async (event) => {
   const method = (event.requestContext?.http?.method || event.httpMethod || 'GET').toUpperCase();
   const path = getPath(event);
@@ -53,28 +55,18 @@ export const handler = async (event) => {
     SITE_URL = 'https://acampimersos.com.br'
   } = process.env;
 
+  const supabaseReadAuthKey = SUPABASE_SERVICE_ROLE_KEY || DEFAULT_ANON_KEY;
+
   // -------------------------------------------------------------------------
   // 1. GET /inscricoes (ou /api/inscricoes) -> Teste de acesso e lista de inscrições
   // -------------------------------------------------------------------------
   if (method === 'GET' && (path === '/inscricoes' || path === '/teste' || path === '/health')) {
     try {
-      if (!SUPABASE_SERVICE_ROLE_KEY) {
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({
-            ok: false,
-            banco_conectado: false,
-            error: 'SUPABASE_SERVICE_ROLE_KEY não configurada no ambiente da Lambda.'
-          })
-        };
-      }
-
       const searchUrl = `${SUPABASE_URL}/rest/v1/acampantes?select=*`;
       const searchRes = await fetch(searchUrl, {
         headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+          apikey: supabaseReadAuthKey,
+          Authorization: `Bearer ${supabaseReadAuthKey}`
         }
       });
 
@@ -103,6 +95,7 @@ export const handler = async (event) => {
           total_inscricoes: Array.isArray(inscricoes) ? inscricoes.length : 0,
           configuracao: {
             supabase_url: SUPABASE_URL,
+            supabase_service_role_ativa: Boolean(SUPABASE_SERVICE_ROLE_KEY),
             infinitepay_configurada: Boolean(INFINITEPAY_API_KEY),
             site_url: SITE_URL
           },
@@ -246,21 +239,14 @@ export const handler = async (event) => {
         };
       }
 
-      if (!SUPABASE_SERVICE_ROLE_KEY) {
-        console.error('SUPABASE_SERVICE_ROLE_KEY ausente.');
-        return {
-          statusCode: 500,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: 'Configuração do Supabase incompleta' })
-        };
-      }
+      const writeKey = SUPABASE_SERVICE_ROLE_KEY || DEFAULT_ANON_KEY;
 
       // Busca o acampante no Supabase pelo código da inscrição
       const searchUrl = `${SUPABASE_URL}/rest/v1/acampantes?codigo=eq.${encodeURIComponent(orderNsu)}&select=*`;
       const searchRes = await fetch(searchUrl, {
         headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+          apikey: writeKey,
+          Authorization: `Bearer ${writeKey}`
         }
       });
 
@@ -293,8 +279,8 @@ export const handler = async (event) => {
       const updateRes = await fetch(updateUrl, {
         method: 'PATCH',
         headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          apikey: writeKey,
+          Authorization: `Bearer ${writeKey}`,
           'Content-Type': 'application/json',
           Prefer: 'return=representation'
         },
@@ -344,8 +330,8 @@ export const handler = async (event) => {
       const searchUrl = `${SUPABASE_URL}/rest/v1/acampantes?codigo=eq.${encodeURIComponent(codigo)}&select=*`;
       const searchRes = await fetch(searchUrl, {
         headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+          apikey: supabaseReadAuthKey,
+          Authorization: `Bearer ${supabaseReadAuthKey}`
         }
       });
 
@@ -388,8 +374,8 @@ export const handler = async (event) => {
                 await fetch(`${SUPABASE_URL}/rest/v1/acampantes?codigo=eq.${encodeURIComponent(codigo)}`, {
                   method: 'PATCH',
                   headers: {
-                    apikey: SUPABASE_SERVICE_ROLE_KEY,
-                    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                    apikey: SUPABASE_SERVICE_ROLE_KEY || DEFAULT_ANON_KEY,
+                    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY || DEFAULT_ANON_KEY}`,
                     'Content-Type': 'application/json'
                   },
                   body: JSON.stringify({ parcelas })
