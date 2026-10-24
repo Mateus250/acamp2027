@@ -40,6 +40,11 @@ function handler(event) {
 EOF
 }
 
+# Política gerenciada da AWS para repassar todos os headers/queries para a API (exceto o Host)
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host_header" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
 # Módulo da comunidade para criação e distribuição otimizada do CloudFront
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
@@ -95,8 +100,8 @@ module "cloudfront" {
       # AWS Managed Cache Policy: CachingDisabled (ID: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad)
       cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
 
-      # AWS Managed Origin Request Policy: AllViewerExceptHostHeader (ID: b684b08a-5e13-4170-9704-05a201c738e1)
-      origin_request_policy_id = "b684b08a-5e13-4170-9704-05a201c738e1"
+      # AWS Managed Origin Request Policy: Managed-AllViewerExceptHostHeader
+      origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host_header.id
     }
   ]
 

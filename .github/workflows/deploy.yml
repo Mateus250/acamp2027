@@ -11,8 +11,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy to Production
+  # ============================================================================
+  # JOB 1: DEPLOY DO FRONTEND (RODANDO EM PARALELO COM O BACKEND)
+  # ============================================================================
+  deploy-frontend:
+    name: Deploy Frontend (S3)
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +29,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      - name: Determine S3 Bucket & CloudFront ID
+      - name: Determine S3 Bucket
         id: vars
         run: |
           BUCKET="${{ secrets.S3_BUCKET_NAME }}"
@@ -35,15 +38,6 @@ jobs:
           fi
           echo "bucket_name=$BUCKET" >> $GITHUB_OUTPUT
 
-          DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
-          if [ -z "$DIST_ID" ]; then
-            DIST_ID="E1DUN67TRI2Z0V"
-          fi
-          echo "dist_id=$DIST_ID" >> $GITHUB_OUTPUT
-
-      # -------------------------------------------------------------
-      # 1. DEPLOY DO FRONTEND (S3)
-      # -------------------------------------------------------------
       - name: Sync Static Assets (Fonts & Images with Long Cache)
         run: |
           BUCKET="${{ steps.vars.outputs.bucket_name }}"
@@ -59,7 +53,7 @@ jobs:
               --cache-control "public, max-age=604800"
           fi
 
-      - name: Sync Application Files (Frontend HTML, JS, CSS)
+      - name: Sync Application Files (HTML, JS, CSS)
         run: |
           BUCKET="${{ steps.vars.outputs.bucket_name }}"
           echo "Sincronizando arquivos do frontend..."
@@ -77,15 +71,30 @@ jobs:
             --exclude "fotos/*" \
             --cache-control "public, max-age=0, must-revalidate"
 
-      # -------------------------------------------------------------
-      # 2. DEPLOY DO BACKEND (TERRAFORM APPLY & LAMBDA)
-      # -------------------------------------------------------------
+  # ============================================================================
+  # JOB 2: DEPLOY DO BACKEND / TERRAFORM (RODANDO SIMULTANEAMENTE COM O FRONTEND)
+  # ============================================================================
+  deploy-backend:
+    name: Deploy Backend & Infra (Terraform Apply)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.16.6"
 
-      - name: Terraform Apply (Deploy da Lambda & Infraestrutura)
+      - name: Terraform Apply (Lambda & CloudFront)
         working-directory: terraform
         env:
           TF_VAR_infinitepay_api_key: ${{ secrets.INFINITEPAY_API_KEY }}
@@ -95,15 +104,31 @@ jobs:
         run: |
           echo "Inicializando Terraform com backend remoto S3..."
           terraform init
-          echo "Executando Terraform Apply para atualizar a Lambda e configuracoes de borda..."
+          echo "Aplicando plano de infraestrutura e atualizando a Lambda..."
           terraform apply -auto-approve -input=false
 
-      # -------------------------------------------------------------
-      # 3. INVALIDAÇÃO DE CACHE (CLOUDFRONT)
-      # -------------------------------------------------------------
-      - name: Invalidate CloudFront Cache
+  # ============================================================================
+  # JOB 3: INVALIDAÇÃO DE CACHE (EXECUTA APÓS O FRONTEND E BACKEND CONCLUÍREM)
+  # ============================================================================
+  invalidate-cache:
+    name: Invalidate CloudFront Cache
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Invalidate CloudFront
         run: |
-          DIST_ID="${{ steps.vars.outputs.dist_id }}"
+          DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
+          if [ -z "$DIST_ID" ]; then
+            DIST_ID="E1DUN67TRI2Z0V"
+          fi
           echo "Criando invalidacao no CloudFront para $DIST_ID..."
           INVALIDATION_ID=$(aws cloudfront create-invalidation \
             --distribution-id $DIST_ID \
