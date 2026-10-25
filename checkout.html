@@ -368,7 +368,9 @@ let pollTimer = null;
 
 // Analisa parâmetros de URL (?codigo=IMR-XXXX&valor=43000&cpf=00000000000)
 const urlParams = new URLSearchParams(window.location.search);
-let activeCode = (urlParams.get('codigo') || urlParams.get('code') || '').trim().toUpperCase();
+let activeCode = (urlParams.get('codigo') || urlParams.get('code') || urlParams.get('order_nsu') || '').trim().toUpperCase();
+let transactionNsu = urlParams.get('transaction_nsu') || '';
+let invoiceSlug = urlParams.get('slug') || '';
 let activeCpf = digits(urlParams.get('cpf') || urlParams.get('documento') || '');
 let rawValor = (urlParams.get('valor') || urlParams.get('val') || '').trim();
 
@@ -479,7 +481,8 @@ async function carregarInscricao(codigo, customCents) {
     let data = null;
 
     try {
-      const res = await fetch('/api/status?codigo=' + encodeURIComponent(codigo));
+      const statusUrl = '/api/status?codigo=' + encodeURIComponent(codigo) + (transactionNsu ? '&transaction_nsu=' + encodeURIComponent(transactionNsu) : '') + (invoiceSlug ? '&slug=' + encodeURIComponent(invoiceSlug) : '');
+    const res = await fetch(statusUrl);
       if (res.ok) {
         data = await res.json();
       }
@@ -635,7 +638,8 @@ function renderSuccess(data) {
 
 async function checkStatusSilently(codigo) {
   try {
-    const res = await fetch('/api/status?codigo=' + encodeURIComponent(codigo));
+    const statusUrl = '/api/status?codigo=' + encodeURIComponent(codigo) + (transactionNsu ? '&transaction_nsu=' + encodeURIComponent(transactionNsu) : '') + (invoiceSlug ? '&slug=' + encodeURIComponent(invoiceSlug) : '');
+    const res = await fetch(statusUrl);
     if (!res.ok) return;
     const data = await res.json();
     if (data.status === 'pago' || data.confirmado) {

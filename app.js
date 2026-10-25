@@ -465,15 +465,37 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
         r = data[0];
       }
 
-      // 2. Fallback via API se necessário
-      if (!r) {
+      // 2. Se a inscrição ainda não consta como paga no banco, busca na InfinitePay via /api/status se o pagamento foi feito
+      const parcLocal = (r && r.parcelas) || [];
+      const totalLocal = parcLocal.reduce((t, p) => t + (Number(p.valor) || 0), 0);
+      const pagoLocal = parcLocal.reduce((t, p) => t + Math.min(Number(p.pago) || 0, Number(p.valor) || 0), 0);
+      const stLocal = totalLocal > 0 && pagoLocal >= totalLocal ? 'pago' : 'pendente';
+
+      if (!r || stLocal !== 'pago') {
         try {
-          const apiRes = await fetch('/api/status?cpf=' + encodeURIComponent(cpfNum));
+          say('Consultando status do pagamento com a InfinitePay…');
+          const apiQuery = r && r.codigo
+            ? '/api/status?codigo=' + encodeURIComponent(r.codigo) + '&cpf=' + encodeURIComponent(cpfNum)
+            : '/api/status?cpf=' + encodeURIComponent(cpfNum);
+          const apiRes = await fetch(apiQuery);
           if (apiRes.ok) {
             const apiData = await apiRes.json();
-            if (apiData && apiData.inscricao) r = apiData.inscricao;
+            if (apiData) {
+              if (apiData.status === 'pago' || apiData.confirmado) {
+                if (r) {
+                  r.parcelas = apiData.parcelas || r.parcelas;
+                  r.status = 'pago';
+                } else if (apiData.codigo) {
+                  r = apiData;
+                }
+              } else if (!r && apiData.codigo) {
+                r = apiData;
+              }
+            }
           }
-        } catch (apiErr) {}
+        } catch (apiErr) {
+          console.warn('Consulta na API InfinitePay:', apiErr);
+        }
       }
     } catch (err) {
       console.error(err);

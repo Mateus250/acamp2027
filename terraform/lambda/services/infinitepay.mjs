@@ -80,8 +80,14 @@ export async function createCheckoutLink({ apiKey, siteUrl, codigo, nome, valor,
   return { ok: true, url, raw: resData };
 }
 
-export async function checkPaymentDirect({ apiKey, orderNsu, requestId }) {
-  if (!apiKey) return null;
+export async function checkPaymentDirect({ apiKey, orderNsu, transactionNsu, slug, handle, requestId }) {
+  if (!apiKey || !orderNsu) return null;
+  const body = { order_nsu: orderNsu };
+  if (transactionNsu) body.transaction_nsu = transactionNsu;
+  if (slug) body.slug = slug;
+  if (handle) body.handle = handle;
+
+  log('INFINITEPAY', `[${requestId}] Chamando payment_check para order_nsu='${orderNsu}'...`, body);
   try {
     const res = await fetch('https://api.checkout.infinitepay.io/payment_check', {
       method: 'POST',
@@ -89,17 +95,31 @@ export async function checkPaymentDirect({ apiKey, orderNsu, requestId }) {
         'Content-Type': 'application/json',
         'X-Api-Key': apiKey
       },
-      body: JSON.stringify({ order_nsu: orderNsu })
+      body: JSON.stringify(body)
     });
-    if (!res.ok) {
-      logError('INFINITEPAY', `[${requestId}] payment_check HTTP ${res.status}:`, await res.text());
-      return null;
-    }
-    const data = await res.json();
-    log('INFINITEPAY', `[${requestId}] Resposta payment_check:`, data);
-    return data;
+
+    const data = await res.json().catch(async () => ({ text: await res.text() }));
+    log('INFINITEPAY', `[${requestId}] Resposta payment_check (HTTP ${res.status}):`, data);
+
+    const isPaid = res.ok && (
+      data.success === true ||
+      data.paid === true ||
+      data.status === 'paid' ||
+      data.event === 'paid' ||
+      Number(data.paid_amount) > 0
+    );
+
+    return {
+      ok: res.ok,
+      paid: isPaid,
+      raw: data,
+      paid_amount: data.paid_amount || data.amount || null,
+      capture_method: data.capture_method || null,
+      transaction_nsu: data.transaction_nsu || transactionNsu || null,
+      receipt_url: data.receipt_url || null
+    };
   } catch (err) {
-    logError('INFINITEPAY', `[${requestId}] Exceção no payment_check:`, err.message);
+    logError('INFINITEPAY', `[${requestId}] Erro ao chamar payment_check:`, err);
     return null;
   }
 }

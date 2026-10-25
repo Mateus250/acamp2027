@@ -10,15 +10,19 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null) {
     const eventType = body.event || body.type;
     const orderNsu = pathCodigo || body.order_nsu || body.orderId || body.reference;
     const amountPaid = body.paid_amount || body.amount;
+    const captureMethod = body.capture_method || 'infinitepay';
+    const transactionNsu = body.transaction_nsu || '';
+    const receiptUrl = body.receipt_url || '';
 
-    log('WEBHOOK', `[${requestId}] Extraído: event=${eventType}, order_nsu=${orderNsu} (fonte: ${pathCodigo ? 'path' : 'payload'}), amount=${amountPaid}`);
+    log('WEBHOOK', `[${requestId}] Extraído: event=${eventType || 'none'}, order_nsu=${orderNsu} (fonte: ${pathCodigo ? 'path' : 'payload'}), amount=${amountPaid}`);
 
-    // Só confirma a inscrição se for status de pagamento aprovado
-    if (eventType !== 'paid' && eventType !== 'settled') {
+    // Se o evento foi explicitamente enviado e for de cancelamento/estorno, ignora confirmação
+    if (eventType && eventType !== 'paid' && eventType !== 'settled') {
       log('WEBHOOK', `[${requestId}] Evento ignorado (não é 'paid' ou 'settled'): ${eventType} para pedido ${orderNsu}`);
       return json(200, { ok: true, ignored: true, event: eventType, order_nsu: orderNsu });
     }
 
+    // Se não houver orderNsu, não temos como saber qual acampante atualizar
     if (!orderNsu) {
       logError('WEBHOOK', `[${requestId}] Webhook sem order_nsu/código no path ou no payload`);
       return json(400, { error: 'order_nsu ausente no path e no payload do webhook' });
@@ -40,16 +44,70 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null) {
 
     const parcelas = Array.isArray(acampante.parcelas) ? acampante.parcelas.map(p => ({ ...p })) : [];
     const hoje = todayISO();
-    const valorRecebido = Number(amountPaid) || (parcelas[0] ? parcelas[0].valor : 0);
+    const valorRecebido = Number(amountPaid) || (parcelas[0] ? Number(parcelas[0].valor) || 0 : 0);
 
-    if (parcelas.length > 0) {
-      parcelas[0].pago = valorRecebido;
-      parcelas[0].dataPag = hoje;
+    // Atualização da linha específica desse pagamento
+    if (parcelas.length === 0) {
+      parcelas.push({
+        n: 1,
+        valor: valorRecebido,
+        pago: valorRecebido,
+        venc: hoje,
+        dataPag: hoje,
+        forma: captureMethod,
+        comprovante: receiptUrl || transactionNsu || ''
+      });
     } else {
-      parcelas.push({ n: 1, valor: valorRecebido, pago: valorRecebido, venc: hoje, dataPag: hoje });
+      // 1. Tenta achar a parcela específica cujo saldo devedor seja exatamente igual ao valor recebido
+      let targetIndex = parcelas.findIndex(p => {
+        const devido = (Number(p.valor) || 0) - (Number(p.pago) || 0);
+        return devido > 0 && devido === valorRecebido;
+      });
+
+      if (targetIndex >= 0) {
+        log('WEBHOOK', `[${requestId}] Parcela exata identificada: índice ${targetIndex} (Parcela ${parcelas[targetIndex].n})`);
+        parcelas[targetIndex].pago = (Number(parcelas[targetIndex].pago) || 0) + valorRecebido;
+        parcelas[targetIndex].dataPag = hoje;
+        parcelas[targetIndex].forma = captureMethod;
+        if (receiptUrl || transactionNsu) {
+          parcelas[targetIndex].comprovante = receiptUrl || transactionNsu;
+        }
+      } else {
+        // 2. Se não houver correspondência exata de valor, aplica sequencialmente nas parcelas com saldo aberto
+        log('WEBHOOK', `[${requestId}] Distribuindo R$ ${(valorRecebido / 100).toFixed(2)} nas parcelas em aberto...`);
+        let restante = valorRecebido;
+        for (let i = 0; i < parcelas.length && restante > 0; i++) {
+          const valorParcela = Number(parcelas[i].valor) || 0;
+          const pagoAtual = Number(parcelas[i].pago) || 0;
+          const devido = Math.max(0, valorParcela - pagoAtual);
+          if (devido > 0) {
+            const pagar = Math.min(devido, restante);
+            parcelas[i].pago = pagoAtual + pagar;
+            parcelas[i].dataPag = hoje;
+            parcelas[i].forma = captureMethod;
+            if (receiptUrl || transactionNsu) {
+              parcelas[i].comprovante = receiptUrl || transactionNsu;
+            }
+            restante -= pagar;
+          }
+        }
+        // Se sobrou valor acima do total previsto, adiciona na última parcela
+        if (restante > 0 && parcelas.length > 0) {
+          const last = parcelas[parcelas.length - 1];
+          last.pago = (Number(last.pago) || 0) + restante;
+          last.dataPag = hoje;
+        }
+      }
     }
 
-    log('WEBHOOK', `[${requestId}] Atualizando parcelas do acampante:`, parcelas);
+    log('WEBHOOK', `[${requestId}] Parcelas atualizadas:`, parcelas);
+
+    const comprovanteTxt = receiptUrl ? ` - Recibo: ${receiptUrl}` : '';
+    const nsuTxt = transactionNsu ? ` - NSU: ${transactionNsu}` : '';
+    const novaObs = [
+      acampante.obs,
+      `Pago R$ ${(valorRecebido / 100).toFixed(2)} via InfinitePay (${captureMethod}${nsuTxt}${comprovanteTxt}) em ${hoje}`
+    ].filter(Boolean).join(' • ');
 
     const updateRes = await updateAcampante({
       supabaseUrl: env.SUPABASE_URL,
@@ -57,7 +115,7 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null) {
       codigo: orderNsu,
       updateData: {
         parcelas,
-        obs: [acampante.obs, `Pago via InfinitePay (${body.capture_method || 'online'} - Ref: ${body.transaction_nsu || ''})`].filter(Boolean).join(' • ')
+        obs: novaObs
       },
       requestId
     });
@@ -66,8 +124,9 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null) {
 
     return json(200, {
       ok: true,
-      message: 'Pagamento confirmado e inscrição atualizada com sucesso',
-      order_nsu: orderNsu
+      message: 'Pagamento confirmado e linha específica atualizada com sucesso',
+      order_nsu: orderNsu,
+      parcelas
     });
   } catch (err) {
     logError('WEBHOOK', `[${requestId}] Exceção não tratada ao processar webhook:`, err);
