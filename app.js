@@ -143,10 +143,15 @@ const maskCPF = (v) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d)/, 
 const ageAt = (birth, ref) => { const b = new Date(birth + 'T00:00:00'), r = new Date(ref + 'T00:00:00'); let a = r.getFullYear() - b.getFullYear(); if (r < new Date(r.getFullYear(), b.getMonth(), b.getDate())) a--; return a; };
 const f = $('#f');
 f.elements.noshirt.addEventListener('change', () => { f.elements.shirt.disabled = f.elements.noshirt.checked; if (f.elements.noshirt.checked) { f.elements.shirt.value = ''; setErr('shirt', ''); } });
-const PAIS = ['dad', 'dadphone', 'mom', 'momphone'];
-const syncAdult = () => { const on = f.elements.adult.checked; PAIS.forEach((n) => { f.elements[n].disabled = on; if (on) setErr(n, ''); }); $('#pais').classList.toggle('off', on); };
+const PAIS = ['resp1_name', 'resp1_cpf', 'resp1_phone', 'resp2_name', 'resp2_cpf', 'resp2_phone'];
+const syncAdult = () => { const on = f.elements.adult.checked; PAIS.forEach((n) => { if (f.elements[n]) { f.elements[n].disabled = on; if (on) setErr(n, ''); } }); $('#pais').classList.toggle('off', on); };
 f.elements.adult.addEventListener('change', syncAdult);
-if (f.elements.cpf) { f.elements.cpf.addEventListener('input', (e) => { e.target.value = maskCPF(e.target.value); }); }
+['cpf', 'resp1_cpf', 'resp2_cpf'].forEach((n) => {
+  if (f.elements[n]) f.elements[n].addEventListener('input', (e) => { e.target.value = maskCPF(e.target.value); });
+});
+if ($('#csDoc')) {
+  $('#csDoc').addEventListener('input', (e) => { e.target.value = maskCPF(e.target.value); });
+}
 
 f.elements.birth.addEventListener('change', () => { const b = f.elements.birth.value; if (!b) return; const a = ageAt(b, CONFIG.campStart); if (a >= 0 && a <= 110) { f.elements.adult.checked = a >= 18; syncAdult(); } });
 
@@ -155,28 +160,67 @@ const setErr = (k, m) => { const e = $('[data-e=' + k + ']'); if (e) e.textConte
 const digits = (s) => s.replace(/\D/g, '');
 f.addEventListener('submit', async (ev) => {
   ev.preventDefault();
-  ['name', 'cpf', 'phone', 'email', 'birth', 'shirt', 'dad', 'dadphone', 'mom', 'momphone', 'consent'].forEach((k) => setErr(k, ''));
-  const v = { name: f.elements.name.value.trim(), cpf: (f.elements.cpf ? f.elements.cpf.value.trim() : ''), phone: f.elements.phone.value.trim(), email: f.elements.email.value.trim().toLowerCase(), birth: f.elements.birth.value, shirt: f.elements.shirt.value, dad: f.elements.dad.value.trim(), dadphone: f.elements.dadphone.value.trim(), mom: f.elements.mom.value.trim(), momphone: f.elements.momphone.value.trim(), notes: f.elements.notes.value.trim() };
+  ['name', 'cpf', 'phone', 'email', 'birth', 'shirt', 'resp1_name', 'resp1_cpf', 'resp1_phone', 'resp2_name', 'resp2_cpf', 'resp2_phone', 'termo_financeiro', 'termo_imagem', 'termo_bens', 'consent'].forEach((k) => setErr(k, ''));
+  const v = {
+    name: f.elements.name.value.trim(),
+    cpf: (f.elements.cpf ? f.elements.cpf.value.trim() : ''),
+    phone: f.elements.phone.value.trim(),
+    email: f.elements.email.value.trim().toLowerCase(),
+    birth: f.elements.birth.value,
+    shirt: f.elements.shirt.value,
+    resp1_name: (f.elements.resp1_name ? f.elements.resp1_name.value.trim() : ''),
+    resp1_cpf: (f.elements.resp1_cpf ? f.elements.resp1_cpf.value.trim() : ''),
+    resp1_phone: (f.elements.resp1_phone ? f.elements.resp1_phone.value.trim() : ''),
+    resp2_name: (f.elements.resp2_name ? f.elements.resp2_name.value.trim() : ''),
+    resp2_cpf: (f.elements.resp2_cpf ? f.elements.resp2_cpf.value.trim() : ''),
+    resp2_phone: (f.elements.resp2_phone ? f.elements.resp2_phone.value.trim() : ''),
+    notes: f.elements.notes.value.trim()
+  };
   let first = null; const bad = (k, m) => { setErr(k, m); first = first || f.elements[k]; };
   if (v.name.split(/\s+/).filter(Boolean).length < 2) bad('name', 'Digite seu nome completo.');
   if (!validaCPF(v.cpf)) bad('cpf', 'Digite um CPF válido (11 dígitos).');
   if (digits(v.phone).length < 10) bad('phone', 'Digite o WhatsApp com DDD.');
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.email)) bad('email', 'Digite um e-mail válido. É para lá que vão a confirmação e o seu código.');
   if (!v.birth) bad('birth', 'Informe a data de nascimento.');
-  else { const a = ageAt(v.birth, CONFIG.campStart); if (a < 0 || a > 110) bad('birth', 'Confira a data de nascimento.'); else if (CONFIG.minAge && a < CONFIG.minAge) bad('birth', 'O acampamento é para quem tem ' + CONFIG.minAge + ' anos ou mais.'); else if (a < 18 && f.elements.adult.checked) bad('birth', 'Pela data de nascimento, você terá ' + a + ' anos no acampamento. Desmarque "Sou maior de 18 anos" e preencha os dados do pai ou da mãe.');
+  else {
+    const a = ageAt(v.birth, CONFIG.campStart);
+    if (a < 0 || a > 110) bad('birth', 'Confira a data de nascimento.');
+    else if (CONFIG.minAge && a < CONFIG.minAge) bad('birth', 'O acampamento é para quem tem ' + CONFIG.minAge + ' anos ou mais.');
+    else if (a < 18 && f.elements.adult.checked) bad('birth', 'Pela data de nascimento, você terá ' + a + ' anos no acampamento. Desmarque "Sou maior de 18 anos" e preencha os dados dos responsáveis.');
     else if (a < 18) {
-      const full = (x) => x.split(/\s+/).filter(Boolean).length >= 2, okPh = (x) => digits(x).length >= 10;
-      const check = (kn, kp, quem) => { const nm = v[kn], ph = v[kp]; if (!nm && !ph) return false; if (!full(nm)) bad(kn, 'Digite o nome completo ' + quem + '.'); else if (!okPh(ph)) bad(kp, 'Informe o celular ' + quem + ' com DDD.'); return full(nm) && okPh(ph); };
-      const okDad = check('dad', 'dadphone', 'do pai'), okMom = check('mom', 'momphone', 'da mãe');
-      if (!okDad && !okMom && !first) bad('dad', 'Preencha o nome e o celular do pai ou da mãe.');
-    } }
+      if (v.resp1_name.split(/\s+/).filter(Boolean).length < 2) bad('resp1_name', 'Digite o nome completo do 1º responsável.');
+      if (!validaCPF(v.resp1_cpf)) bad('resp1_cpf', 'Digite um CPF válido para o 1º responsável (11 dígitos).');
+      if (digits(v.resp1_phone).length < 10) bad('resp1_phone', 'Informe o celular do 1º responsável com DDD.');
+      
+      if (v.resp2_cpf && !validaCPF(v.resp2_cpf)) bad('resp2_cpf', 'CPF do 2º responsável inválido.');
+      if (v.resp2_phone && digits(v.resp2_phone).length < 10) bad('resp2_phone', 'Informe o celular do 2º responsável com DDD.');
+    }
+  }
   if (!v.shirt && !f.elements.noshirt.checked) bad('shirt', 'Escolha o tamanho ou marque que não quer camiseta agora.');
+  if (!f.elements.termo_financeiro.checked) bad('termo_financeiro', 'Você precisa concordar com o termo de responsabilidade financeira.');
+  if (!f.elements.termo_imagem.checked) bad('termo_imagem', 'Você precisa autorizar o uso de imagem.');
+  if (!f.elements.termo_bens.checked) bad('termo_bens', 'Você precisa estar ciente da responsabilidade sobre bens pessoais.');
   if (!f.elements.consent.checked) bad('consent', 'Marque a caixa para continuar.');
   if (first) { first.focus(); return; }
   const p = curPlan(), l = activeLot();
   const code = 'IMR-' + (Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 4)).toUpperCase();
   const minor = ageAt(v.birth, CONFIG.campStart) < 18;
-  const msg = ['Olá! Quero me inscrever no ' + CONFIG.camp.toUpperCase() + ' · ' + CONFIG.edition + '.', '', 'Código: ' + code, 'Nome: ' + v.name, 'WhatsApp: ' + v.phone, 'Nascimento: ' + fmtD(v.birth), minor && v.dad ? 'Pai: ' + v.dad + (v.dadphone ? ' (' + v.dadphone + ')' : '') : null, minor && v.mom ? 'Mãe: ' + v.mom + (v.momphone ? ' (' + v.momphone + ')' : '') : null, 'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt), v.notes ? 'Observações: ' + v.notes : null, 'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + coupon.church + ')' : ''), 'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)].filter((x) => x !== null).join('\n');
+  const msg = [
+    'Olá! Quero me inscrever no ' + CONFIG.camp.toUpperCase() + ' · ' + CONFIG.edition + '.',
+    '',
+    'Código: ' + code,
+    'Nome: ' + v.name,
+    'CPF: ' + maskCPF(v.cpf),
+    'WhatsApp: ' + v.phone,
+    'Nascimento: ' + fmtD(v.birth),
+    minor && v.resp1_name ? '1º Resp: ' + v.resp1_name + ' (CPF: ' + maskCPF(v.resp1_cpf) + ', Tel: ' + v.resp1_phone + ')' : null,
+    minor && v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') + (v.resp2_phone ? ' (Tel: ' + v.resp2_phone + ')' : '') : null,
+    'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt),
+    v.notes ? 'Observações: ' + v.notes : null,
+    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + coupon.church + ')' : ''),
+    'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)
+  ].filter((x) => x !== null).join('\n');
+
   /* grava a inscrição no banco antes de mostrar o PIX */
   if (sending) return;
   const cpfDig = digits(v.cpf);
@@ -205,8 +249,7 @@ f.addEventListener('submit', async (ev) => {
         btn.textContent = oldTxt;
         const ja = existRows[0];
         errBox.innerHTML = 'Já existe uma inscrição com este CPF (<b>' + esc(ja.nome) + '</b> - Código: <b>' + ja.codigo + '</b>). Redirecionando para a consulta...';
-        if ($('#csCode')) $('#csCode').value = v.cpf;
-        if ($('#csTel')) $('#csTel').value = v.phone;
+        if ($('#csDoc')) $('#csDoc').value = maskCPF(v.cpf);
         setTimeout(() => {
           const csSec = $('#consulta');
           if (csSec) csSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -225,9 +268,19 @@ f.addEventListener('submit', async (ev) => {
   const total = finalPrice(), hoje = todayBR(), base = Math.floor(total / p.n);
   const addMonths = (iso, k) => { const [y, m, dd] = iso.split('-').map(Number); const t = new Date(y, m - 1 + k, 1); t.setDate(Math.min(dd, new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate())); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
   const parcelas = []; for (let i = 0; i < p.n; i++) parcelas.push({ n: i + 1, valor: i === 0 ? p.first : base, venc: addMonths(hoje, i), pago: 0, dataPag: '' });
-  const resp = minor ? [v.dad ? 'Pai: ' + v.dad : '', v.mom ? 'Mãe: ' + v.mom : ''].filter(Boolean).join(' / ') : '';
-  const respTel = minor ? [v.dadphone, v.momphone].filter(Boolean).join(' / ') : '';
-  const obs = ['CPF: ' + cpfDig, v.notes, coupon ? 'Cupom: ' + coupon.church + ' (' + couponLabel(coupon) + ')' : ''].filter(Boolean).join(' · ');
+  const resp = minor ? [
+    v.resp1_name ? '1º Resp: ' + v.resp1_name + (v.resp1_cpf ? ' (CPF: ' + maskCPF(v.resp1_cpf) + ')' : '') : '',
+    v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') : ''
+  ].filter(Boolean).join(' / ') : '';
+  const respTel = minor ? [v.resp1_phone, v.resp2_phone].filter(Boolean).join(' / ') : '';
+  const obs = [
+    'CPF: ' + cpfDig,
+    minor && v.resp1_cpf ? 'Resp1 CPF: ' + digits(v.resp1_cpf) : '',
+    minor && v.resp2_cpf ? 'Resp2 CPF: ' + digits(v.resp2_cpf) : '',
+    v.notes,
+    coupon ? 'Cupom: ' + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
+    'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
+  ].filter(Boolean).join(' · ');
   const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: l.name, opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
   sending = true; btn.disabled = true; btn.textContent = 'Enviando…';
   errBox.textContent = '';
@@ -375,52 +428,74 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   const ROT = { pago: 'Pago', parcial: 'Parcialmente pago', pendente: 'Pagamento pendente', atrasado: 'Parcela atrasada' };
   const stParc = (p) => (p.valor > 0 && p.pago >= p.valor ? 'pago' : p.venc && p.venc < todayBR() ? 'atrasado' : p.pago > 0 ? 'parcial' : 'pendente');
   const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  /* chegou pelo link do e-mail: ?consulta=IMR-XXXXXX */
-  const q = new URLSearchParams(location.search).get('consulta');
-  if (q) { $('#csCode').value = q.toUpperCase(); setTimeout(() => { $('#consulta').scrollIntoView({ block: 'start' }); $('#csTel').focus(); }, 600); }
+
+  /* Chegou pelo link: ?consulta=... ou ?cpf=... */
+  const q = new URLSearchParams(location.search).get('consulta') || new URLSearchParams(location.search).get('cpf');
+  if (q && $('#csDoc')) {
+    const qDig = digits(q);
+    $('#csDoc').value = qDig.length === 11 ? maskCPF(qDig) : q;
+    setTimeout(() => {
+      $('#consulta').scrollIntoView({ block: 'start' });
+      if (qDig.length === 11) btn.click();
+      else $('#csDoc').focus();
+    }, 600);
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const code = $('#csCode').value.trim(), tel = digits($('#csTel').value);
+    const docInput = $('#csDoc');
+    const doc = docInput ? docInput.value.trim() : '';
     res.classList.add('hide');
-    const isCpf = digits(code).length === 11;
-    if (!isCpf && code.replace(/[^A-Za-z0-9]/g, '').length < 6) return say('Digite o código da inscrição ou seu CPF.', true);
-    if (tel.length < 10) return say('Digite o WhatsApp usado na inscrição, com DDD.', true);
+    const cpfNum = digits(doc);
+    if (cpfNum.length !== 11) {
+      return say('Digite o CPF completo do acampante (11 dígitos).', true);
+    }
+    if (!validaCPF(cpfNum)) {
+      return say('Digite um CPF válido para consultar.', true);
+    }
     if (!SB) return say('Não foi possível consultar agora. Tente de novo em instantes.', true);
-    btn.disabled = true; say('Consultando…');
+
+    btn.disabled = true; say('Consultando sua inscrição…');
     let r = null;
     try {
-      if (isCpf) {
-        const cpfNum = digits(code);
-        const { data, error } = await SB.from('acampantes').select('*').ilike('obs', '%CPF: ' + cpfNum + '%');
-        if (error) throw error;
-        if (data && data.length) {
-          const telNum = digits(tel);
-          r = data.find(x => digits(x.telefone || '').slice(-8) === telNum.slice(-8)) || data[0];
-        }
-      } else {
-        try {
-          const { data, error } = await SB.rpc('consultar_inscricao', { p_codigo: code, p_tel: tel });
-          if (!error && data) r = Array.isArray(data) ? data[0] : data;
-        } catch (err) {}
-        if (!r) {
-          const { data } = await SB.from('acampantes').select('*').eq('codigo', code);
-          if (data && data.length) r = data[0];
-        }
+      // 1. Consulta no Supabase pelo campo obs com CPF
+      const { data, error } = await SB.from('acampantes').select('*').ilike('obs', '%CPF: ' + cpfNum + '%').order('criado_em', { ascending: false });
+      if (error) console.warn('Aviso consulta Supabase:', error);
+      if (data && data.length) {
+        r = data[0];
       }
-    } catch (err) { console.error(err); btn.disabled = false; return say('Não foi possível consultar agora. Tente de novo em instantes.', true); }
+
+      // 2. Fallback via API se necessário
+      if (!r) {
+        try {
+          const apiRes = await fetch('/api/status?cpf=' + encodeURIComponent(cpfNum));
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (apiData && apiData.inscricao) r = apiData.inscricao;
+          }
+        } catch (apiErr) {}
+      }
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      return say('Não foi possível consultar agora. Tente de novo em instantes.', true);
+    }
     btn.disabled = false;
-    if (!r) return say('Não encontramos uma inscrição com esse código e esse WhatsApp. Confira os dois e tente de novo.', true);
+    if (!r) {
+      return say('Não encontramos nenhuma inscrição com o CPF ' + maskCPF(cpfNum) + '. Confira os números ou faça sua inscrição acima.', true);
+    }
+
     const parc = (r.parcelas || []).map((p) => ({ n: p.n, valor: Number(p.valor) || 0, pago: Number(p.pago) || 0, venc: p.venc || '' }));
     const total = parc.reduce((t, p) => t + p.valor, 0), pago = parc.reduce((t, p) => t + Math.min(p.pago, p.valor), 0);
     const st = total > 0 && pago >= total ? 'pago' : parc.some((p) => stParc(p) === 'atrasado') ? 'atrasado' : pago > 0 ? 'parcial' : 'pendente';
     say('');
-    const csCpf = digits((r.obs && r.obs.match(/CPF:\s*(\d{11})/)?.[1]) || (isCpf ? code : ''));
+    const csCpf = cpfNum;
     res.innerHTML = '<div class="cs-head"><b>Oi, ' + esc(r.nome) + '!</b><span class="cs-st ' + st + '">' + ROT[st] + '</span></div>' +
-      '<div>' + esc(r.lote || '') + (r.opcao_nome ? ' · ' + esc(r.opcao_nome) : '') + '</div>' +
+      '<div>' + esc(r.lote || '') + (r.opcao_nome ? ' · ' + esc(r.opcao_nome) : '') + (r.codigo ? ' · Código: <b>' + esc(r.codigo) + '</b>' : '') + '</div>' +
       '<div class="cs-bar" role="img" aria-label="Pago ' + brl(pago) + ' de ' + brl(total) + '"><i style="width:' + (total ? Math.round(pago / total * 100) : 0) + '%"></i></div>' +
       '<div><b>' + brl(pago) + '</b> pagos de <b>' + brl(total) + '</b>' + (total > pago ? ' · falta ' + brl(total - pago) : '') + '</div>' +
       (parc.length > 1 ? '<ul class="cs-parc">' + parc.map((p) => { const s = stParc(p); return '<li><span>Parcela ' + p.n + ' · ' + brl(p.valor) + (p.venc ? ' · vence ' + fmtD(p.venc) : '') + '</span><span class="cs-st ' + s + '">' + (s === 'pago' ? 'Paga' : s === 'atrasado' ? 'Atrasada' : s === 'parcial' ? 'Parcial' : 'Em aberto') + '</span></li>'; }).join('') + '</ul>' : '') +
-      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? A equipe confere os comprovantes à mão; pode levar um tempinho.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || code) + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
+      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? A equipe confere os comprovantes à mão; pode levar um tempinho.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || '') + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
     res.classList.remove('hide');
   });
 })();

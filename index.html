@@ -122,12 +122,18 @@
       </div>
       <label class="chk adult"><input type="checkbox" name="adult"><span>Sou maior de 18 anos</span></label>
       <div id="pais" class="pais">
-        <p class="pais-t">Menor de 18 anos: dados do pai e da mãe<span>Preencha pelo menos um dos dois. Se for outro responsável legal, use um dos campos.</span></p>
+        <p class="pais-t">Menor de 18 anos: dados dos responsáveis<span>O 1º responsável é obrigatório (com documento). O 2º responsável é opcional.</span></p>
+        <div style="margin-bottom:8px;font-weight:700;font-size:0.92rem;color:var(--water-deep,#136776)">1º Responsável (obrigatório para menores)</div>
         <div class="grid2 g2fix">
-          <label class="f">Nome completo do pai<input type="text" name="dad" autocomplete="off"><div class="err" data-e="dad"></div></label>
-          <label class="f">Celular do pai (com DDD)<input type="tel" name="dadphone" inputmode="tel" placeholder="(19) 99999-9999"><div class="err" data-e="dadphone"></div></label>
-          <label class="f">Nome completo da mãe<input type="text" name="mom" autocomplete="off"><div class="err" data-e="mom"></div></label>
-          <label class="f">Celular da mãe (com DDD)<input type="tel" name="momphone" inputmode="tel" placeholder="(19) 99999-9999"><div class="err" data-e="momphone"></div></label>
+          <label class="f">Nome completo do 1º responsável<input type="text" name="resp1_name" autocomplete="off"><div class="err" data-e="resp1_name"></div></label>
+          <label class="f">CPF do 1º responsável<input type="text" name="resp1_cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off"><div class="err" data-e="resp1_cpf"></div></label>
+          <label class="f" style="grid-column: 1 / -1;">Celular / WhatsApp do 1º responsável (com DDD)<input type="tel" name="resp1_phone" inputmode="tel" placeholder="(19) 99999-9999"><div class="err" data-e="resp1_phone"></div></label>
+        </div>
+        <div style="margin:14px 0 8px;font-weight:700;font-size:0.92rem;color:var(--water-deep,#136776)">2º Responsável (opcional)</div>
+        <div class="grid2 g2fix">
+          <label class="f">Nome completo do 2º responsável<input type="text" name="resp2_name" autocomplete="off"><div class="err" data-e="resp2_name"></div></label>
+          <label class="f">CPF do 2º responsável (opcional)<input type="text" name="resp2_cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off"><div class="err" data-e="resp2_cpf"></div></label>
+          <label class="f" style="grid-column: 1 / -1;">Celular / WhatsApp do 2º responsável<input type="tel" name="resp2_phone" inputmode="tel" placeholder="(19) 99999-9999"><div class="err" data-e="resp2_phone"></div></label>
         </div>
       </div>
       <div class="grid2">
@@ -141,8 +147,43 @@
       <div class="opts" id="payopts" role="radiogroup" aria-label="Forma de pagamento"></div>
       <div class="sum" id="sum" aria-live="polite"></div>
 
-      <label class="chk"><input type="checkbox" name="consent"><span id="consentTxt"></span></label>
-      <div class="err" data-e="consent" style="margin:-12px 0 16px"></div>
+      <div class="termos-card" style="background:#f4f9fa;border:1.5px solid #c2e2e8;border-radius:14px;padding:16px 18px;margin:20px 0 18px">
+        <h4 style="margin:0 0 12px;font-size:1.02rem;color:var(--water-deep,#136776);display:flex;align-items:center;gap:8px">
+          📋 Termos de Responsabilidade e Ciência
+        </h4>
+        
+        <label class="chk" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" name="termo_financeiro" required style="margin-top:3px">
+          <span style="font-size:0.92rem;line-height:1.45;color:var(--text,#1c333a)">
+            <b>Responsabilidade Financeira:</b> Estou ciente e concordo que <b>não haverá devolução</b> de valores pagos em caso de desistência a <b>menos de 30 dias</b> do início do acampamento, em razão dos compromissos e custos fixos já contratados.
+          </span>
+        </label>
+        <div class="err" data-e="termo_financeiro" style="margin:-8px 0 10px 28px"></div>
+
+        <label class="chk" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" name="termo_imagem" required style="margin-top:3px">
+          <span style="font-size:0.92rem;line-height:1.45;color:var(--text,#1c333a)">
+            <b>Uso de Imagem:</b> Autorizo expressamente o uso da minha imagem e voz (ou do menor sob minha responsabilidade) em fotos e gravações feitas durante o acampamento, para veiculação institucional e redes sociais do acampamento e da igreja.
+          </span>
+        </label>
+        <div class="err" data-e="termo_imagem" style="margin:-8px 0 10px 28px"></div>
+
+        <label class="chk" style="margin-bottom:12px;display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" name="termo_bens" required style="margin-top:3px">
+          <span style="font-size:0.92rem;line-height:1.45;color:var(--text,#1c333a)">
+            <b>Bens e Itens Pessoais:</b> Estou ciente de que a organização do acampamento <b>não se responsabiliza</b> por perda, extravio, furto ou danos a pertences pessoais, celulares, equipamentos eletrônicos ou valores em dinheiro levados ao evento, sendo de inteira guarda e responsabilidade do participante.
+          </span>
+        </label>
+        <div class="err" data-e="termo_bens" style="margin:-8px 0 10px 28px"></div>
+
+        <label class="chk" style="display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" name="consent" required style="margin-top:3px">
+          <span id="consentTxt" style="font-size:0.92rem;line-height:1.45;color:var(--text,#1c333a)">
+            Concordo em enviar meus dados para organização da inscrição e estadia no acampamento. Se sou menor de 18 anos, meu responsável legal está ciente e de acordo.
+          </span>
+        </label>
+        <div class="err" data-e="consent" style="margin:-8px 0 0 28px"></div>
+      </div>
       <button class="btn dark" type="submit" id="submit">Enviar inscrição</button>
     </form>
     <div id="done" class="hide" tabindex="-1">
@@ -169,11 +210,10 @@
 <section id="consulta"><div class="wrap">
   <span class="depth">29 m</span>
   <h2>Consulte sua inscrição</h2>
-  <p class="cs-sub">Digite o código da inscrição ou o seu CPF e o seu WhatsApp.</p>
+  <p class="cs-sub">Digite apenas o CPF do acampante para consultar sua inscrição e a situação do pagamento.</p>
   <form class="cs-card" id="csForm" novalidate>
-    <div class="cs-row">
-      <label class="f">Código da inscrição ou CPF<input type="text" id="csCode" placeholder="IMR-XXXXXX ou CPF" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
-      <label class="f">Seu WhatsApp (com DDD)<input type="tel" id="csTel" inputmode="tel" placeholder="(19) 99999-9999" autocomplete="tel"></label>
+    <div class="cs-row" style="grid-template-columns: minmax(0, 1fr) auto;">
+      <label class="f" style="margin-bottom:0">CPF do acampante<input type="text" id="csDoc" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off" required><div class="err" data-e="csDoc"></div></label>
       <button class="btn dark" type="submit" id="csBtn">Consultar</button>
     </div>
     <div class="cs-msg" id="csMsg" role="status" aria-live="polite"></div>
