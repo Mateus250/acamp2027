@@ -107,9 +107,6 @@ jobs:
           echo "Aplicando plano de infraestrutura e atualizando a Lambda..."
           terraform apply -auto-approve -input=false
 
-  # ============================================================================
-  # JOB 3: INVALIDAÇÃO DE CACHE (EXECUTA APÓS O FRONTEND E BACKEND CONCLUÍREM)
-  # ============================================================================
   invalidate-cache:
     name: Invalidate CloudFront Cache
     runs-on: ubuntu-latest
