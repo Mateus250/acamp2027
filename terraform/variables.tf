@@ -30,11 +30,17 @@ variable "price_class" {
 
 variable "custom_domains" {
   type        = list(string)
-  description = "Domínios customizados atendidos pela distribuição CloudFront. O primeiro é o domínio principal do certificado ACM; os demais entram como SANs. Deixe vazio para usar apenas o domínio padrão do CloudFront."
+  description = "Domínios customizados atendidos pela distribuição CloudFront. Deixe vazio para usar apenas o domínio padrão do CloudFront."
   default = [
-    "acampimersos.com.br",
     "acampamentoipi.com.br",
+    "acampimersos.com.br",
   ]
+}
+
+variable "acm_certificate_arn" {
+  type        = string
+  description = "ARN fixo do certificado SSL no AWS Certificate Manager (us-east-1) que cobre acampamentoipi.com.br e acampimersos.com.br"
+  default     = "arn:aws:acm:us-east-1:434856744265:certificate/a1c6199a-ac9c-4db7-bc41-8b0eb5132ad5"
 }
 
 variable "infinitepay_api_key" {

@@ -172,10 +172,9 @@ module "cloudfront" {
     restriction_type = "none"
   }
 
-  # Usa o ARN vindo do recurso de validação para garantir que o certificado
-  # já esteja emitido (ISSUED) antes de ser associado à distribuição.
+  # Usa o ARN fixo do certificado ACM emitido que cobre todos os dominios
   viewer_certificate = local.use_custom_domain ? {
-    acm_certificate_arn      = aws_acm_certificate_validation.site[0].certificate_arn
+    acm_certificate_arn      = local.acm_certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   } : {
