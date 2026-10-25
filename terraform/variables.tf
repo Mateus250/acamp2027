@@ -16,6 +16,12 @@ variable "environment" {
   default     = "prod"
 }
 
+variable "bucket_name" {
+  type        = string
+  description = "Nome customizado para o bucket S3 (opcional). Se deixado em branco, sera gerado automaticamente com sufixo aleatorio."
+  default     = ""
+}
+
 variable "price_class" {
   type        = string
   description = "Classe de preco do CloudFront: PriceClass_100 (Americas/Europa), PriceClass_200 (inclui Brasil/SA), PriceClass_All (global)"
