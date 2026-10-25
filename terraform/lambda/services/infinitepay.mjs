@@ -24,7 +24,7 @@ export async function createCheckoutLink({ apiKey, siteUrl, codigo, nome, valor,
   const redirectUrl = `${siteUrl}/checkout.html?codigo=${encodeURIComponent(codigo)}&status=concluido`;
   // Webhook com o código da inscrição no path para atualização automática e direta
   const webhookUrl = `${siteUrl}/api/webhook/${encodeURIComponent(codigo)}`;
-  const itemDesc = `Inscrição Imersos 2027 (${(nome || codigo).slice(0, 35)})`;
+  const itemDesc = `Inscrição Acampamento 2027 (${(nome || codigo).slice(0, 35)})`;
 
   const payload = {
     order_nsu: codigo,

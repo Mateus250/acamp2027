@@ -57,7 +57,7 @@ const lotOpen = () => CONFIG.lots.some((l) => todayBR() <= l.until);
 
 /* conteúdo vindo da configuração */
 if (CONFIG.preview) $('#preview').hidden = false;
-document.title = CONFIG.camp + ' · ' + CONFIG.edition;
+document.title = 'Acampamento 2027 · ' + CONFIG.edition;
 $('#word').textContent = CONFIG.camp.toUpperCase();
 $('#kicker').textContent = CONFIG.edition;
 $('#lede').textContent = 'Cinco dias para desligar o barulho e ir fundo.';
@@ -77,7 +77,7 @@ $('#lots').innerHTML = CONFIG.lots.map((l, i) => {
 }).join('');
 $('#payhow').textContent = 'Você paga por PIX, à vista ou em até ' + CONFIG.maxInstallments + ' parcelas. A organização confere cada pagamento e confirma sua vaga.';
 $('#formintro').textContent = 'Preencha em um minuto. No final, você paga por PIX e manda o comprovante pelo WhatsApp.';
-$('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do ' + CONFIG.camp + ' apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
+$('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do acampamento apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
 const faqs = [['Posso pagar em parcelas?', 'Sim, no PIX, em até ' + CONFIG.maxInstallments + ' vezes. A primeira parcela é paga na inscrição e as demais a cada 30 dias.'], ['Quando minha vaga está garantida?', 'Depois que a organização confere o seu primeiro pagamento. Até lá, a vaga não é reservada.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Faça o PIX e mande o comprovante para um dos contatos que aparecem no fim da inscrição. Guarde o seu código.']];
 $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></details>').join('');
 [...document.querySelectorAll('#faq details')].forEach((d, i) => { d.querySelector('summary').textContent = faqs[i][0]; d.querySelector('p').textContent = faqs[i][1]; });
@@ -206,7 +206,7 @@ f.addEventListener('submit', async (ev) => {
   const code = 'IMR-' + (Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 4)).toUpperCase();
   const minor = ageAt(v.birth, CONFIG.campStart) < 18;
   const msg = [
-    'Olá! Quero me inscrever no ' + CONFIG.camp.toUpperCase() + ' · ' + CONFIG.edition + '.',
+    'Olá! Quero me inscrever no ' + CONFIG.edition + '.',
     '',
     'Código: ' + code,
     'Nome: ' + v.name,
@@ -337,15 +337,15 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   const target = new Date(CONFIG.campStart + 'T00:00:00-03:00').getTime();
   const els = { D: $('#cdD'), H: $('#cdH'), M: $('#cdM'), S: $('#cdS') }; const prev = {};
   const put = (k, v) => { if (prev[k] === v) return; prev[k] = v; const e = els[k]; e.textContent = v; e.classList.remove('tk'); void e.offsetWidth; e.classList.add('tk'); };
-  const tick = () => { const diff = target - Date.now(); if (isNaN(target)) { $('#countwrap').classList.add('hide'); return false; } if (diff <= 0) { $('#count').classList.add('hide'); $('#cdcap').textContent = 'O ' + CONFIG.camp + ' já começou!'; return false; } const s = Math.floor(diff / 1000); put('D', String(Math.floor(s / 86400))); put('H', String(Math.floor(s % 86400 / 3600)).padStart(2, '0')); put('M', String(Math.floor(s % 3600 / 60)).padStart(2, '0')); put('S', String(s % 60).padStart(2, '0')); return true; };
+  const tick = () => { const diff = target - Date.now(); if (isNaN(target)) { $('#countwrap').classList.add('hide'); return false; } if (diff <= 0) { $('#count').classList.add('hide'); $('#cdcap').textContent = 'O acampamento já começou!'; return false; } const s = Math.floor(diff / 1000); put('D', String(Math.floor(s / 86400))); put('H', String(Math.floor(s % 86400 / 3600)).padStart(2, '0')); put('M', String(Math.floor(s % 3600 / 60)).padStart(2, '0')); put('S', String(s % 60).padStart(2, '0')); return true; };
   if (tick()) { const iv = setInterval(() => { if (!tick()) clearInterval(iv); }, 1000); }
 
   /* chamar um amigo */
-  const text = 'Bora mergulhar no ' + CONFIG.camp.toUpperCase() + '? ' + CONFIG.edition + '. Inscrições aqui:';
+  const text = 'Bora mergulhar no ' + CONFIG.edition + '? Inscrições aqui:';
   const url = () => location.href.split('#')[0];
   document.querySelectorAll('.shareBtn').forEach((a) => {
     a.href = 'https://wa.me/?text=' + encodeURIComponent(text + ' ' + url());
-    a.addEventListener('click', async (e) => { if (!navigator.share) return; e.preventDefault(); try { await navigator.share({ title: CONFIG.camp, text, url: url() }); } catch (x) { /* a pessoa fechou o menu */ } });
+    a.addEventListener('click', async (e) => { if (!navigator.share) return; e.preventDefault(); try { await navigator.share({ title: CONFIG.edition, text, url: url() }); } catch (x) { /* a pessoa fechou o menu */ } });
   });
 })();
 
@@ -531,13 +531,13 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const w = $('#word');
   /* título em letras, para cada uma poder balançar */
-  const txt = CONFIG.camp.toUpperCase(); w.setAttribute('aria-label', CONFIG.camp); w.textContent = '';
+  const txt = CONFIG.camp.toUpperCase(); w.setAttribute('aria-label', 'Tema em breve'); w.textContent = '';
   const letters = [...txt].map((c, i) => { const o = document.createElement('span'); o.className = 'ch'; o.setAttribute('aria-hidden', 'true'); o.style.setProperty('--i', i); const n = document.createElement('i'); n.textContent = c; o.appendChild(n); w.appendChild(o); return { el: o, py: 0, tg: 0 }; });
   if (reduce) return;
   document.documentElement.classList.add('js');
 
   /* faixa em movimento */
-  const belt = $('#belt'), items = [CONFIG.camp.toUpperCase(), 'Mergulhe fundo', CONFIG.dates.toUpperCase(), 'Vem imergir'];
+  const belt = $('#belt'), items = ['TEMA EM BREVE 🔒', 'Mergulhe fundo', CONFIG.dates.toUpperCase(), 'Vem pro Acampamento'];
   const seq = () => { for (let r = 0; r < 3; r++) items.forEach((t) => { const sp = document.createElement('span'); sp.textContent = t + ' ≈'; belt.appendChild(sp); }); };
   seq(); [...belt.children].forEach((c) => belt.appendChild(c.cloneNode(true)));
   const beltAnim = belt.getAnimations ? belt.getAnimations()[0] : null;

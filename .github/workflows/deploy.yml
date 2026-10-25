@@ -1,4 +1,4 @@
-name: Deploy to AWS S3, CloudFront & Lambda
+name: Deploy Producao (S3, CloudFront & Lambda)
 
 on:
   push:
@@ -6,16 +6,13 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: production-deploy
-  cancel-in-progress: false
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  # ============================================================================
-  # JOB 1: DEPLOY DO FRONTEND (RODANDO EM PARALELO COM O BACKEND)
-  # ============================================================================
   deploy-frontend:
-    name: Deploy Frontend (S3)
+    name: Deploy Frontend to S3
     runs-on: ubuntu-latest
 
     steps:
@@ -29,53 +26,48 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      - name: Determine S3 Bucket
-        id: vars
+      - name: Sync Static Files to S3
         run: |
-          BUCKET="${{ secrets.S3_BUCKET_NAME }}"
-          if [ -z "$BUCKET" ]; then
-            BUCKET="acamp2027-prod-073hd7"
+          BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}"
+          if [ -z "$BUCKET_NAME" ]; then
+            echo "S3_BUCKET_NAME secret não configurado, buscando via Terraform outputs..."
+            cd terraform && terraform init -input=false && BUCKET_NAME=$(terraform output -raw s3_bucket_name) && cd ..
           fi
-          echo "bucket_name=$BUCKET" >> $GITHUB_OUTPUT
+          echo "Sincronizando arquivos no bucket s3://$BUCKET_NAME ..."
 
-      - name: Sync Static Assets (Fonts & Images with Long Cache)
-        run: |
-          BUCKET="${{ steps.vars.outputs.bucket_name }}"
-          if [ -d "fontes" ]; then
-            echo "Sincronizando fontes com cache imutavel..."
-            aws s3 sync fontes/ s3://$BUCKET/fontes/ \
-              --cache-control "public, max-age=31536000, immutable"
-          fi
+          # 1. Arquivos HTML sem cache longo
+          aws s3 sync . s3://$BUCKET_NAME \
+            --exclude "*" \
+            --include "*.html" \
+            --include "admin/*.html" \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --content-type "text/html; charset=utf-8"
 
-          if [ -d "fotos" ]; then
-            echo "Sincronizando fotos..."
-            aws s3 sync fotos/ s3://$BUCKET/fotos/ \
-              --cache-control "public, max-age=604800"
-          fi
+          # 2. Arquivos CSS e JS
+          aws s3 sync . s3://$BUCKET_NAME \
+            --exclude "*" \
+            --include "*.css" \
+            --include "*.js" \
+            --include "*.mjs" \
+            --cache-control "public, max-age=31536000, immutable"
 
-      - name: Sync Application Files (HTML, JS, CSS)
-        run: |
-          BUCKET="${{ steps.vars.outputs.bucket_name }}"
-          echo "Sincronizando arquivos do frontend..."
-          aws s3 sync . s3://$BUCKET/ \
-            --delete \
-            --exclude ".git*" \
-            --exclude ".github*" \
-            --exclude "terraform*" \
-            --exclude ".idea*" \
-            --exclude ".agents*" \
-            --exclude ".gemini*" \
-            --exclude "_headers" \
-            --exclude "*.md" \
-            --exclude "fontes/*" \
-            --exclude "fotos/*" \
-            --cache-control "public, max-age=0, must-revalidate"
+          # 3. Imagens e Fontes
+          aws s3 sync . s3://$BUCKET_NAME \
+            --exclude "*" \
+            --include "*.svg" \
+            --include "*.png" \
+            --include "*.webp" \
+            --include "*.woff2" \
+            --include "fotos/*" \
+            --include "fontes/*" \
+            --cache-control "public, max-age=31536000, immutable"
 
-  # ============================================================================
-  # JOB 2: DEPLOY DO BACKEND / TERRAFORM (RODANDO SIMULTANEAMENTE COM O FRONTEND)
-  # ============================================================================
+          # 4. Outros assets (ex: LEIA-ME, headers)
+          aws s3 cp _headers s3://$BUCKET_NAME/_headers --cache-control "public, max-age=0, must-revalidate" || true
+          aws s3 cp favicon.svg s3://$BUCKET_NAME/favicon.svg --cache-control "public, max-age=31536000, immutable" || true
+
   deploy-backend:
-    name: Deploy Backend & Infra (Terraform Apply)
+    name: Terraform Apply (Lambda & CloudFront)
     runs-on: ubuntu-latest
 
     steps:
@@ -100,7 +92,7 @@ jobs:
           TF_VAR_infinitepay_api_key: ${{ secrets.INFINITEPAY_API_KEY }}
           TF_VAR_supabase_service_role_key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TF_VAR_supabase_url: ${{ secrets.SUPABASE_URL || 'https://xhtnhhdpiuqdquacooau.supabase.co' }}
-          TF_VAR_site_url: ${{ secrets.SITE_URL || 'https://acampimersos.com.br' }}
+          TF_VAR_site_url: ${{ secrets.SITE_URL || 'https://acampamentoipi.com.br' }}
         run: |
           echo "Inicializando Terraform com backend remoto S3..."
           terraform init
@@ -124,12 +116,7 @@ jobs:
         run: |
           DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
           if [ -z "$DIST_ID" ]; then
-            DIST_ID="E1DUN67TRI2Z0V"
+            cd terraform && DIST_ID=$(terraform output -raw cloudfront_distribution_id) && cd ..
           fi
-          echo "Criando invalidacao no CloudFront para $DIST_ID..."
-          INVALIDATION_ID=$(aws cloudfront create-invalidation \
-            --distribution-id $DIST_ID \
-            --paths "/*" \
-            --query "Invalidation.Id" \
-            --output text)
-          echo "Invalidacao criada com sucesso! ID: $INVALIDATION_ID"
+          echo "Criando invalidacao global no CloudFront: $DIST_ID"
+          aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"

@@ -48,7 +48,7 @@ p{margin:0 0 1em;max-width:62ch}
 @keyframes sway{from{transform:translateX(-50%) rotate(-2.5deg)}to{transform:translateX(-50%) rotate(2.5deg)}}
 .hero .wrap{position:relative}
 .kicker{font:700 1.05rem var(--f-body);margin-bottom:18px;color:#fff}
-.word{font-size:clamp(2.3rem,13.2vw,10.5rem);color:#fff;letter-spacing:-.04em;line-height:1;margin:0 0 22px;text-shadow:0 8px 40px rgba(3,21,33,.35);display:flex;flex-wrap:nowrap;will-change:transform}
+.word{font-size:clamp(2.3rem,13.2vw,10.5rem);color:#fff;letter-spacing:-.04em;line-height:1;margin:0 0 22px;text-shadow:0 8px 40px rgba(3,21,33,.35);display:flex;flex-wrap:nowrap;will-change:transform;filter:blur(22px);user-select:none;-webkit-user-select:none;pointer-events:none;transition:filter .4s}
 .ch{display:inline-block;transform:translate3d(0,var(--py,0px),0)}
 .ch>i{display:inline-block;font-style:normal;animation:emerge 1.5s cubic-bezier(.2,.85,.2,1) calc(var(--i)*110ms) backwards,bob 4.6s ease-in-out calc(1.6s + var(--i)*.38s) infinite}
 @keyframes emerge{from{opacity:0;filter:blur(16px);transform:translateY(.7em) rotate(6deg) scaleY(1.3)}}
@@ -161,7 +161,7 @@ footer::before{content:'';position:absolute;left:0;right:0;top:79px;bottom:0;bac
 .foot-wave svg{display:block;width:100%;height:80px}
 .foot-kicker{font:700 1.05rem var(--f-body);color:#fff;margin:0 0 14px}
 .foot-logo{width:min(560px,100%);margin:0 0 30px}
-.foot-logo svg{display:block;width:100%;height:auto}
+.foot-logo svg{display:block;width:100%;height:auto;filter:blur(18px);user-select:none;-webkit-user-select:none;pointer-events:none;transition:filter .4s}
 .foot-line{font-weight:700;color:#fff;margin:0 0 12px;max-width:44ch}
 footer .btn.ghost{color:#fff;border-color:rgba(255,255,255,.75)}
 .foot-small{margin:30px 0 0;color:#E6F6F3;line-height:1.6}
@@ -287,3 +287,6 @@ footer a:not(.btn){color:#fff;text-decoration:underline;text-underline-offset:3p
 .cs-parc li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #CFE3E1;font-size:.95rem}
 .cs-parc li:last-child{border-bottom:0}
 @media (max-width:640px){.cs-row{grid-template-columns:1fr}.cs-row .btn{margin-bottom:6px}}
+
+.suspense-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,210,122,0.18);border:1px solid rgba(255,210,122,0.45);color:var(--ray);font:700 .85rem var(--f-body);padding:5px 16px;border-radius:99px;letter-spacing:.03em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,0.3);margin-bottom:14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:pulseSuspense 2.4s infinite ease-in-out}
+@keyframes pulseSuspense{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.03);opacity:1;border-color:rgba(255,210,122,.7)}}

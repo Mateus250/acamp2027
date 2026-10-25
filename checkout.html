@@ -1,11 +1,16 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<script>
+if (window.location.hostname && window.location.hostname.indexOf('acampimersos.com.br') !== -1) {
+  window.location.replace('https://acampamentoipi.com.br' + window.location.pathname + window.location.search + window.location.hash);
+}
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Checkout e Confirmação · IMERSOS 2027</title>
+<title>Checkout e Confirmação · Acampamento 2027</title>
 <meta name="theme-color" content="#0B495B">
-<meta name="description" content="Pagamento seguro da inscrição do Acampamento de Carnaval IMERSOS 2027 via InfinitePay.">
+<meta name="description" content="Pagamento seguro da inscrição do Acampamento de Carnaval 2027 via InfinitePay.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -214,8 +219,11 @@
 
 <header class="chk-header">
   <a href="index.html" class="chk-brand">
-    <img src="favicon.svg" alt="Logo Imersos">
-    <span>IMERSOS 2027</span>
+    <img src="favicon.svg" alt="Logo Acampamento" style="filter: blur(9px); user-select: none; pointer-events: none;">
+    <div style="display:inline-flex; align-items:center; gap:8px;">
+      <span style="filter: blur(11px); user-select: none; pointer-events: none;">IMERSOS 2027</span>
+      <span class="suspense-pill" style="font-size:0.75rem; padding:3px 8px; margin:0;">🔒 Tema em breve</span>
+    </div>
   </a>
 </header>
 
@@ -326,7 +334,7 @@
         <div class="status-badge pago" style="margin-bottom:12px">Pagamento Confirmado</div>
         <h1 class="chk-title" style="color:#FFF">Você está dentro!</h1>
         <p class="chk-sub" style="color:var(--foam);max-width:44ch;margin-inline:auto">
-          O seu pagamento foi recebido e <b>confirmado com sucesso pela InfinitePay</b>. Sua vaga no <b>IMERSOS 2027</b> está garantida!
+          O seu pagamento foi recebido e <b>confirmado com sucesso pela InfinitePay</b>. Sua vaga no <b>Acampamento 2027</b> está garantida!
         </p>
 
         <div class="det-list" style="text-align:left;margin-top:24px">
@@ -632,7 +640,7 @@ function renderSuccess(data) {
   $('#sucCode').textContent = data.codigo;
   $('#sucName').textContent = data.nome;
   $('#sucValue').textContent = brl(data.pago || data.total);
-  const waMsg = encodeURIComponent(`Olá! Meu pagamento da inscrição ${data.codigo} (${data.nome}) do Acampamento IMERSOS 2027 foi aprovado e confirmado!`);
+  const waMsg = encodeURIComponent(`Olá! Meu pagamento da inscrição ${data.codigo} (${data.nome}) do Acampamento 2027 foi aprovado e confirmado!`);
   $('#sucShareWa').href = `https://wa.me/5519992091360?text=${waMsg}`;
 }
 

@@ -13,18 +13,10 @@ export function getEnv() {
     INFINITEPAY_API_KEY = '',
     SUPABASE_URL = 'https://xhtnhhdpiuqdquacooau.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY = '',
-    SITE_URL = 'https://acampimersos.com.br'
+    SITE_URL = 'https://acampamentoipi.com.br'
   } = process.env;
 
   const supabaseReadAuthKey = SUPABASE_SERVICE_ROLE_KEY || DEFAULT_ANON_KEY;
   const supabaseWriteAuthKey = SUPABASE_SERVICE_ROLE_KEY || DEFAULT_ANON_KEY;
 
-  return {
-    INFINITEPAY_API_KEY,
-    SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY,
-    SITE_URL,
-    supabaseReadAuthKey,
-    supabaseWriteAuthKey
-  };
-}
+  return {\n    INFINITEPAY_API_KEY,\n    SUPABASE_URL,\n    SUPABASE_SERVICE_ROLE_KEY,\n    SITE_URL,\n    supabaseReadAuthKey,\n    supabaseWriteAuthKey\n  };\n}\n
