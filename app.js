@@ -458,48 +458,32 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
     if (!validaCPF(cpfNum)) {
       return say('Digite um CPF válido para consultar.', true);
     }
-    if (!SB) return say('Não foi possível consultar agora. Tente de novo em instantes.', true);
 
     btn.disabled = true; say('Consultando sua inscrição…');
     let r = null;
     try {
-      // 1. Consulta no Supabase pelo campo obs com CPF
-      const { data, error } = await SB.from('acampantes').select('*').ilike('obs', '%CPF: ' + cpfNum + '%').order('criado_em', { ascending: false });
-      if (error) console.warn('Aviso consulta Supabase:', error);
-      if (data && data.length) {
-        r = data[0];
+      // 1. Consulta prioritariamente na API segura /api/status (com service_role e checagem em tempo real na InfinitePay)
+      try {
+        const apiRes = await fetch('/api/status?cpf=' + encodeURIComponent(cpfNum));
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          if (apiData && !apiData.not_found && apiData.codigo) {
+            r = apiData;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('Consulta na API de status:', apiErr);
       }
 
-      // 2. Se a inscrição ainda não consta como paga no banco, busca na InfinitePay via /api/status se o pagamento foi feito
-      const parcLocal = (r && r.parcelas) || [];
-      const totalLocal = parcLocal.reduce((t, p) => t + (Number(p.valor) || 0), 0);
-      const pagoLocal = parcLocal.reduce((t, p) => t + Math.min(Number(p.pago) || 0, Number(p.valor) || 0), 0);
-      const stLocal = totalLocal > 0 && pagoLocal >= totalLocal ? 'pago' : 'pendente';
-
-      if (!r || stLocal !== 'pago') {
+      // 2. Se a API backend não respondeu (ex: falha de rede), tenta fallback no Supabase se cliente estiver carregado
+      if (!r && SB) {
         try {
-          say('Consultando status do pagamento com a InfinitePay…');
-          const apiQuery = r && r.codigo
-            ? '/api/status?codigo=' + encodeURIComponent(r.codigo) + '&cpf=' + encodeURIComponent(cpfNum)
-            : '/api/status?cpf=' + encodeURIComponent(cpfNum);
-          const apiRes = await fetch(apiQuery);
-          if (apiRes.ok) {
-            const apiData = await apiRes.json();
-            if (apiData) {
-              if (apiData.status === 'pago' || apiData.confirmado) {
-                if (r) {
-                  r.parcelas = apiData.parcelas || r.parcelas;
-                  r.status = 'pago';
-                } else if (apiData.codigo) {
-                  r = apiData;
-                }
-              } else if (!r && apiData.codigo) {
-                r = apiData;
-              }
-            }
+          const { data, error } = await SB.from('acampantes').select('*').ilike('obs', '%CPF: ' + cpfNum + '%').order('criado_em', { ascending: false });
+          if (!error && data && data.length) {
+            r = data[0];
           }
-        } catch (apiErr) {
-          console.warn('Consulta na API InfinitePay:', apiErr);
+        } catch (sbErr) {
+          console.warn('Fallback Supabase:', sbErr);
         }
       }
     } catch (err) {

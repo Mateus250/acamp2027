@@ -151,6 +151,8 @@ export async function handleStatus(queryStringParameters, env, requestId) {
       codigo: a.codigo,
       nome: a.nome,
       lote: a.lote,
+      opcao_nome: a.opcao_nome || '',
+      opcao_id: a.opcao_id || '',
       camiseta: a.camiseta,
       email: a.email,
       telefone: a.telefone,
