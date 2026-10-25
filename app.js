@@ -9,6 +9,7 @@ const CONFIG = {
   church: 'Igreja Presbiteriana Independente Parque Itajaí',
   churchShort: 'IPI Itajaí',                       // nome curto que aparece no topo da página
   camp: 'Imersos',
+  themeRelease: '2026-11-21T20:00:00-03:00', // Liberação do tema oficial: 21 de Novembro de 2026 às 20h
   edition: 'Acampamento de Carnaval 2027',
   dates: '5 a 9 de fevereiro de 2027',
   campStart: '2027-02-05',                         // primeiro dia do acampamento: usado na contagem regressiva e para saber se a pessoa será menor de idade
@@ -625,4 +626,66 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
+})();
+
+/* ===== CONTAGEM REGRESSIVA E LIBERAÇÃO AUTOMÁTICA DO TEMA ===== */
+(() => {
+  const target = new Date(CONFIG.themeRelease || '2026-11-21T20:00:00-03:00').getTime();
+  const themeBox = $('#themeTimerBox');
+  const footBox = $('#themeTimerFoot');
+  const tcD = $('#tcD'), tcH = $('#tcH'), tcM = $('#tcM'), tcS = $('#tcS');
+  const word = $('#word');
+  const footLogo = $('.foot-logo svg');
+
+  const reveal = () => {
+    if (word) {
+      word.classList.add('revealed');
+      word.setAttribute('aria-label', CONFIG.camp);
+    }
+    if (footLogo) footLogo.classList.add('revealed');
+    if (themeBox) {
+      themeBox.innerHTML = '<span class="suspense-pill revealed">✨ Tema Oficial Revelado</span>';
+    }
+    if (footBox) {
+      footBox.innerHTML = '<span class="suspense-pill revealed">✨ Tema Oficial: ' + CONFIG.camp.toUpperCase() + '</span>';
+    }
+    const belt = $('#belt');
+    if (belt && !belt.dataset.revealed) {
+      belt.dataset.revealed = 'true';
+      belt.querySelectorAll('span').forEach((sp) => {
+        if (sp.textContent.includes('TEMA EM BREVE')) {
+          sp.textContent = CONFIG.camp.toUpperCase() + ' ≈';
+        }
+      });
+    }
+  };
+
+  const tick = () => {
+    const diff = target - Date.now();
+    if (diff <= 0) {
+      reveal();
+      return false;
+    }
+    const s = Math.floor(diff / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+
+    if (tcD) tcD.textContent = String(d).padStart(2, '0');
+    if (tcH) tcH.textContent = String(h).padStart(2, '0');
+    if (tcM) tcM.textContent = String(m).padStart(2, '0');
+    if (tcS) tcS.textContent = String(sec).padStart(2, '0');
+    const tcFoot = $('#tcFoot');
+    if (tcFoot) {
+      tcFoot.textContent = d + 'd ' + String(h).padStart(2, '0') + 'h ' + String(m).padStart(2, '0') + 'm ' + String(sec).padStart(2, '0') + 's';
+    }
+    return true;
+  };
+
+  if (tick()) {
+    const iv = setInterval(() => {
+      if (!tick()) clearInterval(iv);
+    }, 1000);
+  }
 })();
