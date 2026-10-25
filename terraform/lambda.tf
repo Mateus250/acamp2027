@@ -1,7 +1,7 @@
 # Empacotamento do código da Lambda em arquivo zip
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/lambda/index.mjs"
+  source_dir  = "${path.module}/lambda"
   output_path = "${path.module}/lambda_build.zip"
 }
 

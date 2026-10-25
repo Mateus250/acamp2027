@@ -1,0 +1,6 @@
+{
+  "name": "acamp2027-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "API do Acampamento IMERSOS 2027 (InfinitePay Checkout & Webhooks)"
+}
