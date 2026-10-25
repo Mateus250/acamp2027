@@ -114,7 +114,8 @@
   <div class="formcard" id="formcard">
     <form id="f" novalidate>
       <div class="grid2">
-        <label class="f">Nome completo<input type="text" name="name" autocomplete="name" required><div class="err" data-e="name"></div></label>
+        <label class="f" style="grid-column: 1 / -1;">Nome completo<input type="text" name="name" autocomplete="name" required><div class="err" data-e="name"></div></label>
+        <label class="f">Seu CPF<input type="text" name="cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off" required><div class="err" data-e="cpf"></div></label>
         <label class="f">Seu WhatsApp (com DDD)<input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="(19) 99999-9999" required><div class="err" data-e="phone"></div></label>
         <label class="f">Seu e-mail<input type="email" name="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" required><div class="err" data-e="email"></div></label>
         <label class="f">Nascimento (dia/mês/ano)<input type="date" name="birth" autocomplete="bday" required><div class="err" data-e="birth"></div></label>
@@ -168,10 +169,10 @@
 <section id="consulta"><div class="wrap">
   <span class="depth">29 m</span>
   <h2>Consulte sua inscrição</h2>
-  <p class="cs-sub">Digite o código que apareceu no fim da inscrição (e que também vai no seu e-mail) e o seu WhatsApp.</p>
+  <p class="cs-sub">Digite o código da inscrição ou o seu CPF e o seu WhatsApp.</p>
   <form class="cs-card" id="csForm" novalidate>
     <div class="cs-row">
-      <label class="f">Código da inscrição<input type="text" id="csCode" placeholder="IMR-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <label class="f">Código da inscrição ou CPF<input type="text" id="csCode" placeholder="IMR-XXXXXX ou CPF" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
       <label class="f">Seu WhatsApp (com DDD)<input type="tel" id="csTel" inputmode="tel" placeholder="(19) 99999-9999" autocomplete="tel"></label>
       <button class="btn dark" type="submit" id="csBtn">Consultar</button>
     </div>

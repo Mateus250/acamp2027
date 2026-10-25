@@ -1,9 +1,29 @@
 // Integração com a API da InfinitePay
 import { log, logError } from '../utils/logger.mjs';
 
-export async function createCheckoutLink({ apiKey, siteUrl, codigo, nome, valor, requestId }) {
+function formatPhoneNumber(phone) {
+  if (!phone) return null;
+  const digits = String(phone).replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    return `+${digits}`;
+  }
+  if (digits.length === 10 || digits.length === 11) {
+    return `+55${digits}`;
+  }
+  return `+${digits}`;
+}
+
+function formatDocument(doc) {
+  if (!doc) return null;
+  const digits = String(doc).replace(/\D/g, '');
+  return digits.length === 11 ? digits : digits || null;
+}
+
+export async function createCheckoutLink({ apiKey, siteUrl, codigo, nome, valor, customer, requestId }) {
   const redirectUrl = `${siteUrl}/checkout.html?codigo=${encodeURIComponent(codigo)}&status=concluido`;
-  const webhookUrl = `${siteUrl}/api/webhook`;
+  // Webhook com o código da inscrição no path para atualização automática e direta
+  const webhookUrl = `${siteUrl}/api/webhook/${encodeURIComponent(codigo)}`;
   const itemDesc = `Inscrição Imersos 2027 (${(nome || codigo).slice(0, 35)})`;
 
   const payload = {
@@ -22,6 +42,20 @@ export async function createCheckoutLink({ apiKey, siteUrl, codigo, nome, valor,
       events: ['paid', 'settled']
     }
   };
+
+  // Se foram fornecidos dados do cliente (customer), repassa para a InfinitePay
+  if (customer && customer.name) {
+    const custObj = {
+      name: customer.name.slice(0, 100)
+    };
+    if (customer.email) custObj.email = customer.email.trim().toLowerCase();
+    const formattedPhone = formatPhoneNumber(customer.phone_number || customer.phone || customer.telefone);
+    if (formattedPhone) custObj.phone_number = formattedPhone;
+    const formattedDoc = formatDocument(customer.document || customer.cpf || customer.documento);
+    if (formattedDoc) custObj.document = formattedDoc;
+
+    payload.customer = custObj;
+  }
 
   log('INFINITEPAY', `[${requestId}] Enviando para InfinitePay (https://api.checkout.infinitepay.io/links)...`, payload);
   const startTime = Date.now();

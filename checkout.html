@@ -224,12 +224,12 @@
     <!-- Estado de Busca de Código e Valor -->
     <div id="viewFind" class="hide">
       <h1 class="chk-title">Pagar Inscrição</h1>
-      <p class="chk-sub">Digite o código recebido no momento da inscrição para continuar para o pagamento seguro via InfinitePay.</p>
+      <p class="chk-sub">Digite o código ou CPF informado na inscrição para prosseguir para o pagamento seguro via InfinitePay.</p>
       <form id="findForm">
         <div class="find-row">
           <div class="find-col" style="flex:2;min-width:180px">
-            <label style="font-size:0.88rem;color:var(--mute)">Código da Inscrição</label>
-            <input type="text" id="findInput" placeholder="Ex: IMR-1WB6EK" required autocomplete="off" spellcheck="false" style="text-transform:uppercase">
+            <label style="font-size:0.88rem;color:var(--mute)">Código da Inscrição ou CPF</label>
+            <input type="text" id="findInput" placeholder="Ex: IMR-1WB6EK ou 000.000.000-00" required autocomplete="off" spellcheck="false" style="text-transform:uppercase">
           </div>
           <div class="find-col">
             <label style="font-size:0.88rem;color:var(--mute)">Valor a pagar (opcional)</label>
@@ -361,13 +361,15 @@ const SB = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null
 
 const $ = (s) => document.querySelector(s);
 const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(c % 100).padStart(2, '0');
+const digits = (s) => String(s || '').replace(/\D/g, '');
 
 let curAcampante = null;
 let pollTimer = null;
 
-// Analisa parâmetros de URL (?codigo=IMR-XXXX&valor=43000)
+// Analisa parâmetros de URL (?codigo=IMR-XXXX&valor=43000&cpf=00000000000)
 const urlParams = new URLSearchParams(window.location.search);
 let activeCode = (urlParams.get('codigo') || urlParams.get('code') || '').trim().toUpperCase();
+let activeCpf = digits(urlParams.get('cpf') || urlParams.get('documento') || '');
 let rawValor = (urlParams.get('valor') || urlParams.get('val') || '').trim();
 
 function parseCents(val) {
@@ -391,17 +393,66 @@ function fmtValInput(cents) {
 async function init() {
   const centsFromUrl = parseCents(rawValor);
 
-  $('#findForm').onsubmit = (e) => {
+  $('#findForm').onsubmit = async (e) => {
     e.preventDefault();
-    const c = $('#findInput').value.trim().toUpperCase();
+    const inputVal = $('#findInput').value.trim();
     const v = $('#findValInput').value.trim();
-    if (!c) return;
+    if (!inputVal) return;
+
+    const inputDigits = digits(inputVal);
+    // Se o usuário digitou um CPF de 11 dígitos, resolve para o código da inscrição
+    if (inputDigits.length === 11) {
+      showView('viewLoading');
+      try {
+        let codeFound = null;
+        const res = await fetch('/api/status?documento=' + encodeURIComponent(inputDigits));
+        if (res.ok) {
+          const st = await res.json();
+          if (st.codigo) codeFound = st.codigo;
+        }
+        if (!codeFound && SB) {
+          const { data: rows } = await SB.from('acampantes').select('codigo').ilike('obs', '%CPF: ' + inputDigits + '%');
+          if (rows && rows.length) codeFound = rows[0].codigo;
+        }
+        if (codeFound) {
+          const p = new URLSearchParams();
+          p.set('codigo', codeFound);
+          p.set('cpf', inputDigits);
+          const parsedV = parseCents(v);
+          if (parsedV) p.set('valor', parsedV);
+          window.location.search = '?' + p.toString();
+          return;
+        } else {
+          showView('viewFind');
+          $('#findErr').textContent = 'Nenhuma inscrição encontrada com o CPF ' + inputVal + '.';
+          return;
+        }
+      } catch (err) {
+        showView('viewFind');
+        $('#findErr').textContent = 'Erro ao consultar CPF. Tente novamente.';
+        return;
+      }
+    }
+
     const p = new URLSearchParams();
-    p.set('codigo', c);
+    p.set('codigo', inputVal.toUpperCase());
+    if (activeCpf) p.set('cpf', activeCpf);
     const parsedV = parseCents(v);
     if (parsedV) p.set('valor', parsedV);
     window.location.search = '?' + p.toString();
   };
+
+  if (!activeCode && activeCpf) {
+    // Acessou apenas com CPF: tenta resolver o código
+    showView('viewLoading');
+    try {
+      const res = await fetch('/api/status?documento=' + encodeURIComponent(activeCpf));
+      if (res.ok) {
+        const st = await res.json();
+        if (st.codigo) activeCode = st.codigo;
+      }
+    } catch (e) {}
+  }
 
   if (!activeCode) {
     showView('viewFind');
@@ -448,6 +499,8 @@ async function carregarInscricao(codigo, customCents) {
           nome: a.nome,
           lote: a.lote,
           camiseta: a.camiseta,
+          email: a.email,
+          telefone: a.telefone,
           total,
           pago,
           status: (total > 0 && pago >= total) ? 'pago' : 'pendente',
@@ -462,6 +515,12 @@ async function carregarInscricao(codigo, customCents) {
       $('#findInput').value = codigo;
       $('#findErr').textContent = 'Inscrição ' + codigo + ' não encontrada. Confira o código e tente novamente.';
       return;
+    }
+
+    // Se o CPF não veio na URL, tenta extrair de obs do acampante
+    if (!activeCpf && curAcampante && curAcampante.obs) {
+      const match = curAcampante.obs.match(/CPF:\s*(\d{11})/i);
+      if (match) activeCpf = match[1];
     }
 
     // Se já está pago e confirmado pela InfinitePay
@@ -521,6 +580,8 @@ function renderCheckout(data, customCents) {
     btn.innerHTML = 'Gerando link InfinitePay...';
     if (errEl) errEl.classList.add('hide');
 
+    const docToSend = activeCpf || (curAcampante?.obs && curAcampante.obs.match(/CPF:\s*(\d{11})/i)?.[1]) || null;
+
     try {
       const resp = await fetch('/api/checkout', {
         method: 'POST',
@@ -528,7 +589,10 @@ function renderCheckout(data, customCents) {
         body: JSON.stringify({
           codigo: data.codigo,
           nome: data.nome,
-          valor: aPagar
+          valor: aPagar,
+          email: data.email || curAcampante?.email,
+          telefone: data.telefone || curAcampante?.telefone,
+          documento: docToSend
         })
       });
 
@@ -538,7 +602,7 @@ function renderCheckout(data, customCents) {
         throw new Error(errorMsg);
       }
 
-      // Redireciona imediatamente para o checkout da InfinitePay
+      // Redireciona imediatamente para o checkout da InfinitePay com dados pré-preenchidos
       window.location.href = resData.url;
     } catch (e) {
       console.error(e);

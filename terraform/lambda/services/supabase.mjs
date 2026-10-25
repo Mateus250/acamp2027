@@ -45,6 +45,30 @@ export async function findAcampanteByCodigo({ supabaseUrl, authKey, codigo, requ
   return Array.isArray(list) && list.length ? list[0] : null;
 }
 
+export async function findAcampanteByDocumento({ supabaseUrl, authKey, documento, requestId }) {
+  const digits = String(documento).replace(/\D/g, '');
+  if (!digits) return null;
+
+  // Busca em obs contendo CPF: <digitos>
+  const searchUrl = `${supabaseUrl}/rest/v1/acampantes?obs=ilike.*CPF:%20*${encodeURIComponent(digits)}*&select=*`;
+  log('SUPABASE', `[${requestId}] Buscando acampante por documento/CPF: ${searchUrl}`);
+
+  const searchRes = await fetch(searchUrl, {
+    headers: {
+      apikey: authKey,
+      Authorization: `Bearer ${authKey}`
+    }
+  });
+
+  if (!searchRes.ok) {
+    logError('SUPABASE', `[${requestId}] Falha ao buscar acampante por documento: HTTP ${searchRes.status}`, await searchRes.text());
+    return null;
+  }
+
+  const list = await searchRes.json();
+  return Array.isArray(list) && list.length ? list[0] : null;
+}
+
 export async function updateAcampante({ supabaseUrl, authKey, codigo, updateData, requestId }) {
   const updateUrl = `${supabaseUrl}/rest/v1/acampantes?codigo=eq.${encodeURIComponent(codigo)}`;
   log('SUPABASE', `[${requestId}] Atualizando acampante ${codigo}:`, updateData);

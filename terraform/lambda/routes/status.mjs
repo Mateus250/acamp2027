@@ -1,29 +1,42 @@
-// Rota GET /status (ou /api/status?codigo=IMR-XXXX) -> Consulta status da inscrição
+// Rota GET /status (ou /api/status?codigo=IMR-XXXX ou ?documento=123...) -> Consulta status da inscrição
 import { json } from '../utils/response.mjs';
 import { log, logError } from '../utils/logger.mjs';
 import { todayISO } from '../utils/parser.mjs';
-import { findAcampanteByCodigo, updateAcampante } from '../services/supabase.mjs';
+import { findAcampanteByCodigo, findAcampanteByDocumento, updateAcampante } from '../services/supabase.mjs';
 import { checkPaymentDirect } from '../services/infinitepay.mjs';
 
 export async function handleStatus(queryStringParameters, env, requestId) {
   const codigo = queryStringParameters?.codigo;
-  log('STATUS', `[${requestId}] Consulta de status solicitada para codigo: '${codigo}'`);
+  const documento = queryStringParameters?.documento || queryStringParameters?.cpf;
+  log('STATUS', `[${requestId}] Consulta de status solicitada: codigo='${codigo || ''}', documento='${documento ? '***' : ''}'`);
 
-  if (!codigo) {
-    logError('STATUS', `[${requestId}] Parâmetro 'codigo' não informado`);
-    return json(400, { error: "Parâmetro 'codigo' é obrigatório na URL (ex: /api/status?codigo=IMR-XXXX)" });
+  if (!codigo && !documento) {
+    logError('STATUS', `[${requestId}] Nenhum parâmetro de busca ('codigo' ou 'documento') informado`);
+    return json(400, { error: "Informe o parâmetro 'codigo' ou 'documento' na URL (ex: /api/status?codigo=IMR-XXXX ou ?documento=000.000.000-00)" });
   }
 
   try {
-    const a = await findAcampanteByCodigo({
-      supabaseUrl: env.SUPABASE_URL,
-      authKey: env.supabaseReadAuthKey,
-      codigo,
-      requestId
-    });
+    let a = null;
+    if (codigo) {
+      a = await findAcampanteByCodigo({
+        supabaseUrl: env.SUPABASE_URL,
+        authKey: env.supabaseReadAuthKey,
+        codigo,
+        requestId
+      });
+    }
+
+    if (!a && documento) {
+      a = await findAcampanteByDocumento({
+        supabaseUrl: env.SUPABASE_URL,
+        authKey: env.supabaseReadAuthKey,
+        documento,
+        requestId
+      });
+    }
 
     if (!a) {
-      logError('STATUS', `[${requestId}] Inscrição '${codigo}' não foi encontrada no banco`);
+      logError('STATUS', `[${requestId}] Inscrição não foi encontrada no banco`);
       return json(404, { error: 'Inscrição não encontrada' });
     }
 
@@ -34,14 +47,14 @@ export async function handleStatus(queryStringParameters, env, requestId) {
     if (total > 0 && pago >= total) status = 'pago';
     else if (pago > 0) status = 'parcial';
 
-    log('STATUS', `[${requestId}] Encontrado: Nome='${a.nome}', Total=${total}, Pago=${pago}, Status='${status}'`);
+    log('STATUS', `[${requestId}] Encontrado: Código='${a.codigo}', Nome='${a.nome}', Total=${total}, Pago=${pago}, Status='${status}'`);
 
     // Fallback: se ainda estiver pendente, pode checar na InfinitePay se temos API Key
-    if (status !== 'pago' && env.INFINITEPAY_API_KEY) {
+    if (status !== 'pago' && env.INFINITEPAY_API_KEY && a.codigo) {
       log('STATUS', `[${requestId}] Status pendente: checando fallback na InfinitePay (/payment_check)...`);
       const checkData = await checkPaymentDirect({
         apiKey: env.INFINITEPAY_API_KEY,
-        orderNsu: codigo,
+        orderNsu: a.codigo,
         requestId
       });
 
@@ -54,7 +67,7 @@ export async function handleStatus(queryStringParameters, env, requestId) {
           await updateAcampante({
             supabaseUrl: env.SUPABASE_URL,
             authKey: env.supabaseWriteAuthKey,
-            codigo,
+            codigo: a.codigo,
             updateData: { parcelas },
             requestId
           });
@@ -67,6 +80,8 @@ export async function handleStatus(queryStringParameters, env, requestId) {
       nome: a.nome,
       lote: a.lote,
       camiseta: a.camiseta,
+      email: a.email,
+      telefone: a.telefone,
       total,
       pago,
       status,

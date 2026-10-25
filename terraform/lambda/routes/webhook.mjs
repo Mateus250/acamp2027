@@ -1,27 +1,27 @@
-// Rota POST /webhook (ou /api/webhook) -> Notificações de pagamento da InfinitePay
+// Rota POST /webhook (ou /api/webhook, /api/webhook/<codigo>) -> Notificações de pagamento da InfinitePay
 import { json } from '../utils/response.mjs';
 import { log, logError } from '../utils/logger.mjs';
 import { todayISO } from '../utils/parser.mjs';
 import { findAcampanteByCodigo, updateAcampante } from '../services/supabase.mjs';
 
-export async function handleWebhook(body, env, requestId) {
-  log('WEBHOOK', `[${requestId}] === WEBHOOK RECEBIDO ===`, body);
+export async function handleWebhook(body, env, requestId, pathCodigo = null) {
+  log('WEBHOOK', `[${requestId}] === WEBHOOK RECEBIDO ===`, { pathCodigo, body });
   try {
     const eventType = body.event || body.type;
-    const orderNsu = body.order_nsu || body.orderId || body.reference;
+    const orderNsu = pathCodigo || body.order_nsu || body.orderId || body.reference;
     const amountPaid = body.paid_amount || body.amount;
 
-    log('WEBHOOK', `[${requestId}] Extraído: event=${eventType}, order_nsu=${orderNsu}, amount=${amountPaid}`);
+    log('WEBHOOK', `[${requestId}] Extraído: event=${eventType}, order_nsu=${orderNsu} (fonte: ${pathCodigo ? 'path' : 'payload'}), amount=${amountPaid}`);
 
     // Só confirma a inscrição se for status de pagamento aprovado
     if (eventType !== 'paid' && eventType !== 'settled') {
       log('WEBHOOK', `[${requestId}] Evento ignorado (não é 'paid' ou 'settled'): ${eventType} para pedido ${orderNsu}`);
-      return json(200, { ok: true, ignored: true, event: eventType });
+      return json(200, { ok: true, ignored: true, event: eventType, order_nsu: orderNsu });
     }
 
     if (!orderNsu) {
-      logError('WEBHOOK', `[${requestId}] Payload do webhook não contém order_nsu/código`);
-      return json(400, { error: 'order_nsu ausente no payload do webhook' });
+      logError('WEBHOOK', `[${requestId}] Webhook sem order_nsu/código no path ou no payload`);
+      return json(400, { error: 'order_nsu ausente no path e no payload do webhook' });
     }
 
     const acampante = await findAcampanteByCodigo({
@@ -33,7 +33,7 @@ export async function handleWebhook(body, env, requestId) {
 
     if (!acampante) {
       logError('WEBHOOK', `[${requestId}] Nenhum acampante encontrado com código '${orderNsu}' no Supabase`);
-      return json(200, { ok: true, warning: 'Acampante não localizado no banco' });
+      return json(200, { ok: true, warning: 'Acampante não localizado no banco', order_nsu: orderNsu });
     }
 
     log('WEBHOOK', `[${requestId}] Acampante localizado: Nome='${acampante.nome}', ID='${acampante.id}'`);

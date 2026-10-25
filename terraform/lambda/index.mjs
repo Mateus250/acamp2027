@@ -48,15 +48,16 @@ export const handler = async (event) => {
   }
 
   // -------------------------------------------------------------------------
-  // ROTA 3: POST /webhook (ou /api/webhook) -> Recebe notificação da InfinitePay
+  // ROTA 3: POST /webhook ou /webhook/:codigo -> Recebe notificação da InfinitePay
   // -------------------------------------------------------------------------
-  if (method === 'POST' && path === '/webhook') {
+  if (method === 'POST' && (path === '/webhook' || path.startsWith('/webhook/'))) {
     const body = parseBody(event);
-    return await handleWebhook(body, env, requestId);
+    const pathCodigo = path.startsWith('/webhook/') ? decodeURIComponent(path.slice('/webhook/'.length).trim()) : null;
+    return await handleWebhook(body, env, requestId, pathCodigo);
   }
 
   // -------------------------------------------------------------------------
-  // ROTA 4: GET /status (ou /api/status?codigo=IMR-XXXX) -> Status da inscrição
+  // ROTA 4: GET /status (ou /api/status?codigo=IMR-XXXX ou ?documento=123...)
   // -------------------------------------------------------------------------
   if (method === 'GET' && path === '/status') {
     return await handleStatus(event.queryStringParameters, env, requestId);
@@ -72,7 +73,9 @@ export const handler = async (event) => {
       'GET /api/inscricoes',
       'POST /api/checkout',
       'POST /api/webhook',
-      'GET /api/status?codigo=IMR-XXXX'
+      'POST /api/webhook/:codigo',
+      'GET /api/status?codigo=IMR-XXXX',
+      'GET /api/status?documento=00000000000'
     ]
   });
 };
