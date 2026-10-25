@@ -199,16 +199,16 @@ export const handler = async (event) => {
       const redirectUrl = `${SITE_URL}/checkout.html?codigo=${encodeURIComponent(codigo)}&status=concluido`;
       const webhookUrl = `${SITE_URL}/api/webhook`;
 
+      const itemDesc = `Inscrição Imersos 2027 (${(nome || codigo).slice(0, 35)})`;
       const payload = {
         order_nsu: codigo,
         redirect_url: redirectUrl,
-        single_payment: true,
-        payment_methods_enabled: ['pix', 'credit_card'],
+        webhook_url: webhookUrl,
         items: [
           {
-            name: `Inscrição Imersos 2027 (${(nome || codigo).slice(0, 35)})`,
+            description: itemDesc,
             quantity: 1,
-            price: Number(valor)
+            price: Math.round(Number(valor))
           }
         ],
         webhook: {

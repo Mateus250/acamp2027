@@ -189,23 +189,24 @@
   }
   .divider::before { margin-right: 14px; }
   .divider::after { margin-left: 14px; }
-  .find-box {
+  .find-row {
     display: flex;
-    gap: 10px;
-    margin-top: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
   }
-  .find-box input {
+  .find-col {
     flex: 1;
+    min-width: 160px;
+  }
+  .find-col input {
+    width: 100%;
     background: rgba(2, 18, 29, 0.8);
     border: 1px solid rgba(230, 246, 243, 0.2);
     border-radius: 10px;
     padding: 12px 16px;
     color: #FFF;
     font-size: 1rem;
-    text-transform: uppercase;
-  }
-  .find-box button {
-    padding: 0 20px;
+    margin-top: 6px;
   }
 </style>
 </head>
@@ -220,18 +221,24 @@
 
 <main class="wrap">
   <div class="chk-card" id="cardContainer">
-    <!-- Estado de Busca de Código (se não veio na URL) -->
+    <!-- Estado de Busca de Código e Valor -->
     <div id="viewFind" class="hide">
       <h1 class="chk-title">Pagar Inscrição</h1>
-      <p class="chk-sub">Digite o código recebido no momento da inscrição para continuar para o pagamento seguro.</p>
+      <p class="chk-sub">Digite o código recebido no momento da inscrição para continuar para o pagamento seguro via InfinitePay.</p>
       <form id="findForm">
-        <label style="font-size:0.9rem;color:var(--mute)">Código da Inscrição</label>
-        <div class="find-box">
-          <input type="text" id="findInput" placeholder="IMR-XXXXXX" required autocomplete="off" spellcheck="false">
-          <button type="submit" class="btn">Buscar</button>
+        <div class="find-row">
+          <div class="find-col" style="flex:2;min-width:180px">
+            <label style="font-size:0.88rem;color:var(--mute)">Código da Inscrição</label>
+            <input type="text" id="findInput" placeholder="Ex: IMR-1WB6EK" required autocomplete="off" spellcheck="false" style="text-transform:uppercase">
+          </div>
+          <div class="find-col">
+            <label style="font-size:0.88rem;color:var(--mute)">Valor a pagar (opcional)</label>
+            <input type="text" id="findValInput" placeholder="Ex: 430,00" autocomplete="off">
+          </div>
         </div>
+        <button type="submit" class="btn" style="width:100%;margin-top:18px;min-height:50px;font-weight:700">Buscar e Gerar Checkout</button>
       </form>
-      <p id="findErr" class="err" style="margin-top:12px"></p>
+      <p id="findErr" class="err" style="margin-top:14px"></p>
     </div>
 
     <!-- Estado de Carregamento -->
@@ -246,6 +253,7 @@
         <div>
           <span style="font-size:0.85rem;color:var(--mute);text-transform:uppercase;letter-spacing:0.04em">Inscrição</span>
           <h1 class="chk-title" id="chkCode" style="margin-top:2px">IMR-0000</h1>
+          <a href="javascript:void(0)" id="btnChangeCode" style="color:var(--ray);font-size:0.85rem;text-decoration:underline;cursor:pointer">Buscar outro código ou valor</a>
         </div>
         <div id="statusBadgeContainer">
           <span class="status-badge pendente">Aguardando Pagamento</span>
@@ -270,6 +278,9 @@
           <span class="det-val" id="chkValue">R$ 0,00</span>
         </div>
       </div>
+
+      <!-- Alerta de Erro caso a InfinitePay falhe -->
+      <div id="chkErrorMsg" class="err hide" style="margin-bottom:16px;text-align:center;padding:10px;background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.3);border-radius:10px"></div>
 
       <!-- Botão Oficial de Checkout da InfinitePay -->
       <div>
@@ -298,7 +309,7 @@
             <span style="font-size:0.9rem;color:var(--mute)">Chave PIX:</span>
             <b id="pixKeyVal" style="color:var(--ray)">cantinaipi@gmail.com</b>
             <div style="margin-top:10px">
-              <button type="button" class="btn small" id="btnCopyPix">Copiar Código Pix</button>
+              <button type="button" class="btn small" id="btnCopyPix">Copiar Chave Pix</button>
             </div>
           </div>
         </div>
@@ -354,24 +365,55 @@ const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+
 let curAcampante = null;
 let pollTimer = null;
 
-// Obtém o código dos parâmetros de busca (?codigo=IMR-XXXX)
+// Analisa parâmetros de URL (?codigo=IMR-XXXX&valor=43000)
 const urlParams = new URLSearchParams(window.location.search);
-let activeCode = (urlParams.get('codigo') || '').trim().toUpperCase();
+let activeCode = (urlParams.get('codigo') || urlParams.get('code') || '').trim().toUpperCase();
+let rawValor = (urlParams.get('valor') || urlParams.get('val') || '').trim();
+
+function parseCents(val) {
+  if (!val) return null;
+  const s = String(val).trim().replace('R$', '').trim();
+  if (s.includes(',') || s.includes('.')) {
+    const num = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+    return isNaN(num) ? null : Math.round(num * 100);
+  }
+  const n = parseInt(s, 10);
+  if (isNaN(n) || n <= 0) return null;
+  if (n < 1000) return n * 100; // se passou em reais (ex: 430 -> 43000)
+  return n;
+}
+
+function fmtValInput(cents) {
+  if (!cents) return '';
+  return (cents / 100).toFixed(2).replace('.', ',');
+}
 
 async function init() {
+  const centsFromUrl = parseCents(rawValor);
+
+  $('#findForm').onsubmit = (e) => {
+    e.preventDefault();
+    const c = $('#findInput').value.trim().toUpperCase();
+    const v = $('#findValInput').value.trim();
+    if (!c) return;
+    const p = new URLSearchParams();
+    p.set('codigo', c);
+    const parsedV = parseCents(v);
+    if (parsedV) p.set('valor', parsedV);
+    window.location.search = '?' + p.toString();
+  };
+
   if (!activeCode) {
     showView('viewFind');
-    $('#findForm').onsubmit = (e) => {
-      e.preventDefault();
-      const c = $('#findInput').value.trim().toUpperCase();
-      if (!c) return;
-      window.location.search = '?codigo=' + encodeURIComponent(c);
-    };
     return;
   }
 
+  // Preenche inputs da busca com os valores atuais da URL
+  $('#findInput').value = activeCode;
+  if (centsFromUrl) $('#findValInput').value = fmtValInput(centsFromUrl);
+
   showView('viewLoading');
-  await carregarInscricao(activeCode);
+  await carregarInscricao(activeCode, centsFromUrl);
 }
 
 function showView(viewId) {
@@ -381,9 +423,8 @@ function showView(viewId) {
   });
 }
 
-async function carregarInscricao(codigo) {
+async function carregarInscricao(codigo, customCents) {
   try {
-    // 1. Tenta carregar os dados atualizados via API backend ou Supabase
     let data = null;
 
     try {
@@ -392,7 +433,7 @@ async function carregarInscricao(codigo) {
         data = await res.json();
       }
     } catch (e) {
-      console.warn('API /api/status não disponível localmente, tentando Supabase direto:', e);
+      console.warn('API /api/status não respondeu, tentando Supabase direto:', e);
     }
 
     if (!data && SB) {
@@ -400,8 +441,8 @@ async function carregarInscricao(codigo) {
       if (rows && rows.length) {
         const a = rows[0];
         const parcelas = Array.isArray(a.parcelas) ? a.parcelas : [];
-        const total = parcelas.reduce((s, p) => s + (p.valor || 0), 0);
-        const pago = parcelas.reduce((s, p) => s + (p.pago || 0), 0);
+        const total = parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+        const pago = parcelas.reduce((s, p) => s + (Number(p.pago) || 0), 0);
         data = {
           codigo: a.codigo,
           nome: a.nome,
@@ -418,7 +459,8 @@ async function carregarInscricao(codigo) {
 
     if (!data) {
       showView('viewFind');
-      $('#findErr').textContent = 'Inscrição não encontrada. Confira o código e tente novamente.';
+      $('#findInput').value = codigo;
+      $('#findErr').textContent = 'Inscrição ' + codigo + ' não encontrada. Confira o código e tente novamente.';
       return;
     }
 
@@ -430,9 +472,9 @@ async function carregarInscricao(codigo) {
     }
 
     // Renderiza tela de pagamento em aberto
-    renderCheckout(data);
+    renderCheckout(data, customCents);
 
-    // Inicia verificação automática periódica (webhook confirmação em segundo plano)
+    // Inicia verificação automática periódica do webhook
     if (!pollTimer) {
       pollTimer = setInterval(() => checkStatusSilently(codigo), 3500);
     }
@@ -444,21 +486,40 @@ async function carregarInscricao(codigo) {
   }
 }
 
-function renderCheckout(data) {
+function renderCheckout(data, customCents) {
   showView('viewCheckout');
   $('#chkCode').textContent = data.codigo;
   $('#chkName').textContent = data.nome;
   $('#chkLot').textContent = data.lote || 'Geral';
   $('#chkShirt').textContent = data.camiseta || 'Padrão';
-  const aPagar = Math.max(0, data.total - (data.pago || 0));
+
+  // Configura link para alterar código / busca
+  const btnChange = $('#btnChangeCode');
+  if (btnChange) {
+    btnChange.onclick = () => {
+      showView('viewFind');
+      $('#findInput').value = data.codigo;
+      if (aPagar) $('#findValInput').value = fmtValInput(aPagar);
+      $('#findInput').focus();
+    };
+  }
+
+  const errEl = $('#chkErrorMsg');
+  if (errEl) errEl.classList.add('hide');
+
+  // Determina o valor a pagar: prioriza o valor do parâmetro da URL se passado,
+  // senão pega o saldo pendente do banco, ou o total da inscrição
+  const bancoDevido = Math.max(0, (data.total || 0) - (data.pago || 0));
+  const aPagar = customCents || bancoDevido || (data.total || 43000);
   $('#chkValue').textContent = brl(aPagar);
 
-  // Configura ação do botão de pagamento InfinitePay
+  // Configura ação do botão oficial da InfinitePay
   $('#btnPayInfinite').onclick = async () => {
     const btn = $('#btnPayInfinite');
     btn.disabled = true;
     const oldTxt = btn.innerHTML;
-    btn.innerHTML = 'Gerando pagamento seguro...';
+    btn.innerHTML = 'Gerando link InfinitePay...';
+    if (errEl) errEl.classList.add('hide');
 
     try {
       const resp = await fetch('/api/checkout', {
@@ -471,21 +532,28 @@ function renderCheckout(data) {
         })
       });
 
-      const resData = await resp.json();
+      const resData = await resp.json().catch(() => ({}));
       if (!resp.ok || !resData.url) {
-        throw new Error(resData.error || 'Não foi possível gerar o link de pagamento da InfinitePay.');
+        const errorMsg = resData.error || (resData.details && resData.details.message) || 'Não foi possível gerar o link de pagamento na InfinitePay.';
+        throw new Error(errorMsg);
       }
 
-      // Redireciona o usuário para o checkout oficial da InfinitePay
+      // Redireciona imediatamente para o checkout da InfinitePay
       window.location.href = resData.url;
     } catch (e) {
-      alert(e.message);
+      console.error(e);
+      if (errEl) {
+        errEl.textContent = 'Aviso: ' + e.message;
+        errEl.classList.remove('hide');
+      } else {
+        alert(e.message);
+      }
       btn.disabled = false;
       btn.innerHTML = oldTxt;
     }
   };
 
-  // Pix Direto
+  // Pix Direto Alternativo
   $('#btnShowPix').onclick = () => {
     $('#pixContainer').classList.toggle('hide');
     renderPixQr(aPagar, data.codigo);
@@ -511,14 +579,13 @@ async function checkStatusSilently(codigo) {
       renderSuccess(data);
     }
   } catch (e) {
-    // silencioso para não poluir
+    // silencioso para não poluir console
   }
 }
 
 function renderPixQr(valorCentavos, codigo) {
   const qrBox = $('#qrBox');
   if (qrBox.children.length > 0) return;
-  // Chave Pix padrão da igreja
   const pixStr = `00020126580014br.gov.bcb.pix0119cantinaipi@gmail.com520400005303986540${(valorCentavos/100).toFixed(2)}5802BR5916IPI PARQUE ITAJAI6008CAMPINAS62070503***6304`;
   if (window.qrcode) {
     try {
@@ -528,7 +595,7 @@ function renderPixQr(valorCentavos, codigo) {
       const n = q.getModuleCount();
       let d = '';
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + c + ' ' + r + 'h1v1h-1z';
-      qrBox.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + ' ' + (n + 4) + '" width="180" height="180" shape-rendering="crispEdges"><rect x="-2" y="-2" width="' + (n + 4) + '" height="' + (n + 4) + '" fill="#fff"/><path d="' + d + '" fill="#06212E"/></svg>';
+      qrBox.innerHTML = '<svg viewBox=\"-2 -2 ' + (n + 4) + ' ' + (n + 4) + '\" width=\"180\" height=\"180\" shape-rendering=\"crispEdges\"><rect x=\"-2\" y=\"-2\" width=\"' + (n + 4) + '\" height=\"' + (n + 4) + '\" fill=\"#fff\"/><path d=\"' + d + '\" fill=\"#06212E\"/></svg>';
     } catch (e) {}
   }
   $('#btnCopyPix').onclick = async () => {
