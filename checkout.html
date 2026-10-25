@@ -1,689 +1,292 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script>
-if (window.location.hostname && window.location.hostname.indexOf('acampimersos.com.br') !== -1) {
-  window.location.replace('https://acampamentoipi.com.br' + window.location.pathname + window.location.search + window.location.hash);
-}
-</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Checkout e Confirmação · Acampamento 2027</title>
+<title>Pagamento da inscrição · Acampamento de Carnaval 2027</title>
+<meta name="description" content="Pagamento da inscrição do Acampamento de Carnaval 2027 da IPI Itajaí, por PIX ou cartão, pela InfinitePay.">
 <meta name="theme-color" content="#0B495B">
-<meta name="description" content="Pagamento seguro da inscrição do Acampamento de Carnaval 2027 via InfinitePay.">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex">
 <link rel="preload" href="fontes/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fontes/figtree-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="estilo.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="qrcode.min.js"></script>
 <style>
-  body {
-    background: radial-gradient(circle at 50% 20%, #0B495B 0%, #06283A 55%, #02121D 100%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  .chk-header {
-    padding: 30px 20px 20px;
-    text-align: center;
-  }
-  .chk-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    color: var(--foam);
-  }
-  .chk-brand svg, .chk-brand img {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-  }
-  .chk-brand span {
-    font-family: var(--f-head);
-    font-weight: 800;
-    font-size: 1.3rem;
-    letter-spacing: -.02em;
-  }
-  .chk-card {
-    background: rgba(6, 33, 46, 0.85);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(230, 246, 243, 0.15);
-    border-radius: 20px;
-    padding: 32px 28px;
-    margin: 20px auto 40px;
-    max-width: 580px;
-    width: calc(100% - 32px);
-    box-shadow: 0 16px 40px rgba(0,0,0,0.45);
-  }
-  .chk-title {
-    font-size: 1.6rem;
-    margin-bottom: 8px;
-    color: #FFF;
-  }
-  .chk-sub {
-    color: var(--mute);
-    font-size: 0.95rem;
-    margin-bottom: 24px;
-  }
-  .det-list {
-    background: rgba(2, 18, 29, 0.6);
-    border-radius: 14px;
-    padding: 18px 20px;
-    margin-bottom: 24px;
-    border: 1px solid rgba(230, 246, 243, 0.08);
-  }
-  .det-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    font-size: 0.95rem;
-    border-bottom: 1px solid rgba(230, 246, 243, 0.06);
-  }
-  .det-row:last-child {
-    border-bottom: 0;
-    padding-top: 12px;
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--ray);
-  }
-  .det-label {
-    color: var(--mute);
-  }
-  .det-val {
-    font-weight: 600;
-    text-align: right;
-  }
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 99px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .status-badge.pendente {
-    background: rgba(255, 210, 122, 0.2);
-    color: var(--ray);
-    border: 1px solid rgba(255, 210, 122, 0.4);
-  }
-  .status-badge.pago {
-    background: rgba(46, 204, 113, 0.2);
-    color: #2ECC71;
-    border: 1px solid rgba(46, 204, 113, 0.4);
-  }
-  .btn-infinite {
-    background: linear-gradient(135deg, #00D09C 0%, #009975 100%);
-    color: #03211A;
-    font-weight: 800;
-    font-size: 1.15rem;
-    width: 100%;
-    min-height: 56px;
-    border-radius: 12px;
-    border: 0;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0, 208, 156, 0.3);
-    transition: transform 0.2s, box-shadow 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
-    text-decoration: none;
-  }
-  .btn-infinite:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(0, 208, 156, 0.45);
-  }
-  .btn-infinite:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  .poll-notice {
-    font-size: 0.88rem;
-    color: var(--mute);
-    text-align: center;
-    margin-top: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .pulse-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--ray);
-    animation: blink 1.6s infinite ease-in-out;
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 0.3; transform: scale(0.9); }
-    50% { opacity: 1; transform: scale(1.2); }
-  }
-  .sec-paid {
-    text-align: center;
-    padding: 20px 0;
-  }
-  .sec-paid svg.check-icon {
-    width: 68px;
-    height: 68px;
-    color: #2ECC71;
-    margin-bottom: 16px;
-  }
-  .divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 24px 0;
-    color: var(--mute);
-    font-size: 0.85rem;
-  }
-  .divider::before, .divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid rgba(230, 246, 243, 0.12);
-  }
-  .divider::before { margin-right: 14px; }
-  .divider::after { margin-left: 14px; }
-  .find-row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .find-col {
-    flex: 1;
-    min-width: 160px;
-  }
-  .find-col input {
-    width: 100%;
-    background: rgba(2, 18, 29, 0.8);
-    border: 1px solid rgba(230, 246, 243, 0.2);
-    border-radius: 10px;
-    padding: 12px 16px;
-    color: #FFF;
-    font-size: 1rem;
-    margin-top: 6px;
-  }
+/* ===== Checkout · mesma linguagem visual da landing ===== */
+html{background:#02121D}
+body{min-height:100vh;background:#02121D linear-gradient(180deg,#1B7889 0%,#136776 14%,#0B495B 38%,#08364A 62%,#052536 82%,#02121D 100%) no-repeat;background-size:100% 100%;color:var(--foam)}
+.ck-card section{padding:0}
+.ck{position:relative;z-index:1;width:min(100% - 32px,560px);margin:0 auto;padding:max(28px,env(safe-area-inset-top,0px)) 0 max(48px,env(safe-area-inset-bottom,0px))}
+/* luz e bolhas leves, só decoração */
+.ck-luz{position:fixed;inset:0 0 auto 0;height:70vh;pointer-events:none;z-index:0;opacity:.45;background:
+ linear-gradient(100deg,transparent 30%,rgba(255,246,216,.35) 34%,transparent 40%),
+ linear-gradient(80deg,transparent 52%,rgba(255,246,216,.28) 56%,transparent 62%),
+ linear-gradient(95deg,transparent 70%,rgba(255,246,216,.22) 73%,transparent 79%);
+ -webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent)}
+.ck-bolhas{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.ck-bolhas i{position:absolute;bottom:-30px;border:1.5px solid rgba(230,246,243,.45);border-radius:50%;animation:sobe linear infinite}
+@keyframes sobe{to{transform:translateY(-115vh)}}
+/* cabeçalho: o "cartão" do e-mail, com o nome do acampamento no lugar do logo */
+.ck-head{background:#0B495B;border-radius:22px;padding:22px 24px 20px;box-shadow:0 14px 40px rgba(2,18,29,.35);position:relative;overflow:hidden}
+.ck-head::after{content:'';position:absolute;left:-10%;right:-10%;bottom:-38px;height:70px;border-radius:50%;background:rgba(27,120,137,.45)}
+.ck-head a{color:inherit;text-decoration:none;display:block;position:relative;z-index:1}
+.ck-igreja{font:700 .9rem var(--f-body);color:#E6F6F3;opacity:.9}
+.ck-nome{font:800 clamp(1.45rem,6vw,2rem)/1.08 var(--f-head);letter-spacing:-.03em;color:#fff;margin-top:6px}
+/* passos */
+.ck-passos{display:flex;gap:6px;list-style:none;margin:20px 0 14px;padding:0;font-size:.85rem;font-weight:700;color:var(--mute)}
+.ck-passos li{flex:1;display:flex;flex-direction:column;gap:6px}
+.ck-passos li::before{content:'';height:5px;border-radius:9px;background:rgba(230,246,243,.2)}
+.ck-passos li.feito{color:var(--foam)}.ck-passos li.feito::before{background:var(--ray)}
+.ck-passos li.agora{color:#fff}.ck-passos li.agora::before{background:linear-gradient(90deg,var(--ray),rgba(255,210,122,.35))}
+/* cartão principal (igual ao formulário da landing) */
+.ck-card{background:var(--foam);color:var(--ink);border-radius:24px;padding:clamp(20px,5vw,30px);box-shadow:0 18px 50px rgba(2,18,29,.4)}
+.ck-card h1{font-size:clamp(1.35rem,5vw,1.7rem);margin:0 0 6px}
+.ck-card p{max-width:none}
+.ck-sub{color:#3D5A66;margin:0 0 18px}
+.ck-res{list-style:none;margin:0 0 18px;padding:14px 16px;border-radius:16px;background:#fff;border:2px dashed #9CC3CB}
+.ck-res li{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid #DCEBEA;font-size:.98rem}
+.ck-res li:last-child{border-bottom:0}
+.ck-res span{color:#3D5A66}.ck-res b{text-align:right}
+.ck-total{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;margin:4px 0 18px}
+.ck-total span{font-weight:700;color:#3D5A66}
+.ck-total b{font:800 clamp(1.7rem,7.5vw,2.4rem) var(--f-head);letter-spacing:-.03em;color:var(--ink);white-space:nowrap}
+.ck-pagar{width:100%;min-height:58px;font-size:1.1rem}
+.ck-formas{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+.ck-formas span{font-size:.82rem;font-weight:700;color:#0B495B;background:#D5F0EC;border-radius:99px;padding:4px 12px}
+.ck-nota{font-size:.88rem;color:#3D5A66;margin:14px 0 0;text-align:center}
+.ck-codigo{display:inline-block;font:800 1rem var(--f-head);letter-spacing:.02em;background:#fff;border-radius:10px;padding:2px 10px}
+.ck-ok{width:64px;height:64px;border-radius:50%;background:#D6F2E1;color:#17663F;display:grid;place-items:center;margin:0 auto 14px}
+.ck-centro{text-align:center}
+.ck-acoes{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.ck-acoes .btn{width:100%}
+.btn.ghost.dk{color:var(--ink);border-color:var(--ink)}
+.ck-alerta{border-radius:14px;padding:12px 14px;background:#FBDDD8;color:#7A1B10;font-weight:600;margin:0 0 16px}
+.ck-aviso{border-radius:14px;padding:12px 14px;background:#FFF0C7;color:#5C3E00;font-weight:600;margin:0 0 16px}
+label.ck-lbl{display:block;font-weight:700;margin-bottom:14px}
+.ck-carregando{display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 0;color:#3D5A66;font-weight:600}
+.ck-gota{display:flex;gap:8px}.ck-gota i{width:12px;height:12px;border-radius:50%;background:#167486;animation:pula 1.2s ease-in-out infinite}
+.ck-gota i:nth-child(2){animation-delay:.15s}.ck-gota i:nth-child(3){animation-delay:.3s}
+@keyframes pula{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-10px);opacity:1}}
+.ck-rodape{text-align:center;color:var(--mute);font-size:.9rem;margin-top:22px;line-height:1.6}
+.ck-rodape a{color:#fff}
+@media (prefers-reduced-motion:reduce){.ck-bolhas,.ck-gota i{animation:none!important}.ck-bolhas{display:none}}
 </style>
 </head>
 <body>
+<div class="ck-luz" aria-hidden="true"></div>
+<div class="ck-bolhas" id="bolhas" aria-hidden="true"></div>
 
-<header class="chk-header">
-  <a href="index.html" class="chk-brand">
-    <img src="favicon.svg" alt="Logo Acampamento" style="filter: blur(9px); user-select: none; pointer-events: none;">
-    <div style="display:inline-flex; align-items:center; gap:8px;">
-      <span style="filter: blur(11px); user-select: none; pointer-events: none;">IMERSOS 2027</span>
-      <span class="suspense-pill" style="font-size:0.75rem; padding:3px 8px; margin:0;">🔒 Tema em breve</span>
-    </div>
-  </a>
-</header>
+<div class="ck">
+  <header class="ck-head">
+    <a href="index.html" aria-label="Voltar para o site do acampamento">
+      <div class="ck-igreja">IPI Itajaí</div>
+      <div class="ck-nome">Acampamento de Carnaval 2027</div>
+    </a>
+  </header>
 
-<main class="wrap">
-  <div class="chk-card" id="cardContainer">
-    <!-- Estado de Busca de Código e Valor -->
-    <div id="viewFind" class="hide">
-      <h1 class="chk-title">Pagar Inscrição</h1>
-      <p class="chk-sub">Digite o código ou CPF informado na inscrição para prosseguir para o pagamento seguro via InfinitePay.</p>
-      <form id="findForm">
-        <div class="find-row">
-          <div class="find-col" style="flex:2;min-width:180px">
-            <label style="font-size:0.88rem;color:var(--mute)">Código da Inscrição ou CPF</label>
-            <input type="text" id="findInput" placeholder="Ex: IMR-1WB6EK ou 000.000.000-00" required autocomplete="off" spellcheck="false" style="text-transform:uppercase">
-          </div>
-          <div class="find-col">
-            <label style="font-size:0.88rem;color:var(--mute)">Valor a pagar (opcional)</label>
-            <input type="text" id="findValInput" placeholder="Ex: 430,00" autocomplete="off">
-          </div>
-        </div>
-        <button type="submit" class="btn" style="width:100%;margin-top:18px;min-height:50px;font-weight:700">Buscar e Gerar Checkout</button>
+  <ol class="ck-passos" aria-label="Etapas">
+    <li class="feito">Inscrição</li>
+    <li class="agora" id="passoPag">Pagamento</li>
+    <li id="passoConf">Confirmação</li>
+  </ol>
+
+  <main class="ck-card" aria-live="polite">
+    <!-- carregando -->
+    <section id="vCarregando" class="ck-carregando">
+      <div class="ck-gota" aria-hidden="true"><i></i><i></i><i></i></div>
+      <span id="txtCarregando">Buscando a sua inscrição…</span>
+    </section>
+
+    <!-- buscar pelo código -->
+    <section id="vBuscar" class="hide">
+      <h1>Pagar a inscrição</h1>
+      <p class="ck-sub">Digite o código da sua inscrição. Ele aparece no fim do formulário e no e-mail de confirmação.</p>
+      <div id="buscarErro" class="ck-alerta hide" role="alert"></div>
+      <form id="fBuscar" novalidate>
+        <label class="ck-lbl" for="inCodigo">Código da inscrição
+          <input type="text" id="inCodigo" placeholder="IMR-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </label>
+        <button class="btn dark ck-pagar" type="submit">Continuar</button>
       </form>
-      <p id="findErr" class="err" style="margin-top:14px"></p>
-    </div>
+      <p class="ck-nota">Não tem o código? Veja em <a href="index.html#consulta">Consulte sua inscrição</a>.</p>
+    </section>
 
-    <!-- Estado de Carregamento -->
-    <div id="viewLoading" style="text-align:center;padding:40px 0">
-      <div class="pulse-dot" style="margin:0 auto 16px;width:14px;height:14px"></div>
-      <p style="color:var(--mute)">Localizando informações da sua inscrição...</p>
-    </div>
+    <!-- pagamento em aberto -->
+    <section id="vPagar" class="hide">
+      <h1 id="pagTitulo">Falta só o pagamento</h1>
+      <p class="ck-sub" id="pagSub">Confira os dados e siga para a página segura da InfinitePay.</p>
+      <div id="pagAviso" class="ck-aviso hide"></div>
+      <ul class="ck-res">
+        <li><span>Inscrição</span><b class="ck-codigo" id="rCodigo"></b></li>
+        <li><span>Acampante</span><b id="rNome"></b></li>
+        <li><span>Lote</span><b id="rLote"></b></li>
+        <li id="rTotalLi"><span>Total da inscrição</span><b id="rTotal"></b></li>
+        <li id="rPagoLi" class="hide"><span>Já pago</span><b id="rPago"></b></li>
+      </ul>
+      <div class="ck-total"><span>A pagar agora</span><b id="rAPagar"></b></div>
+      <div id="pagErro" class="ck-alerta hide" role="alert"></div>
+      <button class="btn ck-pagar" type="button" id="btnPagar">Ir para o pagamento</button>
+      <div class="ck-formas" aria-label="Formas de pagamento"><span>PIX</span><span>Cartão em até 12x</span></div>
+      <p class="ck-nota">Você vai para a página segura da <b>InfinitePay</b>, escolhe PIX ou cartão e, ao terminar, volta para cá automaticamente.</p>
+    </section>
 
-    <!-- Estado de Inscrição em Aberto (Pendente) -->
-    <div id="viewCheckout" class="hide">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-        <div>
-          <span style="font-size:0.85rem;color:var(--mute);text-transform:uppercase;letter-spacing:0.04em">Inscrição</span>
-          <h1 class="chk-title" id="chkCode" style="margin-top:2px">IMR-0000</h1>
-          <a href="javascript:void(0)" id="btnChangeCode" style="color:var(--ray);font-size:0.85rem;text-decoration:underline;cursor:pointer">Buscar outro código ou valor</a>
-        </div>
-        <div id="statusBadgeContainer">
-          <span class="status-badge pendente">Aguardando Pagamento</span>
-        </div>
-      </div>
+    <!-- conferindo depois de voltar da InfinitePay -->
+    <section id="vConferindo" class="hide ck-centro">
+      <div class="ck-carregando" style="padding-bottom:6px"><div class="ck-gota" aria-hidden="true"><i></i><i></i><i></i></div></div>
+      <h1>Confirmando o seu pagamento…</h1>
+      <p class="ck-sub">Isso costuma levar poucos segundos. Não precisa fazer nada.</p>
+    </section>
 
-      <div class="det-list">
-        <div class="det-row">
-          <span class="det-label">Participante</span>
-          <span class="det-val" id="chkName">-</span>
-        </div>
-        <div class="det-row">
-          <span class="det-label">Lote</span>
-          <span class="det-val" id="chkLot">-</span>
-        </div>
-        <div class="det-row">
-          <span class="det-label">Camiseta</span>
-          <span class="det-val" id="chkShirt">-</span>
-        </div>
-        <div class="det-row">
-          <span class="det-label">Valor a pagar</span>
-          <span class="det-val" id="chkValue">R$ 0,00</span>
-        </div>
-      </div>
+    <!-- ainda processando -->
+    <section id="vDemorou" class="hide ck-centro">
+      <h1>Seu pagamento ainda está sendo processado</h1>
+      <p class="ck-sub">Pode fechar esta página com tranquilidade. Assim que a InfinitePay confirmar, a sua inscrição é atualizada sozinha. Você acompanha em <a href="index.html#consulta">Consulte sua inscrição</a>.</p>
+      <div class="ck-acoes"><button class="btn dark" type="button" id="btnConferir">Conferir de novo</button><a class="btn ghost dk" href="index.html">Voltar para o site</a></div>
+    </section>
 
-      <!-- Alerta de Erro caso a InfinitePay falhe -->
-      <div id="chkErrorMsg" class="err hide" style="margin-bottom:16px;text-align:center;padding:10px;background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.3);border-radius:10px"></div>
+    <!-- pago -->
+    <section id="vPago" class="hide ck-centro">
+      <div class="ck-ok" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h1>Inscrição confirmada!</h1>
+      <p class="ck-sub" id="pagoTxt"></p>
+      <ul class="ck-res" style="text-align:left">
+        <li><span>Inscrição</span><b class="ck-codigo" id="pCodigo"></b></li>
+        <li><span>Valor pago</span><b id="pValor"></b></li>
+      </ul>
+      <p class="ck-nota" style="margin-top:0">Guarde o seu código. Nos vemos no Carnaval!</p>
+      <div class="ck-acoes"><a class="btn" href="index.html">Voltar para o site</a><a class="btn ghost dk" href="index.html#consulta">Consultar minha inscrição</a></div>
+    </section>
 
-      <!-- Botão Oficial de Checkout da InfinitePay -->
-      <div>
-        <button type="button" class="btn-infinite" id="btnPayInfinite">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          Pagar com Cartão (até 12x) ou Pix
-        </button>
-        <p style="font-size:0.85rem;color:var(--mute);text-align:center;margin-top:8px">
-          Ambiente seguro criptografado pela <b>InfinitePay</b>.
-        </p>
-      </div>
+    <!-- erro geral -->
+    <section id="vErro" class="hide ck-centro">
+      <h1>Não conseguimos carregar agora</h1>
+      <p class="ck-sub" id="erroTxt">Tente de novo em instantes. Se continuar, chame a equipe no WhatsApp.</p>
+      <div class="ck-acoes"><button class="btn dark" type="button" id="btnTentar">Tentar de novo</button></div>
+    </section>
+  </main>
 
-      <!-- Indicador de verificação em tempo real -->
-      <div class="poll-notice" id="pollNotice">
-        <span class="pulse-dot"></span>
-        <span>Aguardando confirmação do banco em tempo real...</span>
-      </div>
-
-      <!-- Alternativa de Pix direto com QR Code -->
-      <div class="divider">ou pague com Pix direto da igreja</div>
-      <div style="text-align:center">
-        <button type="button" class="btn ghost small" id="btnShowPix" style="width:100%">Ver QR Code / Chave Pix</button>
-        <div id="pixContainer" class="hide" style="margin-top:20px">
-          <div id="qrBox" style="background:#FFF;padding:12px;display:inline-block;border-radius:12px;margin-bottom:12px"></div>
-          <div>
-            <span style="font-size:0.9rem;color:var(--mute)">Chave PIX:</span>
-            <b id="pixKeyVal" style="color:var(--ray)">cantinaipi@gmail.com</b>
-            <div style="margin-top:10px">
-              <button type="button" class="btn small" id="btnCopyPix">Copiar Chave Pix</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Estado de Inscrição Confirmada / Paga -->
-    <div id="viewSuccess" class="hide">
-      <div class="sec-paid">
-        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" stroke="#2ECC71"/>
-          <path d="M8 12l3 3 6-6"/>
-        </svg>
-        <div class="status-badge pago" style="margin-bottom:12px">Pagamento Confirmado</div>
-        <h1 class="chk-title" style="color:#FFF">Você está dentro!</h1>
-        <p class="chk-sub" style="color:var(--foam);max-width:44ch;margin-inline:auto">
-          O seu pagamento foi recebido e <b>confirmado com sucesso pela InfinitePay</b>. Sua vaga no <b>Acampamento 2027</b> está garantida!
-        </p>
-
-        <div class="det-list" style="text-align:left;margin-top:24px">
-          <div class="det-row">
-            <span class="det-label">Código</span>
-            <span class="det-val" id="sucCode">-</span>
-          </div>
-          <div class="det-row">
-            <span class="det-label">Acampante</span>
-            <span class="det-val" id="sucName">-</span>
-          </div>
-          <div class="det-row">
-            <span class="det-label">Valor Confirmado</span>
-            <span class="det-val" id="sucValue" style="color:#2ECC71">R$ 0,00</span>
-          </div>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px">
-          <a class="btn" id="sucShareWa" target="_blank" rel="noopener noreferrer">Avisar a liderança no WhatsApp</a>
-          <a class="btn ghost" href="index.html">Voltar para o site</a>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</main>
+  <p class="ck-rodape">Dúvidas sobre o pagamento? Fale com a equipe no WhatsApp:<br>
+    <a href="https://wa.me/5519992091360" target="_blank" rel="noopener noreferrer">(19) 99209-1360</a> ou <a href="https://wa.me/5519992547677" target="_blank" rel="noopener noreferrer">(19) 99254-7677</a></p>
+</div>
 
 <script>
-const SB_URL = 'https://xhtnhhdpiuqdquacooau.supabase.co';
-const SB_KEY = 'sb_publishable_stUBkyPTyqHtCla_seKJRw_k_LW2S_i';
-const SB = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
+/* ============================================================
+   Checkout · Acampamento de Carnaval 2027
+   Tudo (PIX e cartão) é pago na página da InfinitePay.
+   A página recebe só  ?codigo=IMR-XXXXXX  (e o retorno da InfinitePay).
+   O valor vem do servidor (/api/status), nunca do link.
+   ============================================================ */
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const brl = (c) => { c = Math.round(Number(c) || 0); return 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(c % 100).padStart(2, '0'); };
+  const primeiroNome = (n) => String(n || '').trim().split(/\s+/)[0] || '';
+  const VIEWS = ['vCarregando', 'vBuscar', 'vPagar', 'vConferindo', 'vDemorou', 'vPago', 'vErro'];
+  const show = (id) => { VIEWS.forEach((v) => $('#' + v).classList.toggle('hide', v !== id)); };
+  const passo = (n) => { $('#passoPag').className = n >= 2 ? 'feito' : 'agora'; $('#passoConf').className = n >= 2 ? 'agora' : ''; if (n >= 3) $('#passoConf').className = 'feito'; };
 
-const $ = (s) => document.querySelector(s);
-const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(c % 100).padStart(2, '0');
-const digits = (s) => String(s || '').replace(/\D/g, '');
-
-let curAcampante = null;
-let pollTimer = null;
-
-// Analisa parâmetros de URL (?codigo=IMR-XXXX&valor=43000&cpf=00000000000)
-const urlParams = new URLSearchParams(window.location.search);
-let activeCode = (urlParams.get('codigo') || urlParams.get('code') || urlParams.get('order_nsu') || '').trim().toUpperCase();
-let transactionNsu = urlParams.get('transaction_nsu') || '';
-let invoiceSlug = urlParams.get('slug') || '';
-let activeCpf = digits(urlParams.get('cpf') || urlParams.get('documento') || '');
-let rawValor = (urlParams.get('valor') || urlParams.get('val') || '').trim();
-
-function parseCents(val) {
-  if (!val) return null;
-  const s = String(val).trim().replace('R$', '').trim();
-  if (s.includes(',') || s.includes('.')) {
-    const num = parseFloat(s.replace(/\./g, '').replace(',', '.'));
-    return isNaN(num) ? null : Math.round(num * 100);
+  /* bolhas decorativas (leves, só CSS) */
+  if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    const b = $('#bolhas');
+    for (let i = 0; i < 12; i++) { const e = document.createElement('i'); const s = 6 + Math.random() * 16; e.style.cssText = 'left:' + (Math.random() * 100) + '%;width:' + s + 'px;height:' + s + 'px;animation-duration:' + (9 + Math.random() * 10) + 's;animation-delay:' + (-Math.random() * 15) + 's'; b.appendChild(e); }
   }
-  const n = parseInt(s, 10);
-  if (isNaN(n) || n <= 0) return null;
-  if (n < 1000) return n * 100; // se passou em reais (ex: 430 -> 43000)
-  return n;
-}
 
-function fmtValInput(cents) {
-  if (!cents) return '';
-  return (cents / 100).toFixed(2).replace('.', ',');
-}
+  /* lê o link e limpa dados que não devem ficar no endereço (CPF, valor) */
+  const qs = new URLSearchParams(location.search);
+  const normCodigo = (t) => String(t || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  let codigo = normCodigo(qs.get('codigo') || qs.get('order_nsu') || '');
+  const nsu = qs.get('transaction_nsu') || '', slug = qs.get('slug') || '';
+  const voltouDaInfinite = qs.get('status') === 'concluido' || !!nsu || !!slug;
+  if (qs.has('cpf') || qs.has('documento') || qs.has('valor') || qs.has('val')) {
+    ['cpf', 'documento', 'valor', 'val'].forEach((k) => qs.delete(k));
+    try { history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs.toString() : '')); } catch (e) {}
+  }
 
-async function init() {
-  const centsFromUrl = parseCents(rawValor);
-
-  $('#findForm').onsubmit = async (e) => {
-    e.preventDefault();
-    const inputVal = $('#findInput').value.trim();
-    const v = $('#findValInput').value.trim();
-    if (!inputVal) return;
-
-    const inputDigits = digits(inputVal);
-    // Se o usuário digitou um CPF de 11 dígitos, resolve para o código da inscrição
-    if (inputDigits.length === 11) {
-      showView('viewLoading');
-      try {
-        let codeFound = null;
-        const res = await fetch('/api/status?documento=' + encodeURIComponent(inputDigits));
-        if (res.ok) {
-          const st = await res.json();
-          if (st.codigo) codeFound = st.codigo;
-        }
-        if (!codeFound && SB) {
-          const { data: rows } = await SB.from('acampantes').select('codigo').ilike('obs', '%CPF: ' + inputDigits + '%');
-          if (rows && rows.length) codeFound = rows[0].codigo;
-        }
-        if (codeFound) {
-          const p = new URLSearchParams();
-          p.set('codigo', codeFound);
-          p.set('cpf', inputDigits);
-          const parsedV = parseCents(v);
-          if (parsedV) p.set('valor', parsedV);
-          window.location.search = '?' + p.toString();
-          return;
-        } else {
-          showView('viewFind');
-          $('#findErr').textContent = 'Nenhuma inscrição encontrada com o CPF ' + inputVal + '.';
-          return;
-        }
-      } catch (err) {
-        showView('viewFind');
-        $('#findErr').textContent = 'Erro ao consultar CPF. Tente novamente.';
-        return;
-      }
-    }
-
-    const p = new URLSearchParams();
-    p.set('codigo', inputVal.toUpperCase());
-    if (activeCpf) p.set('cpf', activeCpf);
-    const parsedV = parseCents(v);
-    if (parsedV) p.set('valor', parsedV);
-    window.location.search = '?' + p.toString();
+  const statusUrl = () => '/api/status?codigo=' + encodeURIComponent(codigo) + (nsu ? '&transaction_nsu=' + encodeURIComponent(nsu) : '') + (slug ? '&slug=' + encodeURIComponent(slug) : '');
+  async function buscarStatus() {
+    const r = await fetch(statusUrl(), { headers: { Accept: 'application/json' } });
+    if (!r.ok) throw new Error('status ' + r.status);
+    return r.json();
+  }
+  const valores = (d) => {
+    const parc = Array.isArray(d.parcelas) ? d.parcelas : [];
+    const total = Number(d.total) || parc.reduce((t, p) => t + (Number(p.valor) || 0), 0);
+    const pago = Number(d.pago) || parc.reduce((t, p) => t + Math.min(Number(p.pago) || 0, Number(p.valor) || 0), 0);
+    return { total, pago, falta: Math.max(0, total - pago) };
   };
 
-  if (!activeCode && activeCpf) {
-    // Acessou apenas com CPF: tenta resolver o código
-    showView('viewLoading');
-    try {
-      const res = await fetch('/api/status?documento=' + encodeURIComponent(activeCpf));
-      if (res.ok) {
-        const st = await res.json();
-        if (st.codigo) activeCode = st.codigo;
-      }
-    } catch (e) {}
+  function telaPago(d) {
+    const v = valores(d); passo(3); show('vPago');
+    $('#pagoTxt').textContent = (primeiroNome(d.nome) ? primeiroNome(d.nome) + ', o' : 'O') + ' seu pagamento foi recebido e a sua vaga está garantida.';
+    $('#pCodigo').textContent = d.codigo || codigo; $('#pValor').textContent = brl(v.pago || v.total);
   }
-
-  if (!activeCode) {
-    showView('viewFind');
-    return;
-  }
-
-  // Preenche inputs da busca com os valores atuais da URL
-  $('#findInput').value = activeCode;
-  if (centsFromUrl) $('#findValInput').value = fmtValInput(centsFromUrl);
-
-  showView('viewLoading');
-  await carregarInscricao(activeCode, centsFromUrl);
-}
-
-function showView(viewId) {
-  ['viewFind', 'viewLoading', 'viewCheckout', 'viewSuccess'].forEach(id => {
-    const el = $('#' + id);
-    if (el) el.classList.toggle('hide', id !== viewId);
-  });
-}
-
-async function carregarInscricao(codigo, customCents) {
-  try {
-    let data = null;
-
-    try {
-      const statusUrl = '/api/status?codigo=' + encodeURIComponent(codigo) + (transactionNsu ? '&transaction_nsu=' + encodeURIComponent(transactionNsu) : '') + (invoiceSlug ? '&slug=' + encodeURIComponent(invoiceSlug) : '');
-    const res = await fetch(statusUrl);
-      if (res.ok) {
-        data = await res.json();
+  function telaPagar(d) {
+    const v = valores(d); passo(1);
+    if (!v.total) { show('vErro'); $('#erroTxt').textContent = 'Não conseguimos calcular o valor desta inscrição. Chame a equipe no WhatsApp para resolver.'; return; }
+    show('vPagar');
+    $('#rCodigo').textContent = d.codigo || codigo; $('#rNome').textContent = primeiroNome(d.nome) || '—'; $('#rLote').textContent = d.lote || '—';
+    $('#rTotal').textContent = brl(v.total);
+    $('#rPagoLi').classList.toggle('hide', !v.pago); $('#rPago').textContent = brl(v.pago);
+    $('#rAPagar').textContent = brl(v.falta);
+    if (v.pago > 0) { $('#pagTitulo').textContent = 'Pagamento recebido!'; $('#pagSub').textContent = 'Já recebemos ' + brl(v.pago) + '. Falta o restante para completar a inscrição.'; }
+    const btn = $('#btnPagar');
+    btn.onclick = async () => {
+      $('#pagErro').classList.add('hide'); btn.disabled = true; btn.textContent = 'Abrindo a InfinitePay…';
+      try {
+        /* o servidor busca nome, e-mail, telefone e CPF pelo código; aqui vai só o código e o valor que o próprio servidor informou */
+        const r = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: d.codigo || codigo, valor: v.falta }) });
+        const res = await r.json().catch(() => ({}));
+        if (!r.ok || !res.url) throw new Error();
+        location.href = res.url;
+      } catch (e) {
+        $('#pagErro').textContent = 'Não foi possível abrir a página de pagamento agora. Tente de novo em instantes ou chame a equipe no WhatsApp.';
+        $('#pagErro').classList.remove('hide'); btn.disabled = false; btn.textContent = 'Ir para o pagamento';
       }
-    } catch (e) {
-      console.warn('API /api/status não respondeu, tentando Supabase direto:', e);
-    }
-
-    if (!data && SB) {
-      const { data: rows } = await SB.from('acampantes').select('*').eq('codigo', codigo);
-      if (rows && rows.length) {
-        const a = rows[0];
-        const parcelas = Array.isArray(a.parcelas) ? a.parcelas : [];
-        const total = parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0);
-        const pago = parcelas.reduce((s, p) => s + (Number(p.pago) || 0), 0);
-        data = {
-          codigo: a.codigo,
-          nome: a.nome,
-          lote: a.lote,
-          camiseta: a.camiseta,
-          email: a.email,
-          telefone: a.telefone,
-          total,
-          pago,
-          status: (total > 0 && pago >= total) ? 'pago' : 'pendente',
-          confirmado: (total > 0 && pago >= total)
-        };
-        curAcampante = a;
-      }
-    }
-
-    if (!data) {
-      showView('viewFind');
-      $('#findInput').value = codigo;
-      $('#findErr').textContent = 'Inscrição ' + codigo + ' não encontrada. Confira o código e tente novamente.';
-      return;
-    }
-
-    // Se o CPF não veio na URL, tenta extrair de obs do acampante
-    if (!activeCpf && curAcampante && curAcampante.obs) {
-      const match = curAcampante.obs.match(/CPF:\s*(\d{11})/i);
-      if (match) activeCpf = match[1];
-    }
-
-    // Se já está pago e confirmado pela InfinitePay
-    if (data.status === 'pago' || data.confirmado) {
-      renderSuccess(data);
-      if (pollTimer) clearInterval(pollTimer);
-      return;
-    }
-
-    // Renderiza tela de pagamento em aberto
-    renderCheckout(data, customCents);
-
-    // Inicia verificação automática periódica do webhook
-    if (!pollTimer) {
-      pollTimer = setInterval(() => checkStatusSilently(codigo), 3500);
-    }
-
-  } catch (err) {
-    console.error('Erro ao carregar inscrição:', err);
-    showView('viewFind');
-    $('#findErr').textContent = 'Erro de conexão ao buscar sua inscrição.';
-  }
-}
-
-function renderCheckout(data, customCents) {
-  showView('viewCheckout');
-  $('#chkCode').textContent = data.codigo;
-  $('#chkName').textContent = data.nome;
-  $('#chkLot').textContent = data.lote || 'Geral';
-  $('#chkShirt').textContent = data.camiseta || 'Padrão';
-
-  // Configura link para alterar código / busca
-  const btnChange = $('#btnChangeCode');
-  if (btnChange) {
-    btnChange.onclick = () => {
-      showView('viewFind');
-      $('#findInput').value = data.codigo;
-      if (aPagar) $('#findValInput').value = fmtValInput(aPagar);
-      $('#findInput').focus();
     };
   }
 
-  const errEl = $('#chkErrorMsg');
-  if (errEl) errEl.classList.add('hide');
-
-  // Determina o valor a pagar: prioriza o valor do parâmetro da URL se passado,
-  // senão pega o saldo pendente do banco, ou o total da inscrição
-  const bancoDevido = Math.max(0, (data.total || 0) - (data.pago || 0));
-  const aPagar = customCents || bancoDevido || (data.total || 43000);
-  $('#chkValue').textContent = brl(aPagar);
-
-  // Configura ação do botão oficial da InfinitePay
-  $('#btnPayInfinite').onclick = async () => {
-    const btn = $('#btnPayInfinite');
-    btn.disabled = true;
-    const oldTxt = btn.innerHTML;
-    btn.innerHTML = 'Gerando link InfinitePay...';
-    if (errEl) errEl.classList.add('hide');
-
-    const docToSend = activeCpf || (curAcampante?.obs && curAcampante.obs.match(/CPF:\s*(\d{11})/i)?.[1]) || null;
-
-    try {
-      const resp = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          codigo: data.codigo,
-          nome: data.nome,
-          valor: aPagar,
-          email: data.email || curAcampante?.email,
-          telefone: data.telefone || curAcampante?.telefone,
-          documento: docToSend
-        })
-      });
-
-      const resData = await resp.json().catch(() => ({}));
-      if (!resp.ok || !resData.url) {
-        const errorMsg = resData.error || (resData.details && resData.details.message) || 'Não foi possível gerar o link de pagamento na InfinitePay.';
-        throw new Error(errorMsg);
-      }
-
-      // Redireciona imediatamente para o checkout da InfinitePay com dados pré-preenchidos
-      window.location.href = resData.url;
-    } catch (e) {
-      console.error(e);
-      if (errEl) {
-        errEl.textContent = 'Aviso: ' + e.message;
-        errEl.classList.remove('hide');
-      } else {
-        alert(e.message);
-      }
-      btn.disabled = false;
-      btn.innerHTML = oldTxt;
+  /* depois de voltar da InfinitePay: confere por até ~2 minutos, cada vez mais espaçado */
+  async function conferir() {
+    passo(2); show('vConferindo');
+    const esperas = [0, 3000, 4000, 5000, 7000, 10000, 15000, 20000, 25000, 30000];
+    for (const w of esperas) {
+      if (w) await new Promise((r) => setTimeout(r, w));
+      try {
+        const d = await buscarStatus();
+        if (d && d.not_found) { abrirBusca('Não encontramos a inscrição ' + codigo + '.'); return; }
+        const v = valores(d || {});
+        if (d && (d.status === 'pago' || d.confirmado || (v.total && v.falta === 0))) { telaPago(d); return; }
+        if (d && v.pago > 0 && w >= 7000) { telaPagar(d); return; }
+      } catch (e) { /* tenta de novo na próxima */ }
     }
-  };
-
-  // Pix Direto Alternativo
-  $('#btnShowPix').onclick = () => {
-    $('#pixContainer').classList.toggle('hide');
-    renderPixQr(aPagar, data.codigo);
-  };
-}
-
-function renderSuccess(data) {
-  showView('viewSuccess');
-  $('#sucCode').textContent = data.codigo;
-  $('#sucName').textContent = data.nome;
-  $('#sucValue').textContent = brl(data.pago || data.total);
-  const waMsg = encodeURIComponent(`Olá! Meu pagamento da inscrição ${data.codigo} (${data.nome}) do Acampamento 2027 foi aprovado e confirmado!`);
-  $('#sucShareWa').href = `https://wa.me/5519992091360?text=${waMsg}`;
-}
-
-async function checkStatusSilently(codigo) {
-  try {
-    const statusUrl = '/api/status?codigo=' + encodeURIComponent(codigo) + (transactionNsu ? '&transaction_nsu=' + encodeURIComponent(transactionNsu) : '') + (invoiceSlug ? '&slug=' + encodeURIComponent(invoiceSlug) : '');
-    const res = await fetch(statusUrl);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.status === 'pago' || data.confirmado) {
-      if (pollTimer) clearInterval(pollTimer);
-      renderSuccess(data);
-    }
-  } catch (e) {
-    // silencioso para não poluir console
+    passo(2); show('vDemorou');
   }
-}
 
-function renderPixQr(valorCentavos, codigo) {
-  const qrBox = $('#qrBox');
-  if (qrBox.children.length > 0) return;
-  const pixStr = `00020126580014br.gov.bcb.pix0119cantinaipi@gmail.com520400005303986540${(valorCentavos/100).toFixed(2)}5802BR5916IPI PARQUE ITAJAI6008CAMPINAS62070503***6304`;
-  if (window.qrcode) {
+  async function carregar() {
+    if (!codigo) { abrirBusca(); return; }
+    show('vCarregando'); $('#txtCarregando').textContent = 'Buscando a sua inscrição…';
+    if (voltouDaInfinite) { conferir(); return; }
     try {
-      const q = qrcode(0, 'M');
-      q.addData(pixStr);
-      q.make();
-      const n = q.getModuleCount();
-      let d = '';
-      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + c + ' ' + r + 'h1v1h-1z';
-      qrBox.innerHTML = '<svg viewBox=\"-2 -2 ' + (n + 4) + ' ' + (n + 4) + '\" width=\"180\" height=\"180\" shape-rendering=\"crispEdges\"><rect x=\"-2\" y=\"-2\" width=\"' + (n + 4) + '\" height=\"' + (n + 4) + '\" fill=\"#fff\"/><path d=\"' + d + '\" fill=\"#06212E\"/></svg>';
-    } catch (e) {}
+      const d = await buscarStatus();
+      if (!d || d.not_found) { abrirBusca('Não encontramos a inscrição ' + codigo + '. Confira o código.'); return; }
+      const v = valores(d);
+      if (d.status === 'pago' || d.confirmado || (v.total && v.falta === 0)) telaPago(d); else telaPagar(d);
+    } catch (e) { show('vErro'); $('#erroTxt').textContent = 'Tente de novo em instantes. Se continuar, chame a equipe no WhatsApp.'; }
   }
-  $('#btnCopyPix').onclick = async () => {
-    try {
-      await navigator.clipboard.writeText('cantinaipi@gmail.com');
-      $('#btnCopyPix').textContent = 'Chave copiada!';
-      setTimeout(() => $('#btnCopyPix').textContent = 'Copiar Chave Pix', 2000);
-    } catch(e) {}
-  };
-}
 
-init();
+  function abrirBusca(msg) {
+    passo(1); show('vBuscar');
+    $('#buscarErro').textContent = msg || ''; $('#buscarErro').classList.toggle('hide', !msg);
+    $('#inCodigo').value = codigo || '';
+  }
+  $('#fBuscar').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const c = normCodigo($('#inCodigo').value);
+    if (c.replace(/[^A-Z0-9]/g, '').length < 6) { abrirBusca('Digite o código completo, como IMR-AB12CD.'); return; }
+    location.search = '?codigo=' + encodeURIComponent(c);
+  });
+  $('#btnConferir').addEventListener('click', conferir);
+  $('#btnTentar').addEventListener('click', carregar);
+  carregar();
+})();
 </script>
 </body>
 </html>
