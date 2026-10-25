@@ -293,10 +293,14 @@ f.addEventListener('submit', async (ev) => {
     return;
   }
   $('#code').textContent = code;
+  const checkoutUrl = 'checkout.html?codigo=' + encodeURIComponent(code) + '&valor=' + encodeURIComponent(p.first) + '&cpf=' + encodeURIComponent(cpfDig);
   const btnGo = $('#btnGoCheckout');
-  if (btnGo) {
-    btnGo.href = 'checkout.html?codigo=' + encodeURIComponent(code) + '&valor=' + encodeURIComponent(p.first) + '&cpf=' + encodeURIComponent(cpfDig);
-  }
+  if (btnGo) btnGo.href = checkoutUrl;
+  if ($('#csDoc')) $('#csDoc').value = maskCPF(v.cpf);
+
+  btn.disabled = true;
+  btn.textContent = 'Inscrição realizada! Abrindo checkout…';
+  window.location.href = checkoutUrl;
   const proofMsg = encodeURIComponent('Olá! Segue o comprovante do pagamento da inscrição ' + code + ' (' + v.name + '). Valor: ' + brl(p.first) + '.' + (coupon ? ' Cupom: ' + coupon.church + '.' : ''));
   const pw = $('#waProofs'); pw.textContent = '';
   (CONFIG.proofContacts && CONFIG.proofContacts.length ? CONFIG.proofContacts : [{ name: 'organização', number: CONFIG.whatsapp }]).forEach((c) => { const a = document.createElement('a'); a.className = 'btn wa'; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.href = 'https://wa.me/' + c.number + '?text=' + proofMsg; a.textContent = 'Enviar para ' + c.name; pw.appendChild(a); });
