@@ -167,4 +167,18 @@ module "cloudfront" {
       response_page_path    = "/index.html"
     }
   ]
+
+  geo_restriction = {
+    restriction_type = "none"
+  }
+
+  # Usa o ARN vindo do recurso de validação para garantir que o certificado
+  # já esteja emitido (ISSUED) antes de ser associado à distribuição.
+  viewer_certificate = local.use_custom_domain ? {
+    acm_certificate_arn      = aws_acm_certificate_validation.site[0].certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+  } : {
+    cloudfront_default_certificate = true
+  }
 }

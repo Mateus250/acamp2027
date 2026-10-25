@@ -32,8 +32,8 @@ variable "custom_domains" {
   type        = list(string)
   description = "Domínios customizados atendidos pela distribuição CloudFront. O primeiro é o domínio principal do certificado ACM; os demais entram como SANs. Deixe vazio para usar apenas o domínio padrão do CloudFront."
   default = [
-    "acampamentoipi.com.br",
     "acampimersos.com.br",
+    "acampamentoipi.com.br",
   ]
 }
 
