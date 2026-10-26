@@ -74,10 +74,33 @@ $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></deta
 
 /* opções de pagamento */
 /* cupons de desconto: o código digitado é comparado com uma "impressão digital", então não dá para ler os cupons no código da página */
-const finalPrice = () => activeLot().price;
+let coupon = null;
+const normCode = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (100 - c.value) / 100) : c.type === 'off' ? Math.max(0, price - c.value) : c.type === 'price' ? c.value : price);
+const finalPrice = () => (coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
+const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
 const P = [{ id: 'avista', t: 'PIX à vista', first: 0, n: 1 }];   // pagamento é feito no checkout (InfinitePay)
 const curPlan = () => ({ ...P[0], first: finalPrice() });
-const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: <b>' + brl(tot) + '</b></div>'; };
+const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : ''); };
+/* campo do cupom */
+(() => {
+  const cIn = $('#cupom'), cBtn = $('#cupomBtn'), cMsg = $('#cupomMsg'); if (!cIn) return;
+  const say = (t, cls) => { cMsg.textContent = t; cMsg.className = 'cupom-msg' + (cls ? ' ' + cls : ''); };
+  const setC = (c) => { coupon = c; renderSum(); };
+  cBtn.addEventListener('click', async () => {
+    if (coupon) { setC(null); cIn.value = ''; cIn.disabled = false; cBtn.textContent = 'Aplicar'; say(''); cIn.focus(); return; }
+    const code = normCode(cIn.value); if (!code) { say('Digite o cupom.', 'bad'); return; }
+    if (!SB) { say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
+    cBtn.disabled = true; say('Conferindo…');
+    let c = null;
+    try { const { data, error } = await SB.rpc('validar_cupom', { p_codigo: code }); if (error) throw error; const r = Array.isArray(data) ? data[0] : data; if (r) c = { church: r.igreja, type: r.tipo, value: r.valor }; }
+    catch (e) { console.error(e); cBtn.disabled = false; say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
+    cBtn.disabled = false;
+    if (!c) { say('Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad'); return; }
+    setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say('Cupom de ' + c.church + ' aplicado: ' + couponLabel(c) + '.', 'ok');
+  });
+  cIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); cBtn.click(); } });
+})();
 renderSum();
 const step1 = $('#done .steps > li'), step1Pix = step1 ? step1.innerHTML : '';
 
@@ -190,7 +213,7 @@ f.addEventListener('submit', async (ev) => {
     minor && v.resp1_name ? '1º Resp: ' + v.resp1_name + ' (CPF: ' + maskCPF(v.resp1_cpf) + ', Tel: ' + v.resp1_phone + ')' : null,
     minor && v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') + (v.resp2_phone ? ' (Tel: ' + v.resp2_phone + ')' : '') : null,
     'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt),
-    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()),
+    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + coupon.church + ')' : ''),
     'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)
   ].filter((x) => x !== null).join('\n');
 
@@ -250,6 +273,7 @@ f.addEventListener('submit', async (ev) => {
     'CPF: ' + cpfDig,
     minor && v.resp1_cpf ? 'Resp1 CPF: ' + digits(v.resp1_cpf) : '',
     minor && v.resp2_cpf ? 'Resp2 CPF: ' + digits(v.resp2_cpf) : '',
+    coupon ? 'Cupom: ' + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
     'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
   ].filter(Boolean).join(' · ');
   const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: l.name, opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
