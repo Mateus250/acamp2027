@@ -67,8 +67,6 @@ $('#lots').innerHTML = CONFIG.lots.map((l, i) => {
   const sub = on || past ? 'Até ' + fmtD(l.until) : prev ? 'A partir de ' + fmtD(dayAfter(prev.until)) : 'Até ' + fmtD(l.until);
   return '<div class="lot' + (on ? ' on' : '') + '">' + tg + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">' + sub + '</div></div>';
 }).join('');
-$('#payhow').textContent = 'Você paga por PIX à vista ou no cartão de crédito em até 12 vezes pela InfinitePay. A confirmação é instantânea e automática.';
-$('#formintro').textContent = 'Preencha em um minuto. No final, você realiza o pagamento por PIX ou cartão com segurança pela InfinitePay.';
 $('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do acampamento apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
 const faqs = [['Posso pagar em parcelas?', 'Sim! Pela InfinitePay você pode parcelar no cartão de crédito em até 12 vezes. O pagamento por PIX é à vista com confirmação imediata.'], ['Quando minha vaga está garantida?', 'Assim que o pagamento for aprovado pela InfinitePay. A confirmação da inscrição é automática.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Você será direcionado para o pagamento seguro na InfinitePay. Escolha PIX ou cartão para confirmar sua vaga imediatamente. Guarde o seu código de inscrição.']];
 $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></details>').join('');
@@ -76,40 +74,11 @@ $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></deta
 
 /* opções de pagamento */
 /* cupons de desconto: o código digitado é comparado com uma "impressão digital", então não dá para ler os cupons no código da página */
-let coupon = null;
-let cardLinks = [];   // vem do painel: [{ valor: centavos, url }]
-const normCode = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (100 - c.value) / 100) : c.type === 'off' ? Math.max(0, price - c.value) : c.type === 'price' ? c.value : price);
-const finalPrice = () => (coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
-const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
-const plans = () => { const price = finalPrice(); const o = [{ id: 'avista', t: 'PIX à vista', s: brl(price) + ' agora', first: price, n: 1 }]; const link = (cardLinks.find((x) => x.valor === price) || {}).url; if (link) o.push({ id: 'cartao', t: 'Cartão de crédito', s: brl(price) + ' à vista ou parcelado no cartão (com acréscimo da operadora)', first: price, n: 1, card: link }); return o; };
-let P = plans();
-const renderPlans = () => { const sel = ($('input[name=plan]:checked') || {}).value; P = plans(); $('#payopts').innerHTML = P.map((p, i) => '<label class="opt"><input type="radio" name="plan" value="' + p.id + '"' + ((sel ? p.id === sel : i === 0) ? ' checked' : '') + '><span class="b">' + p.t + '<small>' + p.s + '</small></span></label>').join(''); };
-renderPlans();
-const curPlan = () => P.find((p) => p.id === ($('input[name=plan]:checked') || {}).value) || P[0];
-const renderSum = () => { const p = curPlan(), l = activeLot(), tot = finalPrice(); $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : '') + '<div>Para pagar hoje: <b>' + brl(p.first) + '</b></div>'; };
-/* campo do cupom */
-(() => {
-  const cIn = $('#cupom'), cBtn = $('#cupomBtn'), cMsg = $('#cupomMsg'); if (!cIn) return;
-  const say = (t, cls) => { cMsg.textContent = t; cMsg.className = 'cupom-msg' + (cls ? ' ' + cls : ''); };
-  const setC = (c) => { coupon = c; renderPlans(); renderSum(); };
-  cBtn.addEventListener('click', async () => {
-    if (coupon) { setC(null); cIn.value = ''; cIn.disabled = false; cBtn.textContent = 'Aplicar'; say(''); cIn.focus(); return; }
-    const code = normCode(cIn.value); if (!code) { say('Digite o cupom.', 'bad'); return; }
-    if (!SB) { say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
-    cBtn.disabled = true; say('Conferindo…');
-    let c = null;
-    try { const { data, error } = await SB.rpc('validar_cupom', { p_codigo: code }); if (error) throw error; const r = Array.isArray(data) ? data[0] : data; if (r) c = { church: r.igreja, type: r.tipo, value: r.valor }; }
-    catch (e) { console.error(e); cBtn.disabled = false; say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
-    cBtn.disabled = false;
-    if (!c) { say('Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad'); return; }
-    setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say('Cupom de ' + c.church + ' aplicado: ' + couponLabel(c) + '.', 'ok');
-  });
-  cIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); cBtn.click(); } });
-})();
-renderSum(); $('#payopts').addEventListener('change', renderSum);
-/* links de cartão cadastrados no painel */
-(async () => { if (!SB) return; try { const { data } = await SB.from('config').select('dados').eq('id', 1).maybeSingle(); const l = data && data.dados && data.dados.linksCartao; if (Array.isArray(l)) { cardLinks = l.filter((x) => x && x.url && x.valor > 0); renderPlans(); renderSum(); } } catch (e) { console.error(e); } })();
+const finalPrice = () => activeLot().price;
+const P = [{ id: 'avista', t: 'PIX à vista', first: 0, n: 1 }];   // pagamento é feito no checkout (InfinitePay)
+const curPlan = () => ({ ...P[0], first: finalPrice() });
+const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: <b>' + brl(tot) + '</b></div>'; };
+renderSum();
 const step1 = $('#done .steps > li'), step1Pix = step1 ? step1.innerHTML : '';
 
 /* validação e máscara de CPF */
@@ -176,8 +145,7 @@ f.addEventListener('submit', async (ev) => {
     resp1_phone: (f.elements.resp1_phone ? f.elements.resp1_phone.value.trim() : ''),
     resp2_name: (f.elements.resp2_name ? f.elements.resp2_name.value.trim() : ''),
     resp2_cpf: (f.elements.resp2_cpf ? f.elements.resp2_cpf.value.trim() : ''),
-    resp2_phone: (f.elements.resp2_phone ? f.elements.resp2_phone.value.trim() : ''),
-    notes: f.elements.notes.value.trim()
+    resp2_phone: (f.elements.resp2_phone ? f.elements.resp2_phone.value.trim() : '')
   };
   let first = null; const bad = (k, m) => { setErr(k, m); first = first || f.elements[k]; };
   if (v.name.split(/\s+/).filter(Boolean).length < 2) bad('name', 'Digite seu nome completo.');
@@ -222,8 +190,7 @@ f.addEventListener('submit', async (ev) => {
     minor && v.resp1_name ? '1º Resp: ' + v.resp1_name + ' (CPF: ' + maskCPF(v.resp1_cpf) + ', Tel: ' + v.resp1_phone + ')' : null,
     minor && v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') + (v.resp2_phone ? ' (Tel: ' + v.resp2_phone + ')' : '') : null,
     'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt),
-    v.notes ? 'Observações: ' + v.notes : null,
-    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + coupon.church + ')' : ''),
+    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()),
     'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)
   ].filter((x) => x !== null).join('\n');
 
@@ -283,8 +250,6 @@ f.addEventListener('submit', async (ev) => {
     'CPF: ' + cpfDig,
     minor && v.resp1_cpf ? 'Resp1 CPF: ' + digits(v.resp1_cpf) : '',
     minor && v.resp2_cpf ? 'Resp2 CPF: ' + digits(v.resp2_cpf) : '',
-    v.notes,
-    coupon ? 'Cupom: ' + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
     'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
   ].filter(Boolean).join(' · ');
   const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: l.name, opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
@@ -525,7 +490,7 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   /* revelações ao rolar */
   document.querySelectorAll('main h2').forEach((h) => { const t = h.textContent; h.setAttribute('aria-label', t); h.textContent = ''; t.split(' ').forEach((wd, i) => { const s = document.createElement('span'); s.className = 'wd'; s.setAttribute('aria-hidden', 'true'); const u = document.createElement('span'); u.textContent = wd; u.style.setProperty('--k', i); s.appendChild(u); h.appendChild(s); h.appendChild(document.createTextNode(' ')); }); h.classList.add('rv-h'); });
   const mark = (sel, step) => document.querySelectorAll(sel).forEach((el, i) => { el.classList.add('rv'); el.style.setProperty('--d', step ? i : 0); });
-  mark('#tema p', true); mark('.dive li', true); mark('#infolist dt, #infolist dd', true); mark('.lot', true); mark('#payhow'); mark('#formintro'); mark('.formcard'); mark('details', true); mark('#spTrack'); mark('#lgView');
+  mark('#tema p', true); mark('.dive li', true); mark('#infolist dt, #infolist dd', true); mark('.lot', true); mark('.formcard'); mark('details', true); mark('#spTrack'); mark('#lgView');
   const count = (el) => { const target = parseInt(el.textContent, 10) || 0; const t0 = performance.now(); const tick = (t) => { const k = Math.min(1, (t - t0) / 900); el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3))) + ' m'; if (k < 1) requestAnimationFrame(tick); }; el.textContent = '0 m'; requestAnimationFrame(tick); };
   const watch = [...document.querySelectorAll('.rv, .rv-h, .depth')];
   if ('IntersectionObserver' in window) {
