@@ -1,5 +1,6 @@
 /* fontes guardadas no próprio site */
 @font-face{font-family:'Unbounded';src:url(fontes/unbounded.woff2) format('woff2');font-weight:200 900;font-display:swap}
+@font-face{font-family:'UnboundedSolid';src:url(fontes/unbounded-800-solid.woff2) format('woff2');font-weight:800;font-display:swap}
 @font-face{font-family:'Figtree';src:url(fontes/figtree-400.woff2) format('woff2');font-weight:400;font-display:swap}
 @font-face{font-family:'Figtree';src:url(fontes/figtree-500.woff2) format('woff2');font-weight:500;font-display:swap}
 @font-face{font-family:'Figtree';src:url(fontes/figtree-700.woff2) format('woff2');font-weight:700;font-display:swap}
@@ -67,8 +68,8 @@ p{margin:0 0 1em;max-width:62ch}
 .rays{will-change:transform}
 .strip{overflow:hidden;padding:18px 0 22px;position:relative;z-index:1;margin-top:-1px}
 .belt{display:flex;width:max-content;animation:belt 60s linear infinite}
-.belt span{font:800 clamp(2rem,7vw,4.4rem)/1.1 var(--f-head);padding-right:.7em;white-space:nowrap;letter-spacing:-.03em;color:transparent;-webkit-text-stroke:1.5px rgba(230,246,243,.6)}
-.belt span:nth-child(3n+2){color:rgba(230,246,243,.92);-webkit-text-stroke:0}
+.belt span{font:800 clamp(2rem,7vw,4.4rem)/1.1 var(--f-head);padding-right:.7em;white-space:nowrap;letter-spacing:-.03em;color:transparent;-webkit-text-stroke:1.5px rgba(230,246,243,.6);font-family:'UnboundedSolid',var(--f-head)}
+.belt span:nth-child(3n+2){color:rgba(230,246,243,.92);-webkit-text-stroke:0;font-family:var(--f-head)}
 @keyframes belt{to{transform:translateX(-50%)}}
 #dz{will-change:filter,opacity}
 .church{font:600 .98rem var(--f-body);color:#fff;opacity:.92;margin:0 0 6px;max-width:34ch}

@@ -511,7 +511,7 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   document.documentElement.classList.add('js');
 
   /* faixa em movimento */
-  const belt = $('#belt'), items = ['TEMA EM BREVE 🔒', 'Mergulhe fundo', CONFIG.dates.toUpperCase(), 'Vem pro Acampamento'];
+  const belt = $('#belt'), items = ['TEMA EM BREVE', 'Mergulhe fundo', CONFIG.dates.toUpperCase(), 'Vem pro Acampamento'];
   const seq = () => { for (let r = 0; r < 3; r++) items.forEach((t) => { const sp = document.createElement('span'); sp.textContent = t + ' ≈'; belt.appendChild(sp); }); };
   seq(); [...belt.children].forEach((c) => belt.appendChild(c.cloneNode(true)));
   const beltAnim = belt.getAnimations ? belt.getAnimations()[0] : null;
