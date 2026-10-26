@@ -20,7 +20,7 @@ const CONFIG = {
     { name: '(19) 99209-1360', number: '5519992091360' },
     { name: '(19) 99254-7677', number: '5519992547677' }
   ],
-  maxInstallments: 3,
+  maxInstallments: 1,
   lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 49500, until: '2027-01-20' } ],  // preço em centavos
   bring: 'Roupas leves e de frio, toalha, itens de higiene, Bíblia, caderno, tênis e protetor solar.',
   includes: 'Hospedagem, alimentação, camiseta e todas as atividades.',
@@ -67,10 +67,10 @@ $('#lots').innerHTML = CONFIG.lots.map((l, i) => {
   const sub = on || past ? 'Até ' + fmtD(l.until) : prev ? 'A partir de ' + fmtD(dayAfter(prev.until)) : 'Até ' + fmtD(l.until);
   return '<div class="lot' + (on ? ' on' : '') + '">' + tg + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">' + sub + '</div></div>';
 }).join('');
-$('#payhow').textContent = 'Você paga por PIX, à vista ou em até ' + CONFIG.maxInstallments + ' parcelas. A organização confere cada pagamento e confirma sua vaga.';
+$('#payhow').textContent = 'Você paga por PIX à vista ou no cartão de crédito em até 12 vezes pela InfinitePay. A confirmação é instantânea e automática.';
 $('#formintro').textContent = 'Preencha em um minuto. No final, você realiza o pagamento por PIX ou cartão com segurança pela InfinitePay.';
 $('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do acampamento apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
-const faqs = [['Posso pagar em parcelas?', 'Sim! Pela InfinitePay você pode parcelar no cartão de crédito em até 12 vezes ou pagar via PIX.'], ['Quando minha vaga está garantida?', 'Assim que o pagamento for aprovado pela InfinitePay. A confirmação da inscrição é automática.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Você será direcionado para o pagamento seguro na InfinitePay. Escolha PIX ou cartão para confirmar sua vaga imediatamente. Guarde o seu código de inscrição.']];
+const faqs = [['Posso pagar em parcelas?', 'Sim! Pela InfinitePay você pode parcelar no cartão de crédito em até 12 vezes. O pagamento por PIX é à vista com confirmação imediata.'], ['Quando minha vaga está garantida?', 'Assim que o pagamento for aprovado pela InfinitePay. A confirmação da inscrição é automática.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Você será direcionado para o pagamento seguro na InfinitePay. Escolha PIX ou cartão para confirmar sua vaga imediatamente. Guarde o seu código de inscrição.']];
 $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></details>').join('');
 [...document.querySelectorAll('#faq details')].forEach((d, i) => { d.querySelector('summary').textContent = faqs[i][0]; d.querySelector('p').textContent = faqs[i][1]; });
 
@@ -82,7 +82,7 @@ const normCode = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpp
 const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (100 - c.value) / 100) : c.type === 'off' ? Math.max(0, price - c.value) : c.type === 'price' ? c.value : price);
 const finalPrice = () => (coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
 const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
-const plans = () => { const price = finalPrice(); const o = [{ id: 'avista', t: 'PIX à vista', s: brl(price) + ' agora', first: price, n: 1 }]; for (let n = 2; n <= CONFIG.maxInstallments; n++) { const base = Math.floor(price / n), first = base + (price - base * n); o.push({ id: 'p' + n, t: 'PIX em ' + n + ' parcelas', s: 'Hoje ' + brl(first) + ', depois ' + (n - 1) + 'x de ' + brl(base) + ' a cada 30 dias', first, n }); } const link = (cardLinks.find((x) => x.valor === price) || {}).url; if (link) o.push({ id: 'cartao', t: 'Cartão de crédito', s: brl(price) + ' à vista ou parcelado no cartão (com acréscimo da operadora)', first: price, n: 1, card: link }); return o; };
+const plans = () => { const price = finalPrice(); const o = [{ id: 'avista', t: 'PIX à vista', s: brl(price) + ' agora', first: price, n: 1 }]; const link = (cardLinks.find((x) => x.valor === price) || {}).url; if (link) o.push({ id: 'cartao', t: 'Cartão de crédito', s: brl(price) + ' à vista ou parcelado no cartão (com acréscimo da operadora)', first: price, n: 1, card: link }); return o; };
 let P = plans();
 const renderPlans = () => { const sel = ($('input[name=plan]:checked') || {}).value; P = plans(); $('#payopts').innerHTML = P.map((p, i) => '<label class="opt"><input type="radio" name="plan" value="' + p.id + '"' + ((sel ? p.id === sel : i === 0) ? ' checked' : '') + '><span class="b">' + p.t + '<small>' + p.s + '</small></span></label>').join(''); };
 renderPlans();
