@@ -24,6 +24,7 @@ const CONFIG = {
   lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 49500, until: '2027-01-20' } ],  // preço em centavos
   bring: 'Roupas leves e de frio, toalha, itens de higiene, Bíblia, caderno, tênis e protetor solar.',
   includes: 'Hospedagem, alimentação, camiseta e todas as atividades.',
+  speakersRevealed: false,                         // false = cartões embaçados com aviso "em breve"; mude para true quando os preletores forem definidos
   speakers: [                                      // preletores: troque nome, descrição e foto. photo vazio = arte de demonstração
     { name: 'Preletor a confirmar', role: 'Nome e foto serão divulgados pela organização', photo: '' },
     { name: 'Preletora a confirmar', role: 'Nome e foto serão divulgados pela organização', photo: '' },
@@ -386,11 +387,15 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   const art = () => { let lines = ''; for (let k = 0; k < 9; k++) lines += '<path d="' + wavesD + '" transform="translate(0 ' + (k * 26) + ')" stroke="rgba(230,246,243,.22)" stroke-width="1" fill="none"/>'; return '<div class="sp-art" aria-hidden="true"><div class="glow"></div><svg viewBox="0 0 1440 240" preserveAspectRatio="none">' + lines + '</svg></div>'; };
   CONFIG.speakers.forEach((sp, i) => {
     const c = document.createElement('article'); c.className = 'sp-card'; c.setAttribute('role', 'listitem'); c.style.setProperty('--d', i);
+    if (!CONFIG.speakersRevealed) { c.classList.add('sealed'); c.setAttribute('aria-hidden', 'true'); c.insertAdjacentHTML('beforeend', art() + '<svg class="sp-sil" viewBox="0 0 100 130" aria-hidden="true"><circle cx="50" cy="46" r="21"/><path d="M8 130 C 8 92 28 78 50 78 S 92 92 92 130 Z"/></svg><div class="sp-info"><h3>Preletor</h3><p>Nome a ser revelado</p></div>'); track.appendChild(c); return; }
     if (sp.photo) { const im = document.createElement('img'); im.src = sp.photo; im.alt = 'Foto de ' + sp.name; im.loading = 'lazy'; c.appendChild(im); }
     else { c.insertAdjacentHTML('beforeend', art()); const b = document.createElement('span'); b.className = 'sp-badge'; b.textContent = 'conteúdo de demonstração'; c.appendChild(b); }
     const info = document.createElement('div'); info.className = 'sp-info'; const h = document.createElement('h3'); h.textContent = sp.name; const p = document.createElement('p'); p.textContent = sp.role || ''; info.append(h, p); c.appendChild(info);
     track.appendChild(c);
   });
+  if (!CONFIG.speakersRevealed) {
+    track.classList.add('is-sealed'); track.removeAttribute('tabindex'); [prev, next].forEach((b) => { if (b) b.hidden = true; });
+  }
   /* alinha o primeiro cartão com o texto da página */
   const align = () => { const wl = Math.round($('#preletores .wrap').getBoundingClientRect().left); track.style.paddingLeft = wl + 'px'; track.style.scrollPaddingLeft = wl + 'px'; };
   const step = () => { const c = track.querySelector('.sp-card'); return c ? c.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 18) : 300; };

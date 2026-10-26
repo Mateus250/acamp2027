@@ -329,3 +329,11 @@ footer a:not(.btn){color:#fff;text-decoration:underline;text-underline-offset:3p
 .tm-caps.transborda .tm-agua{transition-duration:.8s}
 .tm-caps.some{opacity:0;transform:translateY(-12px) scale(.96)}
 @media (prefers-reduced-motion:reduce){.tm-onda,.tm-agua i{animation:none!important}.tm-agua{transition:none}.tm-agua i{display:none}}
+
+/* preletores: em breve (embaçado + placa de aviso 3D) */
+.sp-card.sealed{pointer-events:none;user-select:none}
+.sp-card.sealed .sp-art,.sp-card.sealed .sp-info,.sp-card.sealed .sp-sil{filter:blur(9px)}
+.sp-card.sealed::after{background:linear-gradient(180deg,rgba(2,18,29,.25) 0,rgba(2,18,29,.85) 100%)}
+.sp-sil{position:absolute;left:50%;top:16%;width:62%;transform:translateX(-50%);fill:rgba(230,246,243,.34)}
+.sp-track.is-sealed{overflow-x:hidden;scroll-snap-type:none}
+.nav-b[hidden]{display:none!important}
