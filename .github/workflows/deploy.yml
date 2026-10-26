@@ -64,7 +64,7 @@ jobs:
 
           # 4. Outros assets (ex: LEIA-ME, headers)
           aws s3 cp _headers s3://$BUCKET_NAME/_headers --cache-control "public, max-age=0, must-revalidate" || true
-          aws s3 cp favicon.svg s3://$BUCKET_NAME/favicon.svg --cache-control "public, max-age=31536000, immutable" || true
+          aws s3 cp icon.png s3://$BUCKET_NAME/icon.png --cache-control "public, max-age=31536000, immutable" || true
 
   deploy-backend:
     name: Terraform Apply (Lambda & CloudFront)
