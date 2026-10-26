@@ -238,9 +238,13 @@ label.ck-lbl{display:block;font-weight:700;margin-bottom:14px}
         /* o servidor busca nome, e-mail, telefone e CPF pelo código; aqui vai só o código e o valor que o próprio servidor informou */
         const r = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: d.codigo || codigo, valor: v.falta }) });
         const res = await r.json().catch(() => ({}));
-        if (!r.ok || !res.url) throw new Error();
+        if (!r.ok || !res.url) {
+          console.error('Erro na resposta de checkout:', r.status, res);
+          throw new Error((res && (res.error || (res.details && res.details.message))) || 'Erro ao gerar pagamento');
+        }
         location.href = res.url;
       } catch (e) {
+        console.error('Falha ao abrir checkout:', e);
         $('#pagErro').textContent = 'Não foi possível abrir a página de pagamento agora. Tente de novo em instantes ou chame a equipe no WhatsApp.';
         $('#pagErro').classList.remove('hide'); btn.disabled = false; btn.textContent = 'Ir para o pagamento';
       }

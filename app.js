@@ -139,6 +139,14 @@ const validaCPF = (cpf) => {
   return true;
 };
 const maskCPF = (v) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+const maskPhone = (v) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (!d) return '';
+  if (d.length <= 2) return '(' + d;
+  if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+  if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+  return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+};
 
 /* menor de idade */
 const ageAt = (birth, ref) => { const b = new Date(birth + 'T00:00:00'), r = new Date(ref + 'T00:00:00'); let a = r.getFullYear() - b.getFullYear(); if (r < new Date(r.getFullYear(), b.getMonth(), b.getDate())) a--; return a; };
@@ -149,6 +157,9 @@ const syncAdult = () => { const on = f.elements.adult.checked; PAIS.forEach((n) 
 f.elements.adult.addEventListener('change', syncAdult);
 ['cpf', 'resp1_cpf', 'resp2_cpf'].forEach((n) => {
   if (f.elements[n]) f.elements[n].addEventListener('input', (e) => { e.target.value = maskCPF(e.target.value); });
+});
+['phone', 'resp1_phone', 'resp2_phone'].forEach((n) => {
+  if (f.elements[n]) f.elements[n].addEventListener('input', (e) => { e.target.value = maskPhone(e.target.value); });
 });
 if ($('#csDoc')) {
   $('#csDoc').addEventListener('input', (e) => { e.target.value = maskCPF(e.target.value); });
@@ -180,7 +191,8 @@ f.addEventListener('submit', async (ev) => {
   let first = null; const bad = (k, m) => { setErr(k, m); first = first || f.elements[k]; };
   if (v.name.split(/\s+/).filter(Boolean).length < 2) bad('name', 'Digite seu nome completo.');
   if (!validaCPF(v.cpf)) bad('cpf', 'Digite um CPF válido (11 dígitos).');
-  if (digits(v.phone).length < 10) bad('phone', 'Digite o WhatsApp com DDD.');
+  const phoneDig = digits(v.phone);
+  if (phoneDig.length < 10 || phoneDig.length > 11) bad('phone', 'Digite o WhatsApp com DDD (10 ou 11 dígitos).');
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.email)) bad('email', 'Digite um e-mail válido. É para lá que vão a confirmação e o seu código.');
   if (!v.birth) bad('birth', 'Informe a data de nascimento.');
   else {
@@ -191,10 +203,12 @@ f.addEventListener('submit', async (ev) => {
     else if (a < 18) {
       if (v.resp1_name.split(/\s+/).filter(Boolean).length < 2) bad('resp1_name', 'Digite o nome completo do 1º responsável.');
       if (!validaCPF(v.resp1_cpf)) bad('resp1_cpf', 'Digite um CPF válido para o 1º responsável (11 dígitos).');
-      if (digits(v.resp1_phone).length < 10) bad('resp1_phone', 'Informe o celular do 1º responsável com DDD.');
+      const resp1Dig = digits(v.resp1_phone);
+      if (resp1Dig.length < 10 || resp1Dig.length > 11) bad('resp1_phone', 'Informe o celular do 1º responsável com DDD (10 ou 11 dígitos).');
       
       if (v.resp2_cpf && !validaCPF(v.resp2_cpf)) bad('resp2_cpf', 'CPF do 2º responsável inválido.');
-      if (v.resp2_phone && digits(v.resp2_phone).length < 10) bad('resp2_phone', 'Informe o celular do 2º responsável com DDD.');
+      const resp2Dig = digits(v.resp2_phone);
+      if (v.resp2_phone && (resp2Dig.length < 10 || resp2Dig.length > 11)) bad('resp2_phone', 'Informe o celular do 2º responsável com DDD (10 ou 11 dígitos).');
     }
   }
   if (!v.shirt && !f.elements.noshirt.checked) bad('shirt', 'Escolha o tamanho ou marque que não quer camiseta agora.');
