@@ -31,7 +31,7 @@ const CONFIG = {
     { name: 'Louvor a confirmar', role: 'Ministério de louvor do acampamento', photo: '' }
   ],
   // cupons de desconto e links de pagamento no cartão: cadastre no painel /admin, em Ajustes
-  emailOn: false,                                  // mude para true quando o e-mail automático estiver ligado no Supabase
+  emailOn: true,                                  // mude para true quando o e-mail automático estiver ligado no Supabase
   minAge: null                                     // ex.: 13 para exigir idade mínima; null = sem limite
 };
 /* ================================================================== */

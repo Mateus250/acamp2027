@@ -18,12 +18,12 @@ price_class = "PriceClass_200"
 # Domínios customizados (o primeiro é o principal do certificado ACM; os demais viram SANs).
 # Use [] para servir apenas pelo domínio padrão do CloudFront.
 custom_domains = [
-  "acampimersos.com.br",
   "acampamentoipi.com.br",
+  "acampimersos.com.br",
 ]
 
 # URL pública do site (usada para os callbacks da InfinitePay)
-site_url = "https://acampimersos.com.br"
+site_url = "https://acampamentoipi.com.br"
 
 # ==============================================================================
 # INTEGRAÇÃO INFINITEPAY & SUPABASE

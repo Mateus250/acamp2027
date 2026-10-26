@@ -23,7 +23,7 @@ No app.js, troque  preview: true  por  preview: false
 
 INSCRIÇÕES
 Cada inscrição feita na página é salva no banco (Supabase) e aparece
-no painel da organização: acampimersos.com.br/admin
+no painel da organização: acampamentoipi.com.br/admin
 
 CUPONS E LINKS DE CARTÃO
 Ficam no painel /admin, aba Ajustes. Criar, pausar ou remover vale na hora,
