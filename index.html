@@ -46,18 +46,14 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
     <p class="church" id="churchtop"></p>
     <p class="kicker" id="kicker"></p>
     <div class="suspense-box" id="themeTimerBox">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span class="suspense-pill" style="margin-bottom:0">🔒 Revelação do Tema (21/11 às 20h)</span>
-        <div class="theme-countdown" id="themeCountdown" aria-label="Contagem regressiva para liberação do tema">
-          <div class="tc-unit"><span class="tc-num" id="tcD">00</span><span class="tc-lbl">dias</span></div>
-          <span class="tc-colon">:</span>
-          <div class="tc-unit"><span class="tc-num" id="tcH">00</span><span class="tc-lbl">horas</span></div>
-          <span class="tc-colon">:</span>
-          <div class="tc-unit"><span class="tc-num" id="tcM">00</span><span class="tc-lbl">min</span></div>
-          <span class="tc-colon">:</span>
-          <div class="tc-unit"><span class="tc-num" id="tcS">00</span><span class="tc-lbl">seg</span></div>
-        </div>
+      <p class="tm-rot">TEMA REVELADO EM</p>
+      <div class="tm-caps" id="themeCountdown" role="timer" aria-label="Contagem regressiva para a revelação do tema: 21 de novembro, às 20h">
+        <div class="tm-cap" data-u="d"><div class="tm-agua"><svg class="tm-onda" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6 L200 14 L0 14 Z" fill="#5CC5D3"/><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6" fill="none" stroke="#FFD27A" stroke-width="1.6"/></svg><i></i><i></i><i></i><i></i></div><b class="tm-n" id="tcD">00</b><span class="tm-l">dias</span></div>
+        <div class="tm-cap" data-u="h"><div class="tm-agua"><svg class="tm-onda" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6 L200 14 L0 14 Z" fill="#5CC5D3"/><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6" fill="none" stroke="#FFD27A" stroke-width="1.6"/></svg><i></i><i></i><i></i><i></i></div><b class="tm-n" id="tcH">00</b><span class="tm-l">horas</span></div>
+        <div class="tm-cap" data-u="m"><div class="tm-agua"><svg class="tm-onda" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6 L200 14 L0 14 Z" fill="#5CC5D3"/><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6" fill="none" stroke="#FFD27A" stroke-width="1.6"/></svg><i></i><i></i><i></i><i></i></div><b class="tm-n" id="tcM">00</b><span class="tm-l">min</span></div>
+        <div class="tm-cap" data-u="s"><div class="tm-agua"><svg class="tm-onda" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6 L200 14 L0 14 Z" fill="#5CC5D3"/><path d="M0 6 C 25 0, 50 12, 75 6 S 125 0, 150 6 S 175 12, 200 6" fill="none" stroke="#FFD27A" stroke-width="1.6"/></svg><i></i><i></i><i></i><i></i></div><b class="tm-n" id="tcS">00</b><span class="tm-l">seg</span></div>
       </div>
+      <p class="tm-data">21 de novembro, às 20h</p>
     </div>
     <h1 class="word" id="word" aria-label="Tema em breve">IMERSOS</h1>
     <p class="lede" id="lede"></p>

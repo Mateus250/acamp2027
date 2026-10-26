@@ -300,3 +300,32 @@ footer a:not(.btn){color:#fff;text-decoration:underline;text-underline-offset:3p
 .tc-lbl{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--foam);opacity:0.8;margin-top:2px}
 .tc-colon{font-family:var(--f-head);font-weight:800;font-size:1rem;color:var(--ray);opacity:0.7;padding-bottom:6px}
 .suspense-pill.revealed{background:rgba(46,204,113,0.2)!important;border-color:rgba(46,204,113,0.5)!important;color:#2ECC71!important;animation:none!important}
+
+/* ===== cronômetro de vidro da revelação do tema (no lugar do IMERSOS) ===== */
+.word:not(.revealed){display:none!important}
+.word.revealed{filter:none!important;opacity:1!important}
+#themeTimerBox.suspense-box{display:block;margin:4px 0 20px}
+.tm-rot{font:800 .8rem var(--f-head);letter-spacing:.14em;color:var(--ray);margin:0 0 10px}
+.tm-caps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;max-width:560px;transition:opacity .6s ease,transform .6s ease}
+.tm-cap{--lv:.3;position:relative;height:clamp(96px,26vw,140px);border-radius:20px;overflow:hidden;text-align:center;isolation:isolate;
+ background:rgba(230,246,243,.10);border:1.5px solid rgba(230,246,243,.55);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -10px 22px rgba(2,18,29,.25),0 10px 24px rgba(2,18,29,.35);
+ -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.tm-cap::before{content:'';position:absolute;left:8px;top:7px;width:8px;bottom:35%;border-radius:8px;z-index:2;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));opacity:.7}
+.tm-agua{position:absolute;left:0;right:0;bottom:0;height:100%;transform:translateY(calc((1 - var(--lv)) * 100%));transition:transform 1s cubic-bezier(.3,.7,.3,1);
+ background:linear-gradient(180deg,#5CC5D3 0%,#2A9DAE 16%,#167486 60%,#0B495B 100%)}
+.tm-onda{position:absolute;left:0;top:-7px;width:200%;height:14px;animation:tmOnda 3.4s linear infinite}
+.tm-cap:nth-child(2) .tm-onda{animation-duration:4.1s}.tm-cap:nth-child(3) .tm-onda{animation-duration:3s}.tm-cap:nth-child(4) .tm-onda{animation-duration:3.7s}
+@keyframes tmOnda{to{transform:translateX(-50%)}}
+.tm-agua i{position:absolute;bottom:-10px;width:6px;height:6px;border-radius:50%;border:1px solid rgba(230,246,243,.85);box-shadow:inset 1px 1px 0 rgba(255,255,255,.7);animation:tmBolha 3.2s linear infinite;opacity:0}
+.tm-agua i:nth-child(2){left:22%;animation-delay:.2s}.tm-agua i:nth-child(3){left:58%;width:4px;height:4px;animation-delay:1.3s;animation-duration:2.6s}
+.tm-agua i:nth-child(4){left:76%;width:8px;height:8px;animation-delay:2.1s;animation-duration:3.8s}.tm-agua i:nth-child(5){left:40%;width:5px;height:5px;animation-delay:.9s}
+@keyframes tmBolha{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translateY(-90px);opacity:0}}
+.tm-n{position:relative;z-index:3;display:block;font:800 clamp(1.7rem,7.6vw,2.9rem)/1 var(--f-head);letter-spacing:-.03em;color:#fff;margin-top:clamp(24px,6.6vw,36px);text-shadow:0 2px 10px rgba(2,18,29,.55);font-variant-numeric:tabular-nums}
+.tm-l{position:relative;z-index:3;display:block;font-weight:700;font-size:.78rem;margin-top:6px;color:#E6F6F3;text-shadow:0 1px 6px rgba(2,18,29,.6)}
+.tm-data{margin:10px 0 0;font-weight:700;font-size:.9rem;color:#E6F6F3;opacity:.9}
+/* na hora zero: a água transborda e o vidro some */
+.tm-caps.transborda .tm-cap{--lv:1.2!important}
+.tm-caps.transborda .tm-agua{transition-duration:.8s}
+.tm-caps.some{opacity:0;transform:translateY(-12px) scale(.96)}
+@media (prefers-reduced-motion:reduce){.tm-onda,.tm-agua i{animation:none!important}.tm-agua{transition:none}.tm-agua i{display:none}}

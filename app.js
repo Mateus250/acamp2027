@@ -614,22 +614,36 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
 
 /* ===== CONTAGEM REGRESSIVA E LIBERAÇÃO AUTOMÁTICA DO TEMA ===== */
 (() => {
-  const target = new Date(CONFIG.themeRelease || '2026-11-21T20:00:00-03:00').getTime();
+  /* atalhos da equipe:  ?revelar  faz a revelação em 10 segundos;  ?suspense  mostra o cronômetro mesmo depois da data */
+  const qsT = new URLSearchParams(location.search);
+  let target = new Date(CONFIG.themeRelease || '2026-11-21T20:00:00-03:00').getTime();
+  if (qsT.has('revelar')) target = Date.now() + 10000;
+  else if (qsT.has('suspense') && target <= Date.now()) target = Date.now() + 3 * 86400000 + 5 * 3600000;
+  const reduzMov = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let contando = false;
   const themeBox = $('#themeTimerBox');
   const footBox = $('#themeTimerFoot');
   const tcD = $('#tcD'), tcH = $('#tcH'), tcM = $('#tcM'), tcS = $('#tcS');
   const word = $('#word');
   const footLogo = $('.foot-logo svg');
 
-  const reveal = () => {
-    if (word) {
-      word.classList.add('revealed');
-      word.setAttribute('aria-label', CONFIG.camp);
-    }
+  const reveal = (animar) => {
+    const caps = $('#themeCountdown');
+    const fim = () => {
+      if (themeBox) themeBox.remove();
+      if (word) {
+        word.classList.add('revealed');
+        word.setAttribute('aria-label', CONFIG.camp);
+        /* as letras do IMERSOS emergem da água de novo */
+        if (animar) word.querySelectorAll('.ch > i').forEach((i) => { i.style.animation = 'none'; void i.offsetWidth; i.style.animation = ''; });
+      }
+    };
+    if (animar && caps && !reduzMov) {
+      caps.classList.add('transborda');
+      setTimeout(() => caps.classList.add('some'), 800);
+      setTimeout(fim, 1500);
+    } else fim();
     if (footLogo) footLogo.classList.add('revealed');
-    if (themeBox) {
-      themeBox.innerHTML = '<span class="suspense-pill revealed">✨ Tema Oficial Revelado</span>';
-    }
     if (footBox) {
       footBox.innerHTML = '<span class="suspense-pill revealed">✨ Tema Oficial: ' + CONFIG.camp.toUpperCase() + '</span>';
     }
@@ -647,9 +661,10 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   const tick = () => {
     const diff = target - Date.now();
     if (diff <= 0) {
-      reveal();
+      reveal(contando);
       return false;
     }
+    contando = true;
     const s = Math.floor(diff / 1000);
     const d = Math.floor(s / 86400);
     const h = Math.floor((s % 86400) / 3600);
@@ -660,6 +675,9 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
     if (tcH) tcH.textContent = String(h).padStart(2, '0');
     if (tcM) tcM.textContent = String(m).padStart(2, '0');
     if (tcS) tcS.textContent = String(sec).padStart(2, '0');
+    /* água das cápsulas: sobe conforme a revelação chega (dias: últimos 30 dias) */
+    const niveis = [1 - Math.min(d, 30) / 30, 1 - h / 24, 1 - m / 60, 1 - sec / 60];
+    document.querySelectorAll('.tm-cap').forEach((c, i) => c.style.setProperty('--lv', Math.max(0.08, Math.min(1, niveis[i])).toFixed(3)));
     const tcFoot = $('#tcFoot');
     if (tcFoot) {
       tcFoot.textContent = d + 'd ' + String(h).padStart(2, '0') + 'h ' + String(m).padStart(2, '0') + 'm ' + String(sec).padStart(2, '0') + 's';
