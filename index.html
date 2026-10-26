@@ -11,12 +11,10 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
 <title>Acampamento de Carnaval 2027</title>
 <meta name="theme-color" content="#1B7889">
 <meta name="description" content="Acampamento de Carnaval 2027. Cinco dias para desligar o barulho e ir fundo. Faça sua inscrição.">
-<script defer src="qrcode.min.js"></script>
 <link rel="preload" href="fontes/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fontes/figtree-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <link rel="stylesheet" href="estilo.css?v=20261026">
 </head>
 <body>
@@ -202,17 +200,16 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
       <button class="btn dark" type="submit" id="submit">Enviar inscrição</button>
     </form>
     <div id="done" class="hide" tabindex="-1">
-      <h3>Falta pouco!</h3>
+      <h3>Inscrição realizada!</h3>
       <p>Seu código de inscrição:</p>
       <div class="code" id="code"></div>
-      <div style="margin: 16px 0;">
-        <a id="btnGoCheckout" href="checkout.html" class="btn" style="width:100%;background:linear-gradient(135deg, #00D09C 0%, #009975 100%);color:#03211A;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;box-shadow:0 6px 20px rgba(0,208,156,0.35);">
-          💳 Pagar com Cartão (até 12x) ou Pix (InfinitePay)
+      <div style="margin: 20px 0;">
+        <a id="btnGoCheckout" href="checkout.html" class="btn" style="width:100%;min-height:56px;background:linear-gradient(135deg, #00D09C 0%, #009975 100%);color:#03211A;font-weight:800;font-size:1.05rem;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;box-shadow:0 6px 20px rgba(0,208,156,0.35);">
+          💳 Ir para o Pagamento (PIX ou Cartão pela InfinitePay)
         </a>
       </div>
       <ol class="steps">
-        <li><b>Faça o PIX.</b> <span id="payline"></span><div class="pixbox"><div id="qr" class="qr" role="img" aria-label="QR Code do PIX com o valor"></div><div class="pixcc"><div class="pixlabel">PIX Copia e Cola</div><div id="pixcode" class="pixcode"></div><button type="button" class="btn dark" id="copycode">Copiar código PIX</button><p class="pixhow">No app do seu banco, abra <b>Pix → Pix Copia e Cola</b> e cole o código. O valor já vem preenchido: confira o valor e o nome antes de confirmar.</p></div></div><div class="pixalt">Prefere digitar? Chave PIX: <span id="pixkey"></span><button type="button" id="copypix" class="linkbtn">copiar chave</button></div><div id="pixname" style="margin-top:6px;font-size:.92rem"></div></li>
-        <li><b>Mande o comprovante.</b> Escolha <b>um</b> dos contatos abaixo, anexe a foto ou o PDF do comprovante e envie. A equipe confere o pagamento e confirma sua vaga.<div id="waProofs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px"></div></li>
+        <li><b>Pagamento seguro pela InfinitePay.</b> Toque no botão acima para abrir a tela de pagamento. Você pode pagar por <b>PIX</b> (com confirmação instantânea) ou <b>cartão em até 12x</b>. Não precisa enviar comprovante: sua vaga é confirmada automaticamente assim que o pagamento for concluído.</li>
         <li><b>Convide um amigo.</b> Mande o link desta página para quem também vai querer mergulhar com a gente.<br><a class="btn ghost dk shareBtn" target="_blank" rel="noopener noreferrer" href="#" style="margin-top:10px">Convidar um amigo</a></li>
       </ol>
       <p style="font-size:.92rem">Guarde este código. Se algo mudar, é com ele que a equipe encontra sua inscrição. <span id="emailNote"></span></p>

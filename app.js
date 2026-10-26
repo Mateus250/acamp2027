@@ -20,10 +20,6 @@ const CONFIG = {
     { name: '(19) 99209-1360', number: '5519992091360' },
     { name: '(19) 99254-7677', number: '5519992547677' }
   ],
-  pixKey: 'cantinaipi@gmail.com',
-  pixMerchant: 'IPI PARQUE ITAJAI',                // nome que vai dentro do código PIX (até 25 letras, sem acento)
-  pixCity: 'CAMPINAS',                             // cidade que vai dentro do código PIX (até 15 letras, sem acento)
-  pixName: '',                                     // opcional: nome que aparece para quem paga; deixe vazio para não mostrar
   maxInstallments: 3,
   lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 49500, until: '2027-01-20' } ],  // preço em centavos
   bring: 'Roupas leves e de frio, toalha, itens de higiene, Bíblia, caderno, tênis e protetor solar.',
@@ -48,11 +44,6 @@ const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+
 const todayBR = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
 const fmtD = (iso) => iso.slice(8) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4);
 
-/* código PIX (BR Code estático do Banco Central) */
-const pixField = (id, v) => id + String(v.length).padStart(2, '0') + v;
-const pixAscii = (s, n) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 ]/g, '').toUpperCase().trim().slice(0, n);
-const crc16 = (s) => { let c = 0xFFFF; for (let i = 0; i < s.length; i++) { c ^= s.charCodeAt(i) << 8; for (let j = 0; j < 8; j++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return c.toString(16).toUpperCase().padStart(4, '0'); };
-const pixPayload = (key, cents, name, city, txid) => { const p = pixField('00', '01') + pixField('26', pixField('00', 'br.gov.bcb.pix') + pixField('01', key)) + pixField('52', '0000') + pixField('53', '986') + (cents > 0 ? pixField('54', (cents / 100).toFixed(2)) : '') + pixField('58', 'BR') + pixField('59', pixAscii(name, 25)) + pixField('60', pixAscii(city, 15)) + pixField('62', pixField('05', (txid || '***').replace(/[^A-Za-z0-9]/g, '').slice(0, 25) || '***')) + '6304'; return p + crc16(p); };
 const activeLot = () => { const t = todayBR(); return CONFIG.lots.find((l) => t <= l.until) || CONFIG.lots[CONFIG.lots.length - 1]; };
 const lotOpen = () => CONFIG.lots.some((l) => todayBR() <= l.until);
 
@@ -77,9 +68,9 @@ $('#lots').innerHTML = CONFIG.lots.map((l, i) => {
   return '<div class="lot' + (on ? ' on' : '') + '">' + tg + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">' + sub + '</div></div>';
 }).join('');
 $('#payhow').textContent = 'Você paga por PIX, à vista ou em até ' + CONFIG.maxInstallments + ' parcelas. A organização confere cada pagamento e confirma sua vaga.';
-$('#formintro').textContent = 'Preencha em um minuto. No final, você paga por PIX e manda o comprovante pelo WhatsApp.';
+$('#formintro').textContent = 'Preencha em um minuto. No final, você realiza o pagamento por PIX ou cartão com segurança pela InfinitePay.';
 $('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do acampamento apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
-const faqs = [['Posso pagar em parcelas?', 'Sim, no PIX, em até ' + CONFIG.maxInstallments + ' vezes. A primeira parcela é paga na inscrição e as demais a cada 30 dias.'], ['Quando minha vaga está garantida?', 'Depois que a organização confere o seu primeiro pagamento. Até lá, a vaga não é reservada.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Faça o PIX e mande o comprovante para um dos contatos que aparecem no fim da inscrição. Guarde o seu código.']];
+const faqs = [['Posso pagar em parcelas?', 'Sim! Pela InfinitePay você pode parcelar no cartão de crédito em até 12 vezes ou pagar via PIX.'], ['Quando minha vaga está garantida?', 'Assim que o pagamento for aprovado pela InfinitePay. A confirmação da inscrição é automática.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Você será direcionado para o pagamento seguro na InfinitePay. Escolha PIX ou cartão para confirmar sua vaga imediatamente. Guarde o seu código de inscrição.']];
 $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></details>').join('');
 [...document.querySelectorAll('#faq details')].forEach((d, i) => { d.querySelector('summary').textContent = faqs[i][0]; d.querySelector('p').textContent = faqs[i][1]; });
 
@@ -316,29 +307,19 @@ f.addEventListener('submit', async (ev) => {
   btn.disabled = true;
   btn.textContent = 'Inscrição realizada! Abrindo checkout…';
   window.location.href = checkoutUrl;
-  const proofMsg = encodeURIComponent('Olá! Segue o comprovante do pagamento da inscrição ' + code + ' (' + v.name + '). Valor: ' + brl(p.first) + '.' + (coupon ? ' Cupom: ' + coupon.church + '.' : ''));
-  const pw = $('#waProofs'); pw.textContent = '';
-  (CONFIG.proofContacts && CONFIG.proofContacts.length ? CONFIG.proofContacts : [{ name: 'organização', number: CONFIG.whatsapp }]).forEach((c) => { const a = document.createElement('a'); a.className = 'btn wa'; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.href = 'https://wa.me/' + c.number + '?text=' + proofMsg; a.textContent = 'Enviar para ' + c.name; pw.appendChild(a); });
-  if (p.card) {
-    step1.innerHTML = '<b>Pague com cartão.</b> Toque no botão, escolha em quantas vezes quer pagar e digite os dados do cartão. O valor é ' + brl(p.first) + '; se parcelar, a tela de pagamento mostra o acréscimo antes de você confirmar.<br><a class="btn dark" id="cardBtn" target="_blank" rel="noopener noreferrer" style="margin-top:12px">Pagar com cartão</a>';
-    $('#cardBtn').href = p.card;
-    f.classList.add('hide'); const dc = $('#done'); dc.classList.remove('hide'); dc.focus(); dc.scrollIntoView({ block: 'start' }); setTimeout(() => { if (window.__burst) window.__burst(innerWidth / 2, Math.min(innerHeight * 0.65, innerHeight / 2 + 60)); }, 450);
-    return;
+  // Atualiza código de consulta e notas
+  if ($('#csCode')) $('#csCode').value = code;
+  if ($('#csTel')) $('#csTel').value = v.phone;
+  if ($('#emailNote')) $('#emailNote').textContent = CONFIG.emailOn ? 'Também enviamos o código para ' + v.email + ' (confira a caixa de spam).' : '';
+
+  f.classList.add('hide');
+  const d = $('#done');
+  if (d) {
+    d.classList.remove('hide');
+    d.focus();
+    d.scrollIntoView({ block: 'start' });
+    setTimeout(() => { if (window.__burst) window.__burst(innerWidth / 2, Math.min(innerHeight * 0.65, innerHeight / 2 + 60)); }, 450);
   }
-  step1.innerHTML = step1Pix;
-  $('#payline').textContent = 'Valor de hoje: ' + brl(p.first) + (p.n > 1 ? ' (as outras parcelas são combinadas pelo WhatsApp).' : '.');
-  $('#pixkey').textContent = CONFIG.pixKey; $('#pixname').textContent = CONFIG.pixName ? 'Favorecido: ' + CONFIG.pixName : '';
-  $('#emailNote').textContent = CONFIG.emailOn ? 'Também enviamos o código para ' + v.email + ' (confira a caixa de spam).' : '';
-  $('#csCode').value = code; $('#csTel').value = v.phone;
-  f.classList.add('hide'); const d = $('#done'); d.classList.remove('hide'); d.focus(); d.scrollIntoView({ block: 'start' }); setTimeout(() => { if (window.__burst) window.__burst(innerWidth / 2, Math.min(innerHeight * 0.65, innerHeight / 2 + 60)); }, 450);
-  const copy = async (txt, btn, ok) => { try { await navigator.clipboard.writeText(txt); const o = btn.textContent; btn.textContent = ok; setTimeout(() => (btn.textContent = o), 1800); } catch (e) { const r = document.createRange(); r.selectNodeContents(btn === $('#copypix') ? $('#pixkey') : btn === $('#copycode') ? $('#pixcode') : $('#code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Selecionado: copie (Ctrl+C)'; } };
-  $('#copypix').onclick = () => copy(CONFIG.pixKey, $('#copypix'), 'chave copiada');
-  /* PIX Copia e Cola e QR Code com o valor de hoje (padrão do Banco Central, sem intermediário) */
-  const pixStr = pixPayload(CONFIG.pixKey, p.first, CONFIG.pixMerchant || CONFIG.church, CONFIG.pixCity || 'CAMPINAS', code);
-  $('#pixcode').textContent = pixStr;
-  $('#copycode').onclick = () => copy(pixStr, $('#copycode'), 'Código copiado!');
-  const qrBox = $('#qr'); qrBox.textContent = ''; qrBox.style.display = '';
-  try { const q = qrcode(0, 'M'); q.addData(pixStr); q.make(); const n = q.getModuleCount(); let d = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + c + ' ' + r + 'h1v1h-1z'; qrBox.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + ' ' + (n + 4) + '" shape-rendering="crispEdges" aria-hidden="true"><rect x="-2" y="-2" width="' + (n + 4) + '" height="' + (n + 4) + '" fill="#fff"/><path d="' + d + '" fill="#06212E"/></svg>'; } catch (e) { qrBox.style.display = 'none'; }
 });
 
 /* profundímetro e barra fixa */
@@ -520,7 +501,7 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
       '<div class="cs-bar" role="img" aria-label="Pago ' + brl(pago) + ' de ' + brl(total) + '"><i style="width:' + (total ? Math.round(pago / total * 100) : 0) + '%"></i></div>' +
       '<div><b>' + brl(pago) + '</b> pagos de <b>' + brl(total) + '</b>' + (total > pago ? ' · falta ' + brl(total - pago) : '') + '</div>' +
       (parc.length > 1 ? '<ul class="cs-parc">' + parc.map((p) => { const s = stParc(p); return '<li><span>Parcela ' + p.n + ' · ' + brl(p.valor) + (p.venc ? ' · vence ' + fmtD(p.venc) : '') + '</span><span class="cs-st ' + s + '">' + (s === 'pago' ? 'Paga' : s === 'atrasado' ? 'Atrasada' : s === 'parcial' ? 'Parcial' : 'Em aberto') + '</span></li>'; }).join('') + '</ul>' : '') +
-      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? A equipe confere os comprovantes à mão; pode levar um tempinho.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || '') + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
+      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? O processamento pela InfinitePay costuma levar poucos instantes.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || '') + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
     res.classList.remove('hide');
   });
 })();

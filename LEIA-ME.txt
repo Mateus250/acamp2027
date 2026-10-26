@@ -11,7 +11,7 @@ O QUE TEM AQUI
 - estilo.css ........ cores, tamanhos e layout
 - app.js ............ funcionamento da página. No começo dele fica o CONFIG:
                       datas, local, lotes, parcelas, WhatsApp, PIX e preletores
-- qrcode.min.js ..... gera o QR Code do PIX
+- checkout.html ..... tela segura de pagamento (PIX ou cartão pela InfinitePay)
 - admin/ ............ painel da organização (login, pagamentos, gastos)
 - fotos/ ............ fotos da chácara (para trocar, use o MESMO nome de arquivo)
 - fontes/ ........... fontes Unbounded e Figtree (o site não depende do Google)
