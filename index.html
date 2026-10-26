@@ -116,13 +116,11 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
   <h2>Investimento</h2>
   <p style="margin-top:20px">O valor sobe a cada lote. Garanta o seu enquanto o lote atual está aberto.</p>
   <div class="lots" id="lots"></div>
-  <p style="margin-top:22px" id="payhow"></p>
 </div></section>
 
 <section id="inscricao"><div class="wrap">
   <span class="depth">27 m</span>
   <h2>Faça sua inscrição</h2>
-  <p style="margin-top:20px" id="formintro"></p>
 
   <div class="formcard" id="formcard">
     <form id="f" novalidate>
@@ -153,11 +151,6 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
                 <label class="f">Tamanho da camiseta<select name="shirt"><option value="">Escolha</option><option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option></select><div class="err" data-e="shirt"></div></label>
         <label class="chk noshirt"><input type="checkbox" name="noshirt"><span>Não quero camiseta agora</span></label>
       </div>
-      <label class="f">Restrição alimentar ou algo que a equipe precisa saber<span class="h">Opcional. Escreva só o necessário para o acampamento.</span><textarea name="notes"></textarea></label>
-
-      <div class="cupom"><label class="f" for="cupom" style="margin-bottom:6px">Cupom da sua igreja (opcional)<span class="h">Se a sua igreja combinou um desconto com a organização, digite o cupom aqui.</span></label><div class="cupom-row"><input type="text" id="cupom" autocomplete="off" autocapitalize="characters" spellcheck="false"><button type="button" class="btn dark" id="cupomBtn">Aplicar</button></div><div class="cupom-msg" id="cupomMsg" aria-live="polite"></div></div>
-      <h3>Como você quer pagar?</h3>
-      <div class="opts" id="payopts" role="radiogroup" aria-label="Forma de pagamento"></div>
       <div class="sum" id="sum" aria-live="polite"></div>
 
       <div class="termos-card" style="background:#f4f9fa;border:1.5px solid #c2e2e8;border-radius:14px;padding:16px 18px;margin:20px 0 18px">
