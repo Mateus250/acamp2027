@@ -396,7 +396,7 @@ function lanterna(track) {
     + '<svg class="sp-diver" viewBox="0 0 84 40"><path class="kf" d="M10 17 L0 10 L2 18 Z" fill="#E8A93C" style="transform-origin:10px 17px"/><path class="kf b" d="M10 23 L0 30 L2 22 Z" fill="#E8A93C" style="transform-origin:10px 23px"/><rect x="9" y="15" width="22" height="5" rx="2.5" fill="#FFD27A"/><rect x="9" y="20" width="22" height="5" rx="2.5" fill="#f0c25f"/><rect x="28" y="12" width="30" height="16" rx="8" fill="#FFD27A"/><rect x="30" y="6" width="22" height="7" rx="3.5" fill="#E6F6F3"/><rect x="34" y="6" width="3" height="7" fill="#1B8396"/><circle cx="63" cy="18" r="7.5" fill="#FFD27A"/><rect x="63" y="13" width="9" height="7" rx="3" fill="#1B8396"/><rect x="64.5" y="14.5" width="5" height="3" rx="1.5" fill="#8fe3d4"/><path d="M50 24 L70 28" stroke="#f0c25f" stroke-width="4" stroke-linecap="round"/><rect x="69" y="25.5" width="9" height="5" rx="1.5" fill="#E6F6F3"/><rect x="77" y="25" width="2.5" height="6" rx="1" fill="#fff6d8"/></svg>';
   track.appendChild(fx);
   const poly = fx.querySelector('polygon'), lg = fx.querySelector('#spLg'), dv = fx.querySelector('.sp-diver');
-  let touch = 0, tx = 0, ty = 0, last = 0, px = 80, py = 120, svx = 0, dir = 1, face = 1, ang = 0, on = true, raf = 0;
+  let touch = 0, tx = 0, ty = 0, last = 0, px = -1, py = -1, svx = 0, dir = 1, face = 1, ang = 0, on = true, raf = 0;
   const pos = (e) => { const r = track.getBoundingClientRect(), p = e.touches ? e.touches[0] : e; tx = p.clientX - r.left; ty = p.clientY - r.top; touch = 1; last = performance.now(); };
   track.addEventListener('pointermove', pos); track.addEventListener('touchmove', pos, { passive: true }); track.addEventListener('touchstart', pos, { passive: true });
   const frame = (t) => {
@@ -405,11 +405,16 @@ function lanterna(track) {
     if (touch && t - last > 2000) touch = 0;
     const c0 = cards[0].getBoundingClientRect(), cN = cards[cards.length - 1].getBoundingClientRect();
     const L = c0.left - r.left, T = c0.top - r.top, R = cN.right - r.left, B = cN.bottom - r.top, CW = R - L, CH = B - T;
+    if (px < 0) { px = L + CW * .5; py = T + CH * .45; }
     let gx, gy;
     if (touch) { gx = tx; gy = ty; }
     else if (mob) { gx = L + CW * (.5 + .36 * Math.sin(s * .4)); gy = T + CH * (.5 + .33 * Math.sin(s * .27 + 1)); }
     else { gx = L + CW * (.5 + .42 * Math.sin(s * .32)); gy = T + CH * (.42 + .16 * Math.sin(s * .9)); }
+    const k = Math.max(.65, Math.min(1.15, CW / 700)), mx = 56 * k, my = 40 * k + 6;
+    gx = Math.max(L + mx, Math.min(R - mx, gx)); gy = Math.max(T + Math.max(my, CH * .12), Math.min(B - my, gy));
+    fx.style.clipPath = 'inset(' + T.toFixed(1) + 'px ' + (W - R).toFixed(1) + 'px ' + (H - B).toFixed(1) + 'px ' + L.toFixed(1) + 'px round 24px)';
     const vx = (gx - px) * .045, vy = (gy - py) * .045; px += vx; py += vy;
+    px = Math.max(L + mx, Math.min(R - mx, px)); py = Math.max(T + Math.max(my, CH * .12), Math.min(B - my, py));
     svx = svx * .92 + vx * .08; if (svx > .35) dir = 1; else if (svx < -.35) dir = -1;
     face += (dir - face) * .09; ang += (Math.max(-.45, Math.min(.45, vy * .07)) - ang) * .08;
     const bob = 3 * Math.sin(s * 2.2), sc = Math.max(.65, Math.min(1.15, CW / 700));
