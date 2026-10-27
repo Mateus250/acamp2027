@@ -380,6 +380,54 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   addEventListener('pointerup', end); addEventListener('pointercancel', end);
 })();
 
+/* ===== PRELETORES EM SUSPENSE: mergulhador com lanterna =====
+   Some sozinho quando speakersRevealed = true. */
+function lanterna(track) {
+  const cards = [...track.querySelectorAll('.sp-card.sealed')]; if (!cards.length) return;
+  cards.forEach((c) => {
+    const lit = document.createElement('div'); lit.className = 'sp-lit';
+    c.querySelectorAll('.sp-art, .sp-sil').forEach((el) => lit.appendChild(el.cloneNode(true)));
+    const dk = document.createElement('div'); dk.className = 'sp-dark';
+    c.append(lit, dk);
+  });
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const fx = document.createElement('div'); fx.className = 'sp-fx'; fx.setAttribute('aria-hidden', 'true');
+  fx.innerHTML = '<svg class="sp-cone" width="100%" height="100%" style="position:absolute;inset:0;overflow:visible"><defs><linearGradient id="spLg" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffeab8" stop-opacity=".4"/><stop offset="1" stop-color="#ffeab8" stop-opacity="0"/></linearGradient></defs><polygon fill="url(#spLg)"/></svg>'
+    + '<svg class="sp-diver" viewBox="0 0 84 40"><path class="kf" d="M10 17 L0 10 L2 18 Z" fill="#E8A93C" style="transform-origin:10px 17px"/><path class="kf b" d="M10 23 L0 30 L2 22 Z" fill="#E8A93C" style="transform-origin:10px 23px"/><rect x="9" y="15" width="22" height="5" rx="2.5" fill="#FFD27A"/><rect x="9" y="20" width="22" height="5" rx="2.5" fill="#f0c25f"/><rect x="28" y="12" width="30" height="16" rx="8" fill="#FFD27A"/><rect x="30" y="6" width="22" height="7" rx="3.5" fill="#E6F6F3"/><rect x="34" y="6" width="3" height="7" fill="#1B8396"/><circle cx="63" cy="18" r="7.5" fill="#FFD27A"/><rect x="63" y="13" width="9" height="7" rx="3" fill="#1B8396"/><rect x="64.5" y="14.5" width="5" height="3" rx="1.5" fill="#8fe3d4"/><path d="M50 24 L70 28" stroke="#f0c25f" stroke-width="4" stroke-linecap="round"/><rect x="69" y="25.5" width="9" height="5" rx="1.5" fill="#E6F6F3"/><rect x="77" y="25" width="2.5" height="6" rx="1" fill="#fff6d8"/></svg>';
+  track.appendChild(fx);
+  const poly = fx.querySelector('polygon'), lg = fx.querySelector('#spLg'), dv = fx.querySelector('.sp-diver');
+  let touch = 0, tx = 0, ty = 0, last = 0, px = 80, py = 120, svx = 0, dir = 1, face = 1, ang = 0, on = true, raf = 0;
+  const pos = (e) => { const r = track.getBoundingClientRect(), p = e.touches ? e.touches[0] : e; tx = p.clientX - r.left; ty = p.clientY - r.top; touch = 1; last = performance.now(); };
+  track.addEventListener('pointermove', pos); track.addEventListener('touchmove', pos, { passive: true }); track.addEventListener('touchstart', pos, { passive: true });
+  const frame = (t) => {
+    raf = 0; if (!on) return;
+    const r = track.getBoundingClientRect(), W = r.width, H = r.height, s = t / 1000, mob = W < 560;
+    if (touch && t - last > 2000) touch = 0;
+    const c0 = cards[0].getBoundingClientRect(), cN = cards[cards.length - 1].getBoundingClientRect();
+    const L = c0.left - r.left, T = c0.top - r.top, R = cN.right - r.left, B = cN.bottom - r.top, CW = R - L, CH = B - T;
+    let gx, gy;
+    if (touch) { gx = tx; gy = ty; }
+    else if (mob) { gx = L + CW * (.5 + .36 * Math.sin(s * .4)); gy = T + CH * (.5 + .33 * Math.sin(s * .27 + 1)); }
+    else { gx = L + CW * (.5 + .42 * Math.sin(s * .32)); gy = T + CH * (.42 + .16 * Math.sin(s * .9)); }
+    const vx = (gx - px) * .045, vy = (gy - py) * .045; px += vx; py += vy;
+    svx = svx * .92 + vx * .08; if (svx > .35) dir = 1; else if (svx < -.35) dir = -1;
+    face += (dir - face) * .09; ang += (Math.max(-.45, Math.min(.45, vy * .07)) - ang) * .08;
+    const bob = 3 * Math.sin(s * 2.2), sc = Math.max(.65, Math.min(1.15, CW / 700));
+    const fs = Math.abs(face) < .12 ? (face < 0 ? -.12 : .12) : face;
+    dv.style.transform = 'translate(' + (px - 42).toFixed(1) + 'px,' + (py - 20 + bob).toFixed(1) + 'px) scale(' + (fs * sc).toFixed(3) + ',' + sc.toFixed(3) + ') rotate(' + (Math.sign(fs) * ang).toFixed(3) + 'rad)';
+    const lampX = px + face * 36 * sc, lampY = py + bob + 8 * sc, dist = (mob ? CW * .32 : CW * .15) * Math.abs(face);
+    const lx = lampX + face * dist * Math.cos(ang), ly = lampY + dist * Math.sin(Math.abs(ang)) * Math.sign(ang) + CH * .05 * Math.abs(face);
+    const spread = (mob ? CH * .16 : CH * .34) * Math.abs(face); let nx = -(ly - lampY), ny = lx - lampX; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+    poly.setAttribute('points', lampX + ',' + lampY + ' ' + (lx + nx * spread) + ',' + (ly + ny * spread) + ' ' + (lx - nx * spread) + ',' + (ly - ny * spread));
+    lg.setAttribute('x1', lampX); lg.setAttribute('y1', lampY); lg.setAttribute('x2', lx); lg.setAttribute('y2', ly);
+    const rw = mob ? 80 : CW * .18, rh = mob ? 80 : CH * .5;
+    cards.forEach((c) => { const q = c.getBoundingClientRect(); c.style.setProperty('--lx', (lx - (q.left - r.left)).toFixed(1) + 'px'); c.style.setProperty('--ly', (ly - (q.top - r.top)).toFixed(1) + 'px'); c.style.setProperty('--rw', rw + 'px'); c.style.setProperty('--rh', rh + 'px'); });
+    raf = requestAnimationFrame(frame);
+  };
+  const io = new IntersectionObserver((es) => { on = es[0].isIntersecting; if (on && !raf) raf = requestAnimationFrame(frame); });
+  io.observe(track);
+}
+
 /* ===== PRELETORES ===== */
 (() => {
   const track = $('#spTrack'), prev = $('#spPrev'), next = $('#spNext');
@@ -395,6 +443,8 @@ addEventListener('scroll', onScroll, { passive: true }); addEventListener('resiz
   });
   if (!CONFIG.speakersRevealed) {
     track.classList.add('is-sealed'); track.removeAttribute('tabindex'); [prev, next].forEach((b) => { if (b) b.hidden = true; });
+    const sub = $('#preletores .sp-sub'); if (sub) sub.innerHTML = '<span class="sp-soon"><span>Preletores revelados em breve</span><b>Fique de olho</b></span>';
+    lanterna(track);
   }
   /* alinha o primeiro cartão com o texto da página */
   const align = () => { const wl = Math.round($('#preletores .wrap').getBoundingClientRect().left); track.style.paddingLeft = wl + 'px'; track.style.scrollPaddingLeft = wl + 'px'; };

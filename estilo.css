@@ -338,3 +338,26 @@ footer a:not(.btn){color:#fff;text-decoration:underline;text-underline-offset:3p
 .sp-sil{position:absolute;left:50%;top:16%;width:62%;transform:translateX(-50%);fill:rgba(230,246,243,.34)}
 .sp-track.is-sealed{overflow-x:hidden;scroll-snap-type:none}
 .nav-b[hidden]{display:none!important}
+
+/* ===== preletores em suspense: mergulhador com lanterna ===== */
+.sp-soon{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.sp-soon span{color:var(--mute);font-size:1rem}
+.sp-soon b{font:700 .74rem var(--f-body);color:var(--ink);background:var(--ray);padding:4px 11px;border-radius:99px;animation:spPill 2.4s ease-in-out infinite}
+@keyframes spPill{0%,100%{box-shadow:0 0 0 0 rgba(255,210,122,.5)}50%{box-shadow:0 0 0 6px rgba(255,210,122,0)}}
+.sp-track.is-sealed{display:grid;grid-template-columns:repeat(4,minmax(0,290px));gap:18px;overflow:hidden;touch-action:pan-y}
+.sp-track.is-sealed .sp-card{transform:none!important;opacity:1!important;background:linear-gradient(180deg,#072636,#02101A)}
+.sp-card.sealed .sp-sil{fill:rgba(230,246,243,.2)}
+.sp-card.sealed .sp-art{opacity:.6}
+.sp-lit,.sp-dark{position:absolute;inset:0;pointer-events:none}
+.sp-lit{z-index:3;-webkit-mask-image:radial-gradient(var(--rw,90px) var(--rh,160px) at var(--lx,-999px) var(--ly,-999px),#000 0,#000 25%,transparent 100%);mask-image:radial-gradient(var(--rw,90px) var(--rh,160px) at var(--lx,-999px) var(--ly,-999px),#000 0,#000 25%,transparent 100%)}
+.sp-lit .sp-art,.sp-lit .sp-sil{filter:blur(5px) brightness(1.25)}
+.sp-lit .sp-art{opacity:.8}
+.sp-dark{z-index:4;background:radial-gradient(calc(var(--rw,90px)*1.4) calc(var(--rh,160px)*1.3) at var(--lx,-999px) var(--ly,-999px),rgba(255,235,185,.08) 0,rgba(2,12,18,.35) 50%,rgba(2,12,18,.72) 100%)}
+.sp-fx{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
+.sp-cone{mix-blend-mode:screen}
+.sp-diver{position:absolute;left:0;top:0;width:84px;height:40px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.45));will-change:transform}
+.sp-diver .kf{transform-box:fill-box;animation:spKick .5s ease-in-out infinite alternate}
+.sp-diver .kf.b{animation-delay:.25s}
+@keyframes spKick{0%{transform:rotate(-14deg)}100%{transform:rotate(14deg)}}
+@media (max-width:760px){.sp-track.is-sealed{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.sp-track.is-sealed .sp-info h3{font-size:1rem}.sp-track.is-sealed .sp-info p{font-size:.8rem}}
+@media (prefers-reduced-motion:reduce){.sp-soon b,.sp-diver .kf{animation:none}.sp-fx{display:none}}
