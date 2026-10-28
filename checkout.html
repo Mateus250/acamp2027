@@ -206,7 +206,8 @@ label.ck-lbl{display:block;font-weight:700;margin-bottom:14px}
     try { history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs.toString() : '')); } catch (e) {}
   }
 
-  const statusUrl = () => '/api/status?codigo=' + encodeURIComponent(codigo) + (nsu ? '&transaction_nsu=' + encodeURIComponent(nsu) : '') + (slug ? '&slug=' + encodeURIComponent(slug) : '');
+  const API_BASE = (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:")) ? "https://acampamentoipi.com.br" : "";
+  const statusUrl = () => API_BASE + '/api/status?codigo=' + encodeURIComponent(codigo) + (nsu ? '&transaction_nsu=' + encodeURIComponent(nsu) : '') + (slug ? '&slug=' + encodeURIComponent(slug) : '');
   async function buscarStatus() {
     const r = await fetch(statusUrl(), { headers: { Accept: 'application/json' } });
     if (!r.ok) throw new Error('status ' + r.status);
@@ -238,7 +239,7 @@ label.ck-lbl{display:block;font-weight:700;margin-bottom:14px}
       $('#pagErro').classList.add('hide'); btn.disabled = true; btn.textContent = 'Abrindo a InfinitePay…';
       try {
         /* o servidor busca nome, e-mail, telefone e CPF pelo código; aqui vai só o código e o valor que o próprio servidor informou */
-        const r = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: d.codigo || codigo, valor: v.falta }) });
+        const r = await fetch(API_BASE + '/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: d.codigo || codigo, valor: v.falta }) });
         const res = await r.json().catch(() => ({}));
         if (!r.ok || !res.url) {
           console.error('Erro na resposta de checkout:', r.status, res);

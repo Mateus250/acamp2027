@@ -38,7 +38,9 @@ const CONFIG = {
 /* ================================================================== */
 /* banco de dados (Supabase): as inscrições caem direto no painel /admin */
 /* Todas as consultas e gravações são realizadas com segurança através da API backend (/api/*) */
-const SB = null;
+const API_BASE = (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:"))
+  ? "https://acampamentoipi.com.br"
+  : "";
 let sending = false;
 const $ = (s, r) => (r || document).querySelector(s);
 const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(c % 100).padStart(2, '0');
@@ -91,11 +93,10 @@ const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').i
   cBtn.addEventListener('click', async () => {
     if (coupon) { setC(null); cIn.value = ''; cIn.disabled = false; cBtn.textContent = 'Aplicar'; say(''); cIn.focus(); return; }
     const code = normCode(cIn.value); if (!code) { say('Digite o cupom.', 'bad'); return; }
-    if (!SB) { say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
     cBtn.disabled = true; say('Conferindo…');
     let c = null;
     try {
-      const res = await fetch('/api/cupom?codigo=' + encodeURIComponent(code));
+      const res = await fetch(API_BASE + '/api/cupom?codigo=' + encodeURIComponent(code));
       if (res.ok) {
         const data = await res.json();
         if (data.ok && data.cupom) {
@@ -106,7 +107,10 @@ const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').i
           return;
         }
       } else {
-        throw new Error('HTTP ' + res.status);
+        const errJson = await res.json().catch(() => ({}));
+        cBtn.disabled = false;
+        say(errJson.error || 'Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad');
+        return;
       }
     } catch (e) {
       console.error('Falha ao validar cupom via API:', e);
@@ -257,7 +261,7 @@ f.addEventListener('submit', async (ev) => {
     btn.disabled = true;
     btn.textContent = 'Verificando inscrição anterior…';
     try {
-      const chkRes = await fetch('/api/verificar-cpf?cpf=' + encodeURIComponent(cpfDig));
+      const chkRes = await fetch(API_BASE + '/api/verificar-cpf?cpf=' + encodeURIComponent(cpfDig));
       if (chkRes.ok) {
         const chkData = await chkRes.json();
         if (chkData && chkData.exists && chkData.jaInscrito) {
@@ -303,7 +307,7 @@ f.addEventListener('submit', async (ev) => {
   errBox.textContent = '';
   let salvo = false;
   try {
-    const saveRes = await fetch('/api/inscricoes', {
+    const saveRes = await fetch(API_BASE + '/api/inscricoes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(row)
@@ -561,7 +565,7 @@ function lanterna(track) {
     try {
       // 1. Consulta prioritariamente na API segura /api/status (com service_role e checagem em tempo real na InfinitePay)
       try {
-        const apiRes = await fetch('/api/status?cpf=' + encodeURIComponent(cpfNum));
+        const apiRes = await fetch(API_BASE + '/api/status?cpf=' + encodeURIComponent(cpfNum));
         if (apiRes.ok) {
           const apiData = await apiRes.json();
           if (apiData && !apiData.not_found && apiData.codigo) {

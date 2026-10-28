@@ -38,6 +38,8 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null, req
     let captureMethod = body.capture_method || 'infinitepay';
     let transactionNsu = body.transaction_nsu || '';
     let receiptUrl = body.receipt_url || '';
+    let slug = body.slug || '';
+    let handle = body.handle || '';
 
     log('WEBHOOK', `[${requestId}] Extraído: event=${eventType || 'none'}, order_nsu=${orderNsu} (fonte: ${pathCodigo ? 'path' : 'payload'}), amount=${amountPaid}`);
 
@@ -66,6 +68,8 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null, req
           apiKey: env.INFINITEPAY_API_KEY,
           orderNsu,
           transactionNsu,
+          slug,
+          handle,
           requestId
         });
 
