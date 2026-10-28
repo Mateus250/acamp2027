@@ -501,7 +501,7 @@ function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show"
 const CAT_GASTOS=["Local (chácara)","Transporte","Alimentação","Limpeza","Material e decoração","Som e mídia","Camisetas e brindes","Seguro","Outros"];
 const CAT_ENTRADAS=["Repasse de Igreja","Subsídio de Inscrição","Ofertas","Doações","Cantina","Patrocínio","Bazar","Outros"];
 const DEFAULT_CONFIG={nome:"Imersos",subtitulo:"Acampamento de Carnaval 2027",dataInicio:"",dataFim:"",local:"",vagas:0,whatsapp:"",
-  opcoes:[{id:"avista",nome:"PIX à vista",parcelas:1,valor:45000,primeiroVenc:""}],
+  opcoes:[{id:"infinitepay",nome:"InfinitePay",parcelas:1,valor:45000,primeiroVenc:""}],
   cuponsEquipe:["COMISSAO27","NT180"]};
 
 /* ---------- Estado e dados ---------- */
@@ -1702,7 +1702,7 @@ function abrirAcampante(id){
     ${a.codigo?`<dt>Código</dt><dd>${esc(a.codigo)}</dd>`:""}${a.telefone?`<dt>WhatsApp</dt><dd>${esc(a.telefone)}</dd>`:""}${a.email?`<dt>E-mail</dt><dd>${esc(a.email)}</dd>`:""}${a.nascimento?`<dt>Nascimento</dt><dd>${fmtDate(a.nascimento)}</dd>`:""}${a.idade?`<dt>Idade</dt><dd>${a.idade}</dd>`:""}${a.responsavel?`<dt>Responsável</dt><dd>${esc(a.responsavel)}${a.responsavelTel?", "+esc(a.responsavelTel):""}</dd>`:""}${a.camiseta?`<dt>Camiseta</dt><dd>${esc(a.camiseta)}</dd>`:""}${a.lote?`<dt>Lote</dt><dd>${esc(a.lote)}</dd>`:""}${a.origem==="site"?`<dt>Origem</dt><dd>Inscrição pelo site</dd>`:""}${a.obs?`<dt>Obs.</dt><dd style="font-weight:400">${esc(a.obs)}</dd>`:""}</dl>
     ${t.total===0?`<div class="banner">Este acampante está com valor zerado. Edite a ficha para definir o valor.</div>`:""}
     ${t.falta > 0 && a.codigo ? `<div style="background:rgba(0,208,156,0.12);border:1px solid rgba(0,208,156,0.3);padding:10px 14px;border-radius:10px;margin:12px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div><b style="color:var(--ink)">Link de Pagamento (InfinitePay):</b><div style="font-size:12px;color:var(--muted)">Copie e envie ao acampante para pagar em até 12x ou Pix</div></div>
+        <div><b style="color:var(--ink)">Link de Pagamento (InfinitePay):</b><div style="font-size:12px;color:var(--muted)">Copie e envie ao acampante para pagar online na InfinitePay</div></div>
         <button class="btn small" style="background:#00D09C;color:#03211A;font-weight:700" onclick="copiarLinkCheckout('${esc(a.codigo)}',${t.falta},'${esc(a.cpf||'')}')">Copiar Link do Checkout</button>
       </div>` : ''}
     <h3 style="font-size:17px;margin:6px 0 2px">Parcelas</h3>${ps}

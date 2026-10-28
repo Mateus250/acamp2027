@@ -1,6 +1,6 @@
 ﻿/* ============================================================
    IMERSOS · código da página
-   Para trocar datas, local, valores, lotes, WhatsApp, PIX e preletores,
+   Para trocar datas, local, valores, lotes, WhatsApp e preletores,
    edite o bloco CONFIG logo abaixo e suba a pasta de novo no Netlify.
    ============================================================ */
 /* ===== EDITE AQUI: tudo que muda de um acampamento para outro ===== */
@@ -71,7 +71,7 @@ $('#lots').innerHTML = CONFIG.lots.map((l, i) => {
   return '<div class="lot' + (on ? ' on' : '') + '">' + tg + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">' + sub + '</div></div>';
 }).join('');
 $('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do acampamento apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
-const faqs = [['Posso pagar em parcelas?', 'Sim! Pela InfinitePay você pode parcelar no cartão de crédito em até 12 vezes. O pagamento por PIX é à vista com confirmação imediata.'], ['Quando minha vaga está garantida?', 'Assim que o pagamento for aprovado pela InfinitePay. A confirmação da inscrição é automática.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Você será direcionado para o pagamento seguro na InfinitePay. Escolha PIX ou cartão para confirmar sua vaga imediatamente. Guarde o seu código de inscrição.']];
+const faqs = [['Posso pagar em parcelas?', 'Sim! Pela InfinitePay você pode parcelar no cartão de crédito em até 12 vezes ou pagar via PIX à vista gerado na hora pela plataforma. Todos os pagamentos são feitos exclusivamente pela InfinitePay com baixa automática.'], ['Quando minha vaga está garantida?', 'Assim que o pagamento for aprovado pela InfinitePay. A confirmação da inscrição é automática.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Você será direcionado para o pagamento seguro na InfinitePay para concluir o pagamento e garantir sua vaga imediatamente. Guarde o seu código de inscrição.']];
 $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></details>').join('');
 [...document.querySelectorAll('#faq details')].forEach((d, i) => { d.querySelector('summary').textContent = faqs[i][0]; d.querySelector('p').textContent = faqs[i][1]; });
 
@@ -82,7 +82,7 @@ const normCode = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpp
 const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (100 - c.value) / 100) : c.type === 'off' ? Math.max(0, price - c.value) : c.type === 'price' ? c.value : price);
 const finalPrice = () => (coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
 const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
-const P = [{ id: 'avista', t: 'PIX à vista', first: 0, n: 1 }];   // pagamento é feito no checkout (InfinitePay)
+const P = [{ id: 'infinitepay', t: 'InfinitePay', first: 0, n: 1 }];   // pagamento é feito no checkout (InfinitePay)
 const curPlan = () => ({ ...P[0], first: finalPrice() });
 const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : ''); };
 /* campo do cupom */
@@ -603,7 +603,7 @@ function lanterna(track) {
       '<div><b>' + brl(pago) + '</b> pagos de <b>' + brl(total) + '</b>' + (total > pago ? ' · falta ' + brl(total - pago) : '') + '</div>' +
       (parc.length > 1 ? '<ul class="cs-parc">' + parc.map((p) => { const s = stParc(p); return '<li><span>Parcela ' + p.n + ' · ' + brl(p.valor) + (p.venc ? ' · vence ' + fmtD(p.venc) : '') + '</span><span class="cs-st ' + s + '">' + (s === 'pago' ? 'Paga' : s === 'atrasado' ? 'Atrasada' : s === 'parcial' ? 'Parcial' : 'Em aberto') + '</span></li>'; }).join('') + '</ul>' : '') +
       (st !== 'pago' ?
-        '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? O processamento pela InfinitePay costuma levar poucos instantes.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || '') + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' :
+        '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? O processamento pela InfinitePay costuma levar poucos instantes.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || '') + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay</a></div>' :
         '<div style="margin-top:18px;background:rgba(22,112,124,0.08);border:2px dashed #16707C;border-radius:14px;padding:18px;text-align:center">' +
           '<div style="font-weight:700;font-size:0.85rem;letter-spacing:0.04em;text-transform:uppercase;color:#16707C">Seu Ingresso de Check-in</div>' +
           '<div style="margin:12px auto;width:180px;height:180px;background:#FFFFFF;padding:8px;border-radius:10px;border:1px solid #D0DFDB;box-shadow:0 4px 12px rgba(0,0,0,0.05)">' +
