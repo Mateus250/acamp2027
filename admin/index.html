@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root{
   --bg:#EAF2F0; --surface:#FFFFFF; --ink:#0F2A33; --muted:#566C72; --line:#D0DFDB;
@@ -220,6 +221,209 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
 .preview{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px;font-size:13px;margin-bottom:12px}
 .preview table{border-collapse:collapse;width:100%}
 .preview td,.preview th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+
+/* ---------- Estilos da Aba Check-in ---------- */
+.checkin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.checkin-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.checkin-stat-card .csc-val {
+  font-size: 28px;
+  font-weight: 800;
+  font-family: "Bricolage Grotesque", sans-serif;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.checkin-stat-card .csc-lbl {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.scanner-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.scanner-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.scanner-viewport-box {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg);
+  border: 2px dashed var(--water);
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#reader {
+  width: 100% !important;
+  border: none !important;
+}
+#reader video {
+  border-radius: 14px;
+  object-fit: cover;
+  width: 100% !important;
+}
+
+.alerta-menor-box {
+  background: var(--coral-soft);
+  border: 2px solid var(--coral);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.alerta-menor-title {
+  color: var(--coral);
+  font-weight: 800;
+  font-size: 17px;
+  font-family: "Bricolage Grotesque", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.alerta-menor-desc {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.alerta-resp-grid {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+:root[data-theme="dark"] .alerta-resp-grid {
+  background: rgba(0, 0, 0, 0.3);
+}
+.auth-chk-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--coral);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.auth-chk-label input {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  cursor: pointer;
+}
+
+.alerta-maior-box {
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alerta-pagamento-box {
+  background: var(--sun-soft);
+  border-left: 4px solid var(--sun);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+.pagamento-ok-box {
+  background: var(--ok-soft);
+  color: var(--ok);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.kit-box {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.kit-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+.kit-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.kit-tamanho {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.badge-menor {
+  background: var(--coral-soft);
+  color: var(--coral);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--coral);
+  white-space: nowrap;
+}
+.badge-maior {
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 </style>
 </head>
 <body>
@@ -236,6 +440,7 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
     </div>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="resumo" aria-selected="true">Resumo</button>
+      <button class="tab" role="tab" data-tab="checkin" aria-selected="false">Check-in</button>
       <button class="tab" role="tab" data-tab="acampantes" aria-selected="false">Acampantes</button>
       <button class="tab" role="tab" data-tab="cupons" aria-selected="false">Cupons</button>
       <button class="tab" role="tab" data-tab="gastos" aria-selected="false">Gastos</button>
@@ -249,6 +454,7 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
   <div id="banner"></div>
 
   <section id="sec-resumo"></section>
+  <section id="sec-checkin" hidden></section>
   <section id="sec-acampantes" hidden></section>
   <section id="sec-cupons" hidden></section>
   <section id="sec-gastos" hidden></section>
@@ -522,7 +728,7 @@ function renderAll(){
   $("#evNome").textContent=S.config.nome||"Acampamento";
   const dt = S.config.dataInicio ? fmtDate(S.config.dataInicio)+(S.config.dataFim?" a "+fmtDate(S.config.dataFim):"") : "";
   $("#evSub").textContent=[S.config.subtitulo,dt,S.config.local].filter(Boolean).join(", ");
-  renderResumo(); renderAcampantes(); renderCupons(); renderLista("despesas"); renderLista("entradas"); renderAjustes();
+  renderResumo(); renderCheckin(); renderAcampantes(); renderCupons(); renderLista("despesas"); renderLista("entradas"); renderAjustes();
 }
 
 function calc(){
@@ -1628,13 +1834,617 @@ function exportFinanceiro(){
   baixar("financeiro.csv",L);
 }
 
+/* ---------- Lógica e Renderização de Check-in ---------- */
+let filtroCheckin = "todos"; // 'todos' | 'pendente' | 'checkin' | 'menor'
+let buscaCheckin = "";
+let html5QrScanner = null;
+let isScanning = false;
+let lastScannedText = "";
+let lastScannedTime = 0;
+
+function isMenor(a){
+  if(!a) return false;
+  if(a.idade !== null && a.idade !== undefined && a.idade !== ""){
+    const n = Number(a.idade);
+    if(!isNaN(n) && n > 0) return n < 18;
+  }
+  if(a.nascimento){
+    const parts = String(a.nascimento).split("-");
+    if(parts.length === 3){
+      const campDate = new Date(2027, 1, 5); // 05/02/2027
+      const birthDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      let age = campDate.getFullYear() - birthDate.getFullYear();
+      const m = campDate.getMonth() - birthDate.getMonth();
+      if(m < 0 || (m === 0 && campDate.getDate() < birthDate.getDate())) age--;
+      if(!isNaN(age)) return age < 18;
+    }
+  }
+  if(a.responsavel && a.responsavel.trim().length > 1) return true;
+  if(a.responsavelTel && a.responsavelTel.trim().length > 1) return true;
+  if(a.obs && /(Resp1|Resp2|Respons[aá]vel|Autoriza[çc][aã]o)/i.test(a.obs)) return true;
+  return false;
+}
+
+function getIdadeText(a){
+  if(a.idade !== null && a.idade !== undefined && a.idade !== ""){
+    return a.idade + " anos";
+  }
+  if(a.nascimento){
+    const parts = String(a.nascimento).split("-");
+    if(parts.length === 3){
+      const campDate = new Date(2027, 1, 5);
+      const birthDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      let age = campDate.getFullYear() - birthDate.getFullYear();
+      const m = campDate.getMonth() - birthDate.getMonth();
+      if(m < 0 || (m === 0 && campDate.getDate() < birthDate.getDate())) age--;
+      if(!isNaN(age) && age > 0) return age + " anos";
+    }
+  }
+  return "Idade não informada";
+}
+
+function getCheckinData(a){
+  if(!a) return null;
+  const key = a.codigo || a.id;
+  if(S.config && S.config.checkins && S.config.checkins[key]){
+    return S.config.checkins[key];
+  }
+  if(a.obs){
+    const m = a.obs.match(/\[CHECKIN:\s*([^\|\]]+)(?:\|\s*por:\s*([^\]\|]+))?(?:\|\s*autorizacao:\s*([^\]]+))?\]/i);
+    if(m){
+      return {
+        data: m[1].trim(),
+        por: (m[2] || "admin").trim(),
+        autorizacaoMenor: (m[3] || "").toUpperCase().includes("OK")
+      };
+    }
+  }
+  return null;
+}
+
+function isCheckedIn(a){
+  return Boolean(getCheckinData(a));
+}
+
+function fmtCheckinData(iso){
+  if(!iso) return "data desconhecida";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("pt-BR") + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  } catch(e){
+    return iso;
+  }
+}
+
+function playCheckinBeep(success = true){
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if(!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    if(success){
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.18);
+    } else {
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(160, ctx.currentTime + 0.22);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.22);
+    }
+  } catch(e) {}
+}
+
+function extrairCodigoInscricao(raw){
+  if(!raw) return "";
+  const s = String(raw).trim();
+  try {
+    if(s.startsWith("http://") || s.startsWith("https://")){
+      const u = new URL(s);
+      const cod = u.searchParams.get("codigo") || u.searchParams.get("code") || u.searchParams.get("c");
+      if(cod) return cod.trim().toUpperCase();
+      if(u.hash){
+        const mHash = u.hash.match(/[?&]c(?:odigo)?=([A-Za-z0-9_-]+)/i);
+        if(mHash) return mHash[1].trim().toUpperCase();
+      }
+    }
+  } catch(e) {}
+  const mImr = s.match(/\b(IMR[-_]?[A-Z0-9]{3,8})\b/i);
+  if(mImr) return mImr[1].toUpperCase();
+  return s.toUpperCase();
+}
+
+function processarCodigoLido(rawText){
+  const codBuscado = extrairCodigoInscricao(rawText);
+  const rawNum = rawText.replace(/\D/g, "");
+  const a = S.acampantes.find(x => {
+    if(x.codigo && x.codigo.toUpperCase() === codBuscado) return true;
+    if(x.id && x.id === rawText) return true;
+    if(rawNum && rawNum.length === 11 && x.cpf && x.cpf.replace(/\D/g, "") === rawNum) return true;
+    if(norm(x.nome) === norm(rawText)) return true;
+    return false;
+  });
+
+  if(a){
+    playCheckinBeep(true);
+    abrirCheckinModal(a.id);
+  } else {
+    playCheckinBeep(false);
+    toast("QR Code lido: '" + rawText + "', mas nenhuma inscrição foi encontrada.");
+  }
+}
+
+async function iniciarCamera(){
+  const readerEl = document.getElementById("reader");
+  const placeholder = document.getElementById("scannerPlaceholder");
+  if(!readerEl) return;
+  if(typeof Html5Qrcode === "undefined"){
+    toast("Biblioteca de câmera carregando. Aguarde 2 segundos e tente de novo.");
+    return;
+  }
+  if(isScanning) return;
+
+  try {
+    if(!html5QrScanner){
+      html5QrScanner = new Html5Qrcode("reader");
+    }
+
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      const select = document.getElementById("cameraSelect");
+      if(select && devices && devices.length){
+        select.innerHTML = devices.map(d => '<option value="' + d.id + '">' + (d.label || 'Câmera ' + d.id) + '</option>').join("");
+        select.style.display = devices.length > 1 ? "block" : "none";
+      }
+    } catch(eDevices) {
+      console.warn("Erro ao listar câmeras:", eDevices);
+    }
+
+    const select = document.getElementById("cameraSelect");
+    const cameraId = select && select.value ? select.value : { facingMode: "environment" };
+
+    if(placeholder) placeholder.style.display = "none";
+    readerEl.style.display = "block";
+
+    await html5QrScanner.start(
+      cameraId,
+      { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+      (decodedText) => {
+        const now = Date.now();
+        if(decodedText === lastScannedText && now - lastScannedTime < 3000){
+          return;
+        }
+        lastScannedText = decodedText;
+        lastScannedTime = now;
+        processarCodigoLido(decodedText);
+      },
+      () => {}
+    );
+
+    isScanning = true;
+    atualizarBotoesCamera(true);
+  } catch(err) {
+    console.error("Falha ao abrir câmera:", err);
+    toast("Não foi possível acessar a câmera. Verifique a permissão do navegador.");
+    isScanning = false;
+    atualizarBotoesCamera(false);
+    if(placeholder) placeholder.style.display = "block";
+  }
+}
+
+async function pararCamera(){
+  if(html5QrScanner && isScanning){
+    try {
+      await html5QrScanner.stop();
+    } catch(e) {
+      console.warn("Aviso ao parar câmera:", e);
+    }
+    isScanning = false;
+    atualizarBotoesCamera(false);
+    const placeholder = document.getElementById("scannerPlaceholder");
+    if(placeholder) placeholder.style.display = "block";
+  }
+}
+
+async function trocarCamera(deviceId){
+  if(!deviceId) return;
+  if(isScanning){
+    await pararCamera();
+    setTimeout(iniciarCamera, 300);
+  }
+}
+
+function atualizarBotoesCamera(ativa){
+  const btnStart = document.getElementById("btnStartScan");
+  const btnStop = document.getElementById("btnStopScan");
+  const badge = document.getElementById("scannerStatusBadge");
+  if(btnStart) btnStart.style.display = ativa ? "none" : "inline-flex";
+  if(btnStop) btnStop.style.display = ativa ? "inline-flex" : "none";
+  if(badge){
+    badge.className = ativa ? "pill pago" : "pill pendente";
+    badge.textContent = ativa ? "● Câmera Ativa" : "○ Câmera Desligada";
+  }
+}
+
+function setFiltroCheckin(f){
+  filtroCheckin = f;
+  document.querySelectorAll("#sec-checkin .chip").forEach(c => {
+    c.setAttribute("aria-pressed", c.dataset.f === f);
+  });
+  renderCheckinList();
+}
+
+function filtrarCheckinInput(val){
+  buscaCheckin = val;
+  renderCheckinList();
+}
+
+function getCheckinFiltrados(){
+  let list = S.acampantes.slice();
+  if(filtroCheckin === "pendente"){
+    list = list.filter(a => !isCheckedIn(a));
+  } else if(filtroCheckin === "checkin"){
+    list = list.filter(a => isCheckedIn(a));
+  } else if(filtroCheckin === "menor"){
+    list = list.filter(a => isMenor(a));
+  }
+
+  if(buscaCheckin){
+    const b = norm(buscaCheckin);
+    const bRaw = buscaCheckin.replace(/\D/g, "");
+    list = list.filter(a => {
+      return norm(a.nome).includes(b) ||
+        (a.codigo && a.codigo.toUpperCase().includes(buscaCheckin.toUpperCase())) ||
+        (bRaw && bRaw.length >= 4 && a.cpf && a.cpf.replace(/\D/g, "").includes(bRaw)) ||
+        (bRaw && bRaw.length >= 4 && a.telefone && a.telefone.replace(/\D/g, "").includes(bRaw)) ||
+        (a.responsavel && norm(a.responsavel).includes(b));
+    });
+  }
+
+  return list;
+}
+
+function renderCheckinList(){
+  const container = document.getElementById("checkinListContainer");
+  const counterEl = document.getElementById("checkinListCount");
+  if(!container) return;
+
+  const list = getCheckinFiltrados();
+  if(counterEl) counterEl.textContent = "Mostrando " + list.length + " de " + S.acampantes.length + " participantes";
+
+  if(!list.length){
+    container.innerHTML = '<div class="empty"><strong>Nenhum participante encontrado</strong>Confira o nome, código ou filtro selecionado.</div>';
+    return;
+  }
+
+  container.innerHTML = list.map(a => {
+    const checked = isCheckedIn(a);
+    const checkData = getCheckinData(a);
+    const minor = isMenor(a);
+    const st = statusAcampante(a);
+    const totFin = totais(a);
+
+    return '<div class="item checkin-row" style="border-left: 5px solid ' + (checked ? 'var(--ok)' : (minor ? 'var(--coral)' : 'var(--line)')) + '">' +
+      '<div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<span class="name" style="font-size:16px">' + esc(a.nome) + '</span>' +
+          (a.codigo ? '<span style="font-family:monospace;font-size:12px;font-weight:700;background:var(--water-soft);color:var(--water-2);padding:2px 6px;border-radius:4px">' + esc(a.codigo) + '</span>' : '') +
+          (minor ? '<span class="badge-menor">⚠️ MENOR (' + getIdadeText(a) + ')</span>' : '<span class="badge-maior">' + getIdadeText(a) + '</span>') +
+          '<span class="pill ' + st + '">' + ROTULO[st] + '</span>' +
+        '</div>' +
+        '<div class="meta" style="margin-top:4px">' +
+          (a.camiseta ? '👕 Camiseta: <b>' + esc(a.camiseta) + '</b> · ' : '') +
+          (a.lote ? esc(a.lote) + ' · ' : '') +
+          (a.responsavel ? 'Resp: <b>' + esc(a.responsavel) + '</b> · ' : '') +
+          (totFin.falta > 0 ? '<b style="color:var(--coral)">Falta ' + fmt(totFin.falta) + '</b>' : '<span style="color:var(--ok)">100% pago</span>') +
+        '</div>' +
+        (checked ?
+          '<div style="font-size:12px;color:var(--ok);margin-top:4px;font-weight:600">' +
+            '✓ Check-in realizado em ' + fmtCheckinData(checkData?.data) + ' por ' + esc(checkData?.por || 'admin') +
+            (checkData?.autorizacaoMenor ? ' · <u>Termo de autorização conferido</u>' : '') +
+          '</div>' : '') +
+      '</div>' +
+      '<div class="right">' +
+        (checked ?
+          '<button class="btn ghost small" onclick="abrirCheckinModal(\'' + a.id + '\')">Ver / Alterar</button>' :
+          '<button class="btn small" style="' + (minor ? 'background:var(--coral);' : '') + '" onclick="abrirCheckinModal(\'' + a.id + '\')">' +
+            (minor ? '⚠️ Validar Check-in' : 'Validar Check-in') +
+          '</button>') +
+      '</div>' +
+    '</div>';
+  }).join("");
+}
+
+function renderCheckin(){
+  const sec = document.getElementById("sec-checkin");
+  if(!sec) return;
+
+  const A = S.acampantes;
+  const tot = A.length;
+  const checkinsFeitos = A.filter(isCheckedIn);
+  const checkinsPendentes = A.filter(a => !isCheckedIn(a));
+  const menores = A.filter(isMenor);
+  const menoresCheckin = menores.filter(isCheckedIn);
+  const pctCheckin = tot ? Math.round((checkinsFeitos.length / tot) * 100) : 0;
+
+  sec.innerHTML = `
+    <div class="checkin-stats-grid">
+      <div class="checkin-stat-card">
+        <div class="csc-val">${tot}</div>
+        <div class="csc-lbl">Total de Inscritos</div>
+      </div>
+      <div class="checkin-stat-card">
+        <div class="csc-val" style="color:var(--ok)">${checkinsFeitos.length} <span style="font-size:16px;font-weight:600">(${pctCheckin}%)</span></div>
+        <div class="csc-lbl">Check-ins Realizados</div>
+      </div>
+      <div class="checkin-stat-card">
+        <div class="csc-val" style="color:var(--water)">${checkinsPendentes.length}</div>
+        <div class="csc-lbl">Aguardando Check-in</div>
+      </div>
+      <div class="checkin-stat-card">
+        <div class="csc-val" style="color:var(--coral)">${menores.length} <span style="font-size:14px;font-weight:600">(${menoresCheckin.length} validados)</span></div>
+        <div class="csc-lbl">Menores de Idade (&lt;18)</div>
+      </div>
+    </div>
+
+    <!-- Leitor da Câmera -->
+    <div class="scanner-card">
+      <div class="scanner-header">
+        <div>
+          <h3 style="font-size:18px;margin:0 0 2px">📷 Scanner de QR Code</h3>
+          <p style="font-size:13px;color:var(--muted);margin:0">Aponte a câmera para o QR Code do acampante para validação instantânea</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span id="scannerStatusBadge" class="pill pendente">○ Câmera Desligada</span>
+          <select id="cameraSelect" style="display:none;width:auto;min-height:36px;padding:4px 8px;font-size:13px" onchange="trocarCamera(this.value)"></select>
+          <button id="btnStartScan" class="btn small" onclick="iniciarCamera()">Ligar Câmera</button>
+          <button id="btnStopScan" class="btn ghost small" onclick="pararCamera()" style="display:none">Parar Câmera</button>
+        </div>
+      </div>
+      <div class="scanner-viewport-box">
+        <div id="reader"></div>
+        <div id="scannerPlaceholder" style="text-align:center;padding:30px 20px;color:var(--muted)">
+          <div style="font-size:36px;margin-bottom:8px">📷</div>
+          <b>Câmera desligada</b>
+          <p style="font-size:13px;margin:4px 0 12px">Clique no botão "Ligar Câmera" para ler o QR Code ou busque pelo nome abaixo.</p>
+          <button class="btn small" onclick="iniciarCamera()">Ligar Câmera Agora</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Busca Rápida e Filtros -->
+    <div class="block">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+        <div>
+          <h2 style="font-size:21px;margin:0 0 2px">Buscar Participante para Check-in</h2>
+          <div id="checkinListCount" class="hint">Mostrando ${tot} participantes</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="inputBuscaCheckin" placeholder="🔍 Digite o nome, código (IMR-...), documento ou responsável..." value="${esc(buscaCheckin)}" oninput="filtrarCheckinInput(this.value)">
+      </div>
+      <div class="chips">
+        <button class="chip" data-f="todos" aria-pressed="${filtroCheckin === 'todos'}" onclick="setFiltroCheckin('todos')">Todos (${tot})</button>
+        <button class="chip" data-f="pendente" aria-pressed="${filtroCheckin === 'pendente'}" onclick="setFiltroCheckin('pendente')">⏳ Pendentes (${checkinsPendentes.length})</button>
+        <button class="chip" data-f="checkin" aria-pressed="${filtroCheckin === 'checkin'}" onclick="setFiltroCheckin('checkin')">✓ Check-in Realizado (${checkinsFeitos.length})</button>
+        <button class="chip" data-f="menor" aria-pressed="${filtroCheckin === 'menor'}" onclick="setFiltroCheckin('menor')">⚠️ Menores de Idade (${menores.length})</button>
+      </div>
+      <div id="checkinListContainer" class="list"></div>
+    </div>
+  `;
+
+  renderCheckinList();
+}
+
+function abrirCheckinModal(id){
+  const a = S.acampantes.find(x => x.id === id);
+  if(!a) return toast("Participante não encontrado.");
+
+  const checked = isCheckedIn(a);
+  const checkData = getCheckinData(a);
+  const minor = isMenor(a);
+  const totFin = totais(a);
+  const st = statusAcampante(a);
+
+  let bannerMenor = "";
+  if(minor){
+    bannerMenor = `
+      <div class="alerta-menor-box">
+        <div class="alerta-menor-title">
+          <span>⚠️</span> PARTICIPANTE MENOR DE IDADE (${getIdadeText(a)})
+        </div>
+        <div class="alerta-menor-desc">
+          <b>LEMBRETE OBRIGATÓRIO:</b> Este participante tem menos de 18 anos.
+          Exija e recolha o <b>TERMO DE AUTORIZAÇÃO ASSINADO PELOS PAIS / RESPONSÁVEIS LEGAIS</b> antes de confirmar o check-in!
+        </div>
+        <div class="alerta-resp-grid">
+          <div><b>Nome do Responsável:</b> ${esc(a.responsavel || 'Não informado no cadastro')}</div>
+          <div><b>Telefone do Responsável:</b> ${a.responsavelTel ? `<a href="${waLink(a.responsavelTel, 'Olá, estou falando da equipe do Acampamento Imersos referente ao check-in de ' + a.nome)}" target="_blank" style="color:var(--water);font-weight:700">📱 ${esc(a.responsavelTel)} (Abrir WhatsApp)</a>` : 'Não informado'}</div>
+        </div>
+        <label class="auth-chk-label">
+          <input type="checkbox" id="chkTermoMenor" ${checkData?.autorizacaoMenor ? 'checked' : ''}>
+          <span><b>Confirmo que o Termo de Autorização assinado pelos pais foi entregue e conferido</b></span>
+        </label>
+      </div>
+    `;
+  } else {
+    bannerMenor = `
+      <div class="alerta-maior-box">
+        <span>✓</span> Participante Maior de Idade (${getIdadeText(a)})
+      </div>
+    `;
+  }
+
+  let bannerPagamento = "";
+  if(totFin.falta > 0){
+    bannerPagamento = `
+      <div class="alerta-pagamento-box">
+        ⚠️ <b>ATENÇÃO: PAGAMENTO PENDENTE</b>
+        <div style="margin-top:2px">Este participante ainda tem <b>${fmt(totFin.falta)} a pagar</b> (Total: ${fmt(totFin.total)}, Pago: ${fmt(totFin.pago)}).</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Confira com a tesouraria antes de liberar a entrada.</div>
+      </div>
+    `;
+  } else {
+    bannerPagamento = `
+      <div class="pagamento-ok-box">
+        ✓ <b>Pagamento 100% Quitado</b> (${fmt(totFin.pago)})
+      </div>
+    `;
+  }
+
+  const html = `
+    ${bannerMenor}
+    ${bannerPagamento}
+
+    <div class="kit-box">
+      <div class="kit-icon">👕</div>
+      <div>
+        <div class="kit-title">Kit do Acampante / Camiseta</div>
+        <div class="kit-tamanho">Tamanho da Camiseta: <b>${esc(a.camiseta || 'M (padrão)')}</b></div>
+      </div>
+    </div>
+
+    <dl class="kv" style="margin-top:14px">
+      <dt>Inscrição</dt><dd><b>${esc(a.codigo || 'Sem código')}</b> ${a.lote ? `(${esc(a.lote)})` : ''}</dd>
+      <dt>Participante</dt><dd><b>${esc(a.nome)}</b></dd>
+      ${a.cpf ? `<dt>Documento</dt><dd>${esc(a.cpf)}</dd>` : ''}
+      ${a.nascimento ? `<dt>Nascimento</dt><dd>${fmtDate(a.nascimento)} (${getIdadeText(a)})` : ''}
+      ${a.telefone ? `<dt>WhatsApp</dt><dd><a href="${waLink(a.telefone, 'Olá ' + a.nome.split(' ')[0] + ', seja bem-vindo ao Acampamento Imersos!')}" target="_blank" style="color:var(--water)">${esc(a.telefone)}</a></dd>` : ''}
+      ${a.email ? `<dt>E-mail</dt><dd>${esc(a.email)}</dd>` : ''}
+      ${a.obs ? `<dt>Observações</dt><dd style="font-weight:400;font-size:13px">${esc(a.obs)}</dd>` : ''}
+    </dl>
+
+    ${checked ? `
+      <div style="background:var(--ok-soft);color:var(--ok);padding:10px 14px;border-radius:10px;margin:14px 0;font-size:14px">
+        <b>✓ Check-in já realizado!</b>
+        <div style="font-size:12px;margin-top:2px">Registrado em ${fmtCheckinData(checkData?.data)} por <b>${esc(checkData?.por || 'admin')}</b>${checkData?.autorizacaoMenor ? ' (com autorização)' : ''}.</div>
+      </div>
+    ` : ''}
+
+    <div class="form-actions" style="margin-top:20px;gap:8px">
+      ${checked ? `
+        <button class="btn danger" onclick="desfazerCheckin('${a.id}')">Desfazer Check-in</button>
+      ` : `
+        <button class="btn" style="background:var(--ok);font-size:16px;padding:12px 22px" onclick="confirmarCheckin('${a.id}')">
+          ✓ Confirmar Check-in Agora
+        </button>
+      `}
+      <span class="spacer"></span>
+      ${a.codigo ? `<button class="btn ghost small" onclick="reenviarEmailModal('${esc(a.codigo)}')">📧 Reenviar E-mail c/ QR Code</button>` : ''}
+      <button class="btn ghost small" onclick="closeDlg()">Fechar</button>
+    </div>
+  `;
+
+  openDlg(checked ? ("Check-in · " + a.nome) : ("Validar Check-in · " + a.nome), html);
+}
+
+async function confirmarCheckin(id){
+  const a = S.acampantes.find(x => x.id === id);
+  if(!a) return toast("Participante não encontrado.");
+
+  const chkTermo = document.getElementById("chkTermoMenor");
+  const termoMenor = chkTermo ? chkTermo.checked : false;
+
+  if(isMenor(a) && chkTermo && !chkTermo.checked){
+    if(!confirm("ATENÇÃO: O Termo de Autorização dos responsáveis NÃO foi marcado como entregue/conferido.\n\nDeseja prosseguir com o Check-in mesmo sem a conferência do termo?")){
+      return;
+    }
+  }
+
+  const key = a.codigo || a.id;
+  const agora = new Date().toISOString();
+  const por = S.adminEmail ? S.adminEmail.split("@")[0] : "admin";
+
+  if(!S.config.checkins) S.config.checkins = {};
+  S.config.checkins[key] = {
+    data: agora,
+    por: por,
+    autorizacaoMenor: termoMenor
+  };
+
+  let obsAtual = a.obs || "";
+  obsAtual = obsAtual.replace(/\[CHECKIN:[^\]]+\]/g, "").trim();
+  a.obs = (obsAtual ? obsAtual + " " : "") + "[CHECKIN: " + agora + " | por: " + por + (termoMenor ? " | autorizacao: OK" : "") + "]";
+
+  playCheckinBeep(true);
+  toast("Check-in de " + a.nome + " realizado com sucesso!");
+  closeDlg();
+
+  await Promise.all([
+    saveDoc("config", "main", S.config),
+    saveDoc("acampantes", a.id, a)
+  ]);
+
+  renderCheckin();
+}
+
+async function desfazerCheckin(id){
+  const a = S.acampantes.find(x => x.id === id);
+  if(!a) return toast("Participante não encontrado.");
+  if(!confirm("Deseja realmente desfazer o check-in de " + a.nome + "?")) return;
+
+  const key = a.codigo || a.id;
+  if(S.config && S.config.checkins && S.config.checkins[key]){
+    delete S.config.checkins[key];
+  }
+
+  if(a.obs){
+    a.obs = a.obs.replace(/\[CHECKIN:[^\]]+\]/g, "").trim();
+  }
+
+  toast("Check-in de " + a.nome + " cancelado.");
+  closeDlg();
+
+  await Promise.all([
+    saveDoc("config", "main", S.config),
+    saveDoc("acampantes", a.id, a)
+  ]);
+
+  renderCheckin();
+}
+
+async function reenviarEmailModal(codigo){
+  if(!codigo) return toast("Código da inscrição não encontrado.");
+  toast("Enviando e-mail com QR Code...");
+  try {
+    const res = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codigo })
+    });
+    const data = await res.json();
+    if(res.ok && data.ok){
+      toast("E-mail com QR Code enviado com sucesso!");
+    } else {
+      toast(data.error || "Não foi possível enviar o e-mail.");
+    }
+  } catch(e) {
+    console.error(e);
+    toast("Falha de rede ao solicitar envio do e-mail.");
+  }
+}
+
+
 /* ---------- Navegação ---------- */
 function goTab(t){
+  if(S.tab === "checkin" && t !== "checkin"){
+    pararCamera();
+  }
   S.tab=t;
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
   document.querySelectorAll("main section").forEach(s=>s.hidden=s.id!=="sec-"+t);
   window.scrollTo({top:0});
   if(t==="resumo") renderCharts();
+  if(t==="checkin") renderCheckin();
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.tab)));
 init();

@@ -558,12 +558,33 @@ function lanterna(track) {
     const st = total > 0 && pago >= total ? 'pago' : parc.some((p) => stParc(p) === 'atrasado') ? 'atrasado' : pago > 0 ? 'parcial' : 'pendente';
     say('');
     const csCpf = cpfNum;
+    const isMinor = (r.idade != null && Number(r.idade) > 0 && Number(r.idade) < 18) ||
+      (r.nascimento && (new Date('2027-02-05').getFullYear() - new Date(r.nascimento).getFullYear() < 18)) ||
+      (r.responsavel && r.responsavel.trim().length > 1) ||
+      /Resp1|Resp2|Respons/i.test(r.obs || '');
+    const qrCheckinUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(r.codigo || '');
+
     res.innerHTML = '<div class="cs-head"><b>Oi, ' + esc(r.nome) + '!</b><span class="cs-st ' + st + '">' + ROT[st] + '</span></div>' +
       '<div>' + esc(r.lote || '') + (r.opcao_nome ? ' · ' + esc(r.opcao_nome) : '') + (r.codigo ? ' · Código: <b>' + esc(r.codigo) + '</b>' : '') + '</div>' +
       '<div class="cs-bar" role="img" aria-label="Pago ' + brl(pago) + ' de ' + brl(total) + '"><i style="width:' + (total ? Math.round(pago / total * 100) : 0) + '%"></i></div>' +
       '<div><b>' + brl(pago) + '</b> pagos de <b>' + brl(total) + '</b>' + (total > pago ? ' · falta ' + brl(total - pago) : '') + '</div>' +
       (parc.length > 1 ? '<ul class="cs-parc">' + parc.map((p) => { const s = stParc(p); return '<li><span>Parcela ' + p.n + ' · ' + brl(p.valor) + (p.venc ? ' · vence ' + fmtD(p.venc) : '') + '</span><span class="cs-st ' + s + '">' + (s === 'pago' ? 'Paga' : s === 'atrasado' ? 'Atrasada' : s === 'parcial' ? 'Parcial' : 'Em aberto') + '</span></li>'; }).join('') + '</ul>' : '') +
-      (st !== 'pago' ? '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? O processamento pela InfinitePay costuma levar poucos instantes.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || '') + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' : '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
+      (st !== 'pago' ?
+        '<p style="margin:14px 0 0;font-size:.92rem">Já pagou e ainda aparece pendente? O processamento pela InfinitePay costuma levar poucos instantes.</p><div style="margin-top:14px"><a href="checkout.html?codigo=' + encodeURIComponent(r.codigo || '') + '&valor=' + encodeURIComponent(total > pago ? (total - pago) : total) + (csCpf ? '&cpf=' + encodeURIComponent(csCpf) : '') + '" class="btn" style="background:#00D09C;color:#03211A;font-weight:700;font-size:0.95rem;padding:0.6em 1.2em;text-decoration:none;display:inline-flex;border-radius:8px">💳 Pagar com InfinitePay (Cartão / Pix)</a></div>' :
+        '<div style="margin-top:18px;background:rgba(22,112,124,0.08);border:2px dashed #16707C;border-radius:14px;padding:18px;text-align:center">' +
+          '<div style="font-weight:700;font-size:0.85rem;letter-spacing:0.04em;text-transform:uppercase;color:#16707C">Seu Ingresso de Check-in</div>' +
+          '<div style="margin:12px auto;width:180px;height:180px;background:#FFFFFF;padding:8px;border-radius:10px;border:1px solid #D0DFDB;box-shadow:0 4px 12px rgba(0,0,0,0.05)">' +
+            '<img src="' + qrCheckinUrl + '" alt="QR Code de Check-in" style="width:100%;height:100%;display:block">' +
+          '</div>' +
+          '<div style="font-family:monospace;font-size:1.3rem;font-weight:800;letter-spacing:0.06em;color:#16707C">' + esc(r.codigo || '') + '</div>' +
+          '<p style="margin:8px 0 0;font-size:0.86rem;color:#566C72">Apresente este QR Code no momento do check-in na saída do ônibus ou na entrada do acampamento.</p>' +
+          (isMinor ?
+            '<div style="margin-top:14px;background:#FDF2E9;border-left:4px solid #E06D53;padding:12px 14px;border-radius:6px;text-align:left;font-size:0.86rem;color:#2D3748">' +
+              '<b style="color:#C0442D;display:block;margin-bottom:4px">⚠️ ATENÇÃO: PARTICIPANTE MENOR DE IDADE</b>' +
+              'Identificamos que você terá menos de 18 anos. Lembre-se de levar o <b>Termo de Autorização assinado pelos pais ou responsáveis legais</b> para apresentar no check-in. Sem a autorização assinada, o embarque não poderá ser liberado!' +
+            '</div>' : '') +
+        '</div>' +
+        '<p style="margin:14px 0 0;font-size:.92rem">Tudo certo. Nos vemos lá no fundo!</p>');
     res.classList.remove('hide');
   });
 })();

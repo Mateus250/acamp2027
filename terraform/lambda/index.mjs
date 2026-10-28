@@ -9,6 +9,7 @@ import { handleCheckout } from './routes/checkout.mjs';
 import { handleWebhook } from './routes/webhook.mjs';
 import { handleInscricoes } from './routes/inscricoes.mjs';
 import { handleStatus } from './routes/status.mjs';
+import { handleSendEmail } from './routes/send-email.mjs';
 
 export const handler = async (event) => {
   const method = (event.requestContext?.http?.method || event.httpMethod || 'GET').toUpperCase();
@@ -64,6 +65,14 @@ export const handler = async (event) => {
   }
 
   // -------------------------------------------------------------------------
+  // ROTA 5: POST /send-email (ou /api/send-email) -> Envio manual/reenvio de e-mail com QR Code
+  // -------------------------------------------------------------------------
+  if (method === 'POST' && (path === '/send-email' || path === '/email')) {
+    const body = parseBody(event);
+    return await handleSendEmail(body, env, requestId);
+  }
+
+  // -------------------------------------------------------------------------
   // ROTA NÃO ENCONTRADA (404)
   // -------------------------------------------------------------------------
   logError('NOT_FOUND', `[${requestId}] Rota não encontrada: ${method} ${path}`);
@@ -75,7 +84,8 @@ export const handler = async (event) => {
       'POST /api/webhook',
       'POST /api/webhook/:codigo',
       'GET /api/status?codigo=IMR-XXXX',
-      'GET /api/status?documento=00000000000'
+      'GET /api/status?documento=00000000000',
+      'POST /api/send-email'
     ]
   });
 };

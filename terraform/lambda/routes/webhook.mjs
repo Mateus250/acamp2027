@@ -3,6 +3,7 @@ import { json } from '../utils/response.mjs';
 import { log, logError } from '../utils/logger.mjs';
 import { todayISO } from '../utils/parser.mjs';
 import { findAcampanteByCodigo, updateAcampante } from '../services/supabase.mjs';
+import { sendConfirmationEmail } from '../services/email.mjs';
 
 export async function handleWebhook(body, env, requestId, pathCodigo = null) {
   log('WEBHOOK', `[${requestId}] === WEBHOOK RECEBIDO ===`, { pathCodigo, body });
@@ -122,9 +123,20 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null) {
 
     log('WEBHOOK_SUCCESS', `[${requestId}] Inscrição ${orderNsu} (${acampante.nome}) CONFIRMADA com valor de R$ ${(valorRecebido / 100).toFixed(2)}`);
 
+    // Dispara automaticamente o e-mail de confirmação com o QR Code e aviso de menor (se aplicável)
+    try {
+      await sendConfirmationEmail({
+        acampante: { ...acampante, parcelas },
+        env,
+        requestId
+      });
+    } catch (errMail) {
+      logError('WEBHOOK_EMAIL_ERR', `[${requestId}] Falha não-bloqueante no envio do e-mail de confirmação:`, errMail);
+    }
+
     return json(200, {
       ok: true,
-      message: 'Pagamento confirmado e linha específica atualizada com sucesso',
+      message: 'Pagamento confirmado e e-mail com QR Code disparado',
       order_nsu: orderNsu,
       parcelas
     });
