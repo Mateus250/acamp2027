@@ -50,6 +50,13 @@ variable "infinitepay_api_key" {
   default     = ""
 }
 
+variable "infinitepay_webhook_secret" {
+  type        = string
+  description = "Token secreto para validar callbacks de webhook da InfinitePay (opcional)"
+  sensitive   = true
+  default     = ""
+}
+
 variable "supabase_url" {
   type        = string
   description = "URL do projeto Supabase"
@@ -67,4 +74,17 @@ variable "site_url" {
   type        = string
   description = "URL base pública do site para redirects e webhooks"
   default     = "https://acampamentoipi.com.br"
+}
+
+variable "resend_api_key" {
+  type        = string
+  description = "Chave de API do Resend para envio do e-mail com QR Code (opcional)"
+  sensitive   = true
+  default     = ""
+}
+
+variable "email_from" {
+  type        = string
+  description = "Remetente do e-mail de confirmacao"
+  default     = "contato@acampamentoipi.com.br"
 }

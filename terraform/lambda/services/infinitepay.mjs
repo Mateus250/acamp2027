@@ -49,10 +49,11 @@ function formatEmail(email) {
   return null;
 }
 
-export async function createCheckoutLink({ apiKey, siteUrl, codigo, nome, valor, customer, requestId }) {
+export async function createCheckoutLink({ apiKey, siteUrl, codigo, nome, valor, customer, webhookSecret, requestId }) {
   const redirectUrl = `${siteUrl}/checkout.html?codigo=${encodeURIComponent(codigo)}&status=concluido`;
-  // Webhook com o código da inscrição no path para atualização automática e direta
-  const webhookUrl = `${siteUrl}/api/webhook/${encodeURIComponent(codigo)}`;
+  // Webhook com o código da inscrição no path e segredo opcional para proteção contra spoofing
+  const secretQuery = webhookSecret ? `?secret=${encodeURIComponent(webhookSecret)}` : '';
+  const webhookUrl = `${siteUrl}/api/webhook/${encodeURIComponent(codigo)}${secretQuery}`;
   const itemDesc = `Inscrição Acampamento 2027 (${(nome || codigo).slice(0, 35)})`;
 
   const payload = {

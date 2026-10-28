@@ -90,9 +90,12 @@ jobs:
         working-directory: terraform
         env:
           TF_VAR_infinitepay_api_key: ${{ secrets.INFINITEPAY_API_KEY }}
+          TF_VAR_infinitepay_webhook_secret: ${{ secrets.INFINITEPAY_WEBHOOK_SECRET }}
           TF_VAR_supabase_service_role_key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TF_VAR_supabase_url: ${{ secrets.SUPABASE_URL || 'https://xhtnhhdpiuqdquacooau.supabase.co' }}
           TF_VAR_site_url: ${{ secrets.SITE_URL || 'https://acampamentoipi.com.br' }}
+          TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY }}
+          TF_VAR_email_from: ${{ secrets.EMAIL_FROM || 'contato@acampamentoipi.com.br' }}
         run: |
           echo "Inicializando Terraform com backend remoto S3..."
           terraform init

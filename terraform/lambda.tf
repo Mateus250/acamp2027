@@ -42,10 +42,13 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      INFINITEPAY_API_KEY       = var.infinitepay_api_key
-      SUPABASE_URL              = var.supabase_url
-      SUPABASE_SERVICE_ROLE_KEY = var.supabase_service_role_key
-      SITE_URL                  = var.site_url
+      INFINITEPAY_API_KEY        = var.infinitepay_api_key
+      INFINITEPAY_WEBHOOK_SECRET = var.infinitepay_webhook_secret
+      SUPABASE_URL               = var.supabase_url
+      SUPABASE_SERVICE_ROLE_KEY  = var.supabase_service_role_key
+      SITE_URL                   = var.site_url
+      RESEND_API_KEY             = var.resend_api_key
+      EMAIL_FROM                 = var.email_from
     }
   }
 }

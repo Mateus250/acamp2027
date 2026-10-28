@@ -68,6 +68,7 @@ export async function handleCheckout(body, env, requestId) {
       nome: nomeFinal,
       valor,
       customer: customerData,
+      webhookSecret: env.INFINITEPAY_WEBHOOK_SECRET,
       requestId
     });
 

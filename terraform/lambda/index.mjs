@@ -32,6 +32,7 @@ export const handler = async (event) => {
     SUPABASE_URL: env.SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: maskSecret(env.SUPABASE_SERVICE_ROLE_KEY),
     INFINITEPAY_API_KEY: maskSecret(env.INFINITEPAY_API_KEY),
+    INFINITEPAY_WEBHOOK_SECRET: maskSecret(env.INFINITEPAY_WEBHOOK_SECRET),
     SITE_URL: env.SITE_URL
   });
 
@@ -76,7 +77,11 @@ export const handler = async (event) => {
   if (method === 'POST' && (path === '/webhook' || path.startsWith('/webhook/'))) {
     const body = parseBody(event);
     const pathCodigo = path.startsWith('/webhook/') ? decodeURIComponent(path.slice('/webhook/'.length).trim()) : null;
-    return await handleWebhook(body, env, requestId, pathCodigo);
+    return await handleWebhook(body, env, requestId, pathCodigo, {
+      query: event.queryStringParameters || {},
+      headers: event.headers || {},
+      rawBody: event.body
+    });
   }
 
   // -------------------------------------------------------------------------

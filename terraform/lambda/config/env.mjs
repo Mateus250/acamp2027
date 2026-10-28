@@ -11,9 +11,12 @@ export function maskSecret(val) {
 export function getEnv() {
   const {
     INFINITEPAY_API_KEY = '',
+    INFINITEPAY_WEBHOOK_SECRET = '',
     SUPABASE_URL = 'https://xhtnhhdpiuqdquacooau.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY = '',
-    SITE_URL = 'https://acampamentoipi.com.br'
+    SITE_URL = 'https://acampamentoipi.com.br',
+    RESEND_API_KEY = '',
+    EMAIL_FROM = 'contato@acampamentoipi.com.br'
   } = process.env;
 
   const supabaseReadAuthKey = SUPABASE_SERVICE_ROLE_KEY || DEFAULT_ANON_KEY;
@@ -21,9 +24,12 @@ export function getEnv() {
 
   return {
     INFINITEPAY_API_KEY,
+    INFINITEPAY_WEBHOOK_SECRET,
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
     SITE_URL,
+    RESEND_API_KEY,
+    EMAIL_FROM,
     supabaseReadAuthKey,
     supabaseWriteAuthKey
   };

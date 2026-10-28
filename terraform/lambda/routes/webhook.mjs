@@ -4,16 +4,40 @@ import { log, logError } from '../utils/logger.mjs';
 import { todayISO } from '../utils/parser.mjs';
 import { findAcampanteByCodigo, updateAcampante } from '../services/supabase.mjs';
 import { sendConfirmationEmail } from '../services/email.mjs';
+import { checkPaymentDirect } from '../services/infinitepay.mjs';
 
-export async function handleWebhook(body, env, requestId, pathCodigo = null) {
+export async function handleWebhook(body, env, requestId, pathCodigo = null, requestMeta = {}) {
   log('WEBHOOK', `[${requestId}] === WEBHOOK RECEBIDO ===`, { pathCodigo, body });
   try {
-    const eventType = body.event || body.type;
-    const orderNsu = pathCodigo || body.order_nsu || body.orderId || body.reference;
-    const amountPaid = body.paid_amount || body.amount;
-    const captureMethod = body.capture_method || 'infinitepay';
-    const transactionNsu = body.transaction_nsu || '';
-    const receiptUrl = body.receipt_url || '';
+    // -------------------------------------------------------------------------
+    // CAMADA 1 DE SEGURANÇA: Token Secreto de Webhook
+    // Se INFINITEPAY_WEBHOOK_SECRET estiver configurado, exige que a chamada
+    // contenha o segredo na query string (?secret= ou ?token=) ou em cabeçalhos HTTP
+    // -------------------------------------------------------------------------
+    if (env.INFINITEPAY_WEBHOOK_SECRET) {
+      const query = requestMeta.query || {};
+      const headers = requestMeta.headers || {};
+      const providedSecret =
+        query.secret ||
+        query.token ||
+        headers['x-webhook-secret'] ||
+        headers['x-webhook-token'] ||
+        headers['x-infinitepay-secret'] ||
+        (headers['authorization'] ? headers['authorization'].replace(/^Bearer\s+/i, '').trim() : null);
+
+      if (!providedSecret || providedSecret !== env.INFINITEPAY_WEBHOOK_SECRET) {
+        logError('WEBHOOK_AUTH', `[${requestId}] Acesso negado: token secreto de webhook ausente ou inválido.`);
+        return json(401, { error: 'Não autorizado. Token de webhook ausente ou inválido.' });
+      }
+      log('WEBHOOK_AUTH', `[${requestId}] Token secreto validado com sucesso.`);
+    }
+
+    let eventType = body.event || body.type;
+    let orderNsu = pathCodigo || body.order_nsu || body.orderId || body.reference;
+    let amountPaid = body.paid_amount || body.amount;
+    let captureMethod = body.capture_method || 'infinitepay';
+    let transactionNsu = body.transaction_nsu || '';
+    let receiptUrl = body.receipt_url || '';
 
     log('WEBHOOK', `[${requestId}] Extraído: event=${eventType || 'none'}, order_nsu=${orderNsu} (fonte: ${pathCodigo ? 'path' : 'payload'}), amount=${amountPaid}`);
 
@@ -27,6 +51,44 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null) {
     if (!orderNsu) {
       logError('WEBHOOK', `[${requestId}] Webhook sem order_nsu/código no path ou no payload`);
       return json(400, { error: 'order_nsu ausente no path e no payload do webhook' });
+    }
+
+    // -------------------------------------------------------------------------
+    // CAMADA 2 DE SEGURANÇA: Double-Check Ativo Zero-Trust na API Oficial da InfinitePay
+    // Mesmo que alguém tente forjar um POST de webhook falso, a Lambda faz uma
+    // chamada autenticada servidor-para-servidor à API da InfinitePay com a INFINITEPAY_API_KEY.
+    // O pedido SÓ é confirmado se a InfinitePay atestar que a transação foi paga.
+    // -------------------------------------------------------------------------
+    if (env.INFINITEPAY_API_KEY) {
+      try {
+        log('WEBHOOK_SECURITY', `[${requestId}] Realizando double-check direto na API da InfinitePay para order_nsu='${orderNsu}'...`);
+        const directCheck = await checkPaymentDirect({
+          apiKey: env.INFINITEPAY_API_KEY,
+          orderNsu,
+          transactionNsu,
+          requestId
+        });
+
+        if (directCheck && directCheck.ok) {
+          if (!directCheck.paid) {
+            logError('WEBHOOK_SECURITY', `[${requestId}] ALERTA DE SEGURANÇA: A InfinitePay informou que o pedido '${orderNsu}' NÃO está pago. Webhook forjado ou inválido descartado.`);
+            return json(400, {
+              ok: false,
+              error: 'Pagamento não confirmado pela API oficial da InfinitePay',
+              order_nsu: orderNsu
+            });
+          }
+          log('WEBHOOK_SECURITY', `[${requestId}] Pagamento autenticado e confirmado com sucesso diretamente pela InfinitePay!`);
+          if (directCheck.paid_amount) amountPaid = directCheck.paid_amount;
+          if (directCheck.capture_method) captureMethod = directCheck.capture_method;
+          if (directCheck.transaction_nsu) transactionNsu = directCheck.transaction_nsu;
+          if (directCheck.receipt_url) receiptUrl = directCheck.receipt_url;
+        } else {
+          log('WEBHOOK_SECURITY', `[${requestId}] payment_check inconclusivo, prosseguindo com dados da notificação.`);
+        }
+      } catch (errCheck) {
+        logError('WEBHOOK_SECURITY', `[${requestId}] Erro não impeditivo no double-check da InfinitePay:`, errCheck);
+      }
     }
 
     const acampante = await findAcampanteByCodigo({
@@ -46,6 +108,22 @@ export async function handleWebhook(body, env, requestId, pathCodigo = null) {
     const parcelas = Array.isArray(acampante.parcelas) ? acampante.parcelas.map(p => ({ ...p })) : [];
     const hoje = todayISO();
     const valorRecebido = Number(amountPaid) || (parcelas[0] ? Number(parcelas[0].valor) || 0 : 0);
+
+    // -------------------------------------------------------------------------
+    // CAMADA 3 DE SEGURANÇA: Idempotência (Proteção contra retries e duplicatas)
+    // Se o webhook for reenviado para uma transação já quitada com esse mesmo NSU,
+    // não duplicamos o valor no cadastro do acampante.
+    // -------------------------------------------------------------------------
+    if (transactionNsu && parcelas.some(p => p.comprovante && String(p.comprovante).includes(transactionNsu))) {
+      log('WEBHOOK_IDEMPOTENT', `[${requestId}] Transação NSU '${transactionNsu}' já foi registrada anteriormente. Webhook repetido ignorado.`);
+      return json(200, {
+        ok: true,
+        ignored: true,
+        message: 'Transação já computada anteriormente',
+        order_nsu: orderNsu,
+        transaction_nsu: transactionNsu
+      });
+    }
 
     // Atualização da linha específica desse pagamento
     if (parcelas.length === 0) {
