@@ -94,7 +94,7 @@ const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').i
     if (!SB) { say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
     cBtn.disabled = true; say('Conferindo…');
     let c = null;
-    try { const { data, error } = await SB.rpc('validar_cupom', { p_codigo: code }); if (error) throw error; const r = Array.isArray(data) ? data[0] : data; if (r) c = { church: r.igreja, type: r.tipo, value: r.valor }; }
+    try { const { data, error } = await SB.rpc('validar_cupom', { p_codigo: code }); if (error) throw error; const r = Array.isArray(data) ? data[0] : data; if (r) c = { code, church: r.igreja, type: r.tipo, value: r.valor }; }
     catch (e) { console.error(e); cBtn.disabled = false; say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
     cBtn.disabled = false;
     if (!c) { say('Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad'); return; }
@@ -214,7 +214,7 @@ f.addEventListener('submit', async (ev) => {
     minor && v.resp1_name ? '1º Resp: ' + v.resp1_name + ' (CPF: ' + maskCPF(v.resp1_cpf) + ', Tel: ' + v.resp1_phone + ')' : null,
     minor && v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') + (v.resp2_phone ? ' (Tel: ' + v.resp2_phone + ')' : '') : null,
     'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt),
-    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + coupon.church + ')' : ''),
+    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + (coupon.code ? coupon.code + ' ' : '') + coupon.church + ')' : ''),
     'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)
   ].filter((x) => x !== null).join('\n');
 
@@ -274,7 +274,7 @@ f.addEventListener('submit', async (ev) => {
     'CPF: ' + cpfDig,
     minor && v.resp1_cpf ? 'Resp1 CPF: ' + digits(v.resp1_cpf) : '',
     minor && v.resp2_cpf ? 'Resp2 CPF: ' + digits(v.resp2_cpf) : '',
-    coupon ? 'Cupom: ' + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
+    coupon ? 'Cupom: ' + (coupon.code ? coupon.code + ' · ' : '') + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
     'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
   ].filter(Boolean).join(' · ');
   const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: l.name, opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };

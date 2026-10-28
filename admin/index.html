@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --bg:#EAF2F0; --surface:#FFFFFF; --ink:#0F2A33; --muted:#566C72; --line:#D0DFDB;
@@ -62,7 +63,7 @@ main{max-width:980px;margin:0 auto;padding:18px 18px 60px}
 .banner{background:var(--sun-soft);border-left:4px solid var(--sun);padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:14px}
 section[hidden]{display:none}
 
-/* Resumo */
+/* Resumo e Caixa */
 .lake{background:var(--surface);border-radius:18px;padding:20px;border:1px solid var(--line)}
 .lake-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .lake-head p{margin:0;color:var(--muted);font-size:14px}
@@ -75,7 +76,38 @@ section[hidden]{display:none}
 .legend{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);gap:10px;flex-wrap:wrap}
 @media (prefers-reduced-motion: reduce){.tank-fill{transition:none}}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}
+/* Destaque Financeiro - Valores que Já Entraram vs Pendente */
+.fin-hero{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:16px}
+.fin-hero-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.fin-hero-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--ok)}
+.fin-val-ja{font-size:40px;font-weight:800;font-family:"Bricolage Grotesque",sans-serif;color:var(--ok);letter-spacing:-0.03em;line-height:1;margin-top:6px}
+.fin-sub-ja{font-size:13px;color:var(--muted);margin-top:4px}
+.fin-pendente-box{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 16px;text-align:right}
+.fin-pendente-lbl{font-size:12px;color:var(--muted)}
+.fin-pendente-val{font-size:16px;font-weight:700;color:var(--ink);margin-top:2px}
+
+/* Grid de Gráficos */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-top:18px}
+.chart-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column}
+.chart-card h3{font-size:17px;font-weight:700;margin:0 0 4px}
+.chart-card .hint{font-size:13px;color:var(--muted);margin:0 0 12px}
+.chart-wrap{position:relative;width:100%;height:220px;display:flex;align-items:center;justify-content:center}
+.chart-stats{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.chart-stat-box{flex:1 1 110px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.chart-stat-box .cs-val{font-size:20px;font-weight:800;font-family:"Bricolage Grotesque",sans-serif}
+.chart-stat-box .cs-lbl{font-size:12px;color:var(--muted)}
+
+/* Cupons equipantes tags */
+.tag-box{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+.tag-list{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.tag-badge{background:var(--sun-soft);color:var(--ink);border:1px solid var(--sun);font-size:12px;font-weight:700;padding:4px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;font-family:monospace}
+.tag-badge .tag-del{background:none;border:none;padding:0;font-size:15px;line-height:1;cursor:pointer;color:inherit;opacity:.7}
+.tag-badge .tag-del:hover{opacity:1;color:var(--coral)}
+.tag-input-row{display:flex;gap:6px;margin-top:8px}
+.tag-input-row input{height:36px;min-height:36px;padding:4px 10px;font-size:13px;font-family:monospace;text-transform:uppercase;max-width:180px}
+.tag-input-row button{padding:4px 12px;font-size:13px;white-space:nowrap}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .stat h3{font-size:15px;font-weight:700;margin-bottom:6px}
 .stat .big{font-size:24px;font-weight:700;font-family:"Bricolage Grotesque",sans-serif}
@@ -123,6 +155,8 @@ section[hidden]{display:none}
 .pill.parcial{background:var(--sun-soft);color:var(--ink)}
 .pill.pendente,.pill.previsto{background:var(--water-soft);color:var(--ink)}
 .pill.atrasado{background:var(--coral-soft);color:var(--coral)}
+.pill.equipante{background:var(--sun-soft);color:var(--ink);border:1px solid var(--sun)}
+.pill.acampante{background:var(--water-soft);color:var(--ink)}
 
 .btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;background:var(--water);color:var(--on-water)}
 .btn:hover{background:var(--water-2)}
@@ -169,8 +203,10 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
 @media (max-width:640px){
   .opt-grid{grid-template-columns:1fr 1fr}
   .opt-grid .del{grid-column:1/-1}
-  .lake-value{font-size:34px}
+  .lake-value{font-size:32px}
+  .fin-val-ja{font-size:32px}
   .flow-row{grid-template-columns:56px 1fr auto}
+  .charts-grid{grid-template-columns:1fr}
 }
 #login{position:fixed;inset:0;z-index:40;background:var(--water);display:flex;align-items:center;justify-content:center;padding:20px}
 #login[hidden]{display:none}
@@ -249,6 +285,7 @@ function addMonths(iso,k){
 const MESES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 const monthLabel = k => {const [y,m]=k.split("-");return MESES[+m-1]+"/"+y.slice(2)};
 const norm = s => String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+const normCod = t => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2));
 const sum = (arr,f) => arr.reduce((a,x)=>a+(f(x)||0),0);
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2200)}
@@ -256,14 +293,15 @@ function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show"
 const CAT_GASTOS=["Local (chácara)","Transporte","Alimentação","Limpeza","Material e decoração","Som e mídia","Camisetas e brindes","Seguro","Outros"];
 const CAT_ENTRADAS=["Ofertas","Doações","Cantina","Patrocínio","Bazar","Outros"];
 const DEFAULT_CONFIG={nome:"Imersos",subtitulo:"Acampamento de Carnaval 2027",dataInicio:"",dataFim:"",local:"",vagas:0,whatsapp:"",
-  opcoes:[{id:"avista",nome:"PIX à vista",parcelas:1,valor:45000,primeiroVenc:""}]};
+  opcoes:[{id:"avista",nome:"PIX à vista",parcelas:1,valor:45000,primeiroVenc:""}],
+  cuponsEquipe:["COMISSAO27","NT180"]};
 
 /* ---------- Estado e dados ---------- */
 const SUPABASE_URL="https://xhtnhhdpiuqdquacooau.supabase.co";
 const SUPABASE_KEY="sb_publishable_stUBkyPTyqHtCla_seKJRw_k_LW2S_i";
 const DOMINIO="@acampamentoipi.com.br";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const S={config:structuredClone(DEFAULT_CONFIG),acampantes:[],despesas:[],entradas:[],tab:"resumo",filtro:"todos",busca:"",readOnly:false};
+const S={config:structuredClone(DEFAULT_CONFIG),acampantes:[],despesas:[],entradas:[],cupons:[],tab:"resumo",filtro:"todos",busca:"",readOnly:false};
 const MAP={
   acampantes:{
     toDb:a=>({nome:a.nome,telefone:a.telefone||null,email:a.email||null,idade:a.idade||null,responsavel:a.responsavel||null,responsavel_tel:a.responsavelTel||null,opcao_id:a.opcaoId||null,opcao_nome:a.opcaoNome||null,obs:a.obs||null,parcelas:a.parcelas||[],codigo:a.codigo||null,nascimento:a.nascimento||null,camiseta:a.camiseta||null,lote:a.lote||null,origem:a.origem||"painel"}),
@@ -287,6 +325,85 @@ const MAP={
 const strip = d => {const {id,...r}=d;return r};
 const setSync = t => $("#sync").textContent=t;
 
+/* ---------- Regras de Equipantes vs Acampantes ---------- */
+function getCuponsEquipe(){
+  const list = (S.config && Array.isArray(S.config.cuponsEquipe)) ? S.config.cuponsEquipe : ["COMISSAO27","NT180"];
+  return list.map(c => normCod(c)).filter(Boolean);
+}
+
+function extractCupomFromObs(obs){
+  if(!obs) return "";
+  const m = String(obs).match(/Cupom:\s*([A-Za-z0-9_-]+)/i);
+  if(m && m[1] && m[1] !== ".") return normCod(m[1]);
+  const allCupons = getCuponsEquipe();
+  for(const c of allCupons){
+    if(new RegExp('(?:^|[^A-Z0-9])' + c + '(?:[^A-Z0-9]|$)', 'i').test(obs)) return c;
+  }
+  return "";
+}
+
+function isEquipante(a){
+  const cupons = getCuponsEquipe();
+  if(!cupons.length) return false;
+  const obs = (a.obs || "").toUpperCase();
+  const cupom = (a.cupom || extractCupomFromObs(a.obs) || "").toUpperCase();
+  for(const c of cupons){
+    const cNorm = normCod(c);
+    if(cupom === cNorm) return true;
+    if(new RegExp('(?:^|[^A-Z0-9])' + cNorm + '(?:[^A-Z0-9]|$)', 'i').test(obs)) return true;
+    if(S.cupons && Array.isArray(S.cupons)){
+      const cupomObj = S.cupons.find(x => normCod(x.codigo) === cNorm);
+      if(cupomObj && cupomObj.igreja && cupomObj.igreja.length > 2){
+        if(norm(obs).includes(norm(cupomObj.igreja))) return true;
+      }
+    }
+  }
+  return false;
+}
+
+async function addCupomEquipe(code){
+  const c = normCod(code || "");
+  if(!c) return toast("Digite o código do cupom.");
+  if(!S.config.cuponsEquipe || !Array.isArray(S.config.cuponsEquipe)){
+    S.config.cuponsEquipe = ["COMISSAO27","NT180"];
+  }
+  if(S.config.cuponsEquipe.map(normCod).includes(c)){
+    return toast("O cupom " + c + " já está na lista de equipantes.");
+  }
+  S.config.cuponsEquipe.push(c);
+  await saveDoc("config", "main", S.config);
+  toast("Cupom " + c + " adicionado aos equipantes!");
+  renderAll();
+}
+
+function addCupomEquipeFromInput(){
+  const inp = $("#inputNewCupomEq");
+  if(!inp) return;
+  const val = inp.value.trim();
+  if(!val) return toast("Digite o código do cupom.");
+  addCupomEquipe(val);
+  inp.value = "";
+}
+
+async function removerCupomEquipe(code){
+  const c = normCod(code || "");
+  if(!S.config.cuponsEquipe || !Array.isArray(S.config.cuponsEquipe)){
+    S.config.cuponsEquipe = ["COMISSAO27","NT180"];
+  }
+  S.config.cuponsEquipe = S.config.cuponsEquipe.filter(x => normCod(x) !== c);
+  await saveDoc("config", "main", S.config);
+  toast("Cupom " + c + " removido dos equipantes.");
+  renderAll();
+}
+
+async function resetCuponsEquipe(){
+  if(!confirm("Restaurar lista padrão de cupons de equipantes (COMISSAO27 e NT180)?")) return;
+  S.config.cuponsEquipe = ["COMISSAO27","NT180"];
+  await saveDoc("config", "main", S.config);
+  toast("Lista restaurada para COMISSAO27 e NT180.");
+  renderAll();
+}
+
 async function carregar(){
   setSync("Atualizando…");
   const [c,a,d,e]=await Promise.all([
@@ -295,6 +412,9 @@ async function carregar(){
   const err=c.error||a.error||d.error||e.error;
   if(err){console.error(err);setSync("Erro ao carregar");toast("Não foi possível carregar os dados. Confira a internet.");return}
   if(c.data&&c.data.dados&&Object.keys(c.data.dados).length) S.config={...structuredClone(DEFAULT_CONFIG),...c.data.dados};
+  if(!S.config.cuponsEquipe || !Array.isArray(S.config.cuponsEquipe) || !S.config.cuponsEquipe.length){
+    S.config.cuponsEquipe = ["COMISSAO27","NT180"];
+  }
   S.acampantes=a.data.map(MAP.acampantes.fromDb); S.despesas=d.data.map(MAP.despesas.fromDb); S.entradas=e.data.map(MAP.entradas.fromDb);
   const cp=await sb.from("cupons").select("*").order("criado_em");
   S.cupons=cp.error?null:cp.data; if(cp.error) console.warn(cp.error);
@@ -419,27 +539,466 @@ function calc(){
     saldoHoje:recRec+entRec-despPago, saldoProj:recPrev+entPrev-despPrev};
 }
 
+/* Utilitário para linha do tempo contínua de inscrições */
+function fillDateRange(sortedDates, dateMap){
+  if(!sortedDates.length) return { labels: [], daily: [], cumulative: [] };
+  const start = new Date(sortedDates[0] + "T00:00:00");
+  const today = new Date(todayISO() + "T00:00:00");
+  const end = new Date(Math.max(today.getTime(), new Date(sortedDates[sortedDates.length - 1] + "T00:00:00").getTime()));
+  const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+
+  const labels = [];
+  const daily = [];
+  const cumulative = [];
+  let acc = 0;
+
+  if(diffDays <= 90 && diffDays >= 0){
+    const cur = new Date(start);
+    while(cur <= end){
+      const iso = cur.toISOString().slice(0, 10);
+      const [y, m, d] = iso.split("-");
+      labels.push(d + "/" + m);
+      const cnt = dateMap[iso] || 0;
+      daily.push(cnt);
+      acc += cnt;
+      cumulative.push(acc);
+      cur.setDate(cur.getDate() + 1);
+    }
+  } else {
+    sortedDates.forEach(iso => {
+      const [y, m, d] = iso.split("-");
+      labels.push(d + "/" + m);
+      const cnt = dateMap[iso] || 0;
+      daily.push(cnt);
+      acc += cnt;
+      cumulative.push(acc);
+    });
+  }
+  return { labels, daily, cumulative };
+}
+
+/* Instâncias globais dos gráficos Chart.js */
+window._chartAcampantes = null;
+window._chartTempo = null;
+window._chartFinanceiro = null;
+
+function renderCharts(){
+  if(typeof Chart === "undefined") {
+    setTimeout(renderCharts, 120);
+    return;
+  }
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark" ||
+    (!document.documentElement.getAttribute("data-theme") && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  const c = calc();
+  const A = S.acampantes;
+  const cuponsEq = getCuponsEquipe();
+  const equipantes = A.filter(isEquipante);
+  const acampantes = A.filter(a => !isEquipante(a));
+  const nEquip = equipantes.length;
+  const nAcamp = acampantes.length;
+  const tot = A.length;
+
+  /* 1. Gráfico Acampantes vs Equipantes */
+  const ctxAcamp = document.getElementById("chartAcampantes");
+  if(ctxAcamp){
+    if(window._chartAcampantes) { window._chartAcampantes.destroy(); window._chartAcampantes = null; }
+    window._chartAcampantes = new Chart(ctxAcamp, {
+      type: "doughnut",
+      data: {
+        labels: ["Acampantes", "Equipantes (Comissão)"],
+        datasets: [{
+          data: tot ? [nAcamp, nEquip] : [1, 0],
+          backgroundColor: tot ? [
+            isDark ? "#4FB2BE" : "#16707C",
+            isDark ? "#F0BD3D" : "#D99A00"
+          ] : [isDark ? "#244149" : "#D0DFDB"],
+          borderWidth: 2,
+          borderColor: isDark ? "#122830" : "#FFFFFF"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "68%",
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: {
+              boxWidth: 12,
+              color: isDark ? "#E4EFED" : "#0F2A33",
+              font: { size: 12, weight: 600 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                if(!tot) return " Sem inscritos ainda";
+                const val = ctx.raw || 0;
+                const p = Math.round((val / tot) * 100);
+                return " " + ctx.label + ": " + val + " (" + p + "%)";
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /* 2. Gráfico Inscrições ao Longo do Tempo */
+  const ctxTempo = document.getElementById("chartTempo");
+  if(ctxTempo){
+    if(window._chartTempo) { window._chartTempo.destroy(); window._chartTempo = null; }
+    const dateMap = {};
+    A.forEach(a => {
+      let d = "";
+      if(a.criadoEm) d = String(a.criadoEm).slice(0, 10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) d = todayISO();
+      dateMap[d] = (dateMap[d] || 0) + 1;
+    });
+    const sortedDates = Object.keys(dateMap).sort();
+    const timeline = fillDateRange(sortedDates, dateMap);
+
+    // Atualiza estatísticas do card
+    if(timeline.daily.length){
+      const avg = (tot / Math.max(1, timeline.daily.length)).toFixed(1);
+      const peak = Math.max(0, ...timeline.daily);
+      const elAvg = document.getElementById("valMediaDia");
+      if(elAvg) elAvg.textContent = avg;
+      const elPico = document.getElementById("valPicoDia");
+      if(elPico) elPico.textContent = peak;
+    }
+
+    window._chartTempo = new Chart(ctxTempo, {
+      type: "line",
+      data: {
+        labels: timeline.labels.length ? timeline.labels : ["Hoje"],
+        datasets: [
+          {
+            label: "Total acumulado",
+            data: timeline.cumulative.length ? timeline.cumulative : [0],
+            borderColor: isDark ? "#4FB2BE" : "#16707C",
+            backgroundColor: isDark ? "rgba(79, 178, 190, 0.18)" : "rgba(22, 112, 124, 0.12)",
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2.5,
+            pointRadius: timeline.labels.length > 25 ? 0 : 3,
+            pointHoverRadius: 5,
+            yAxisID: "y"
+          },
+          {
+            label: "Novas no dia",
+            type: "bar",
+            data: timeline.daily.length ? timeline.daily : [0],
+            backgroundColor: isDark ? "rgba(240, 189, 61, 0.5)" : "rgba(217, 154, 0, 0.45)",
+            borderColor: isDark ? "#F0BD3D" : "#D99A00",
+            borderWidth: 1,
+            borderRadius: 4,
+            yAxisID: "y1"
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, color: isDark ? "#92A9AD" : "#566C72" }
+          },
+          y: {
+            type: "linear",
+            display: true,
+            position: "left",
+            beginAtZero: true,
+            grid: { color: isDark ? "rgba(36,65,73,0.6)" : "rgba(208,223,219,0.5)" },
+            ticks: { precision: 0, color: isDark ? "#92A9AD" : "#566C72" }
+          },
+          y1: {
+            type: "linear",
+            display: false,
+            position: "right",
+            beginAtZero: true,
+            grid: { drawOnChartArea: false }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top",
+            labels: {
+              boxWidth: 12,
+              font: { size: 12 },
+              color: isDark ? "#E4EFED" : "#0F2A33"
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                return " " + ctx.dataset.label + ": " + ctx.raw + " inscritos";
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /* 3. Gráfico Valores Recebidos vs. Pendentes */
+  const ctxFin = document.getElementById("chartFinanceiro");
+  if(ctxFin){
+    if(window._chartFinanceiro) { window._chartFinanceiro.destroy(); window._chartFinanceiro = null; }
+    const entTotal = c.recPrev + c.entPrev;
+    const jaInsc = c.recRec;
+    const jaOutras = c.entRec;
+    const pendente = Math.max(0, entTotal - (jaInsc + jaOutras));
+
+    window._chartFinanceiro = new Chart(ctxFin, {
+      type: "doughnut",
+      data: {
+        labels: [
+          "Inscrições pagas (Já entrou)",
+          "Outras entradas (Já entrou)",
+          "Pendente a entrar"
+        ],
+        datasets: [{
+          data: entTotal > 0 ? [jaInsc, jaOutras, pendente] : [0, 0, 1],
+          backgroundColor: entTotal > 0 ? [
+            isDark ? "#4FB2BE" : "#16707C", // Inscrições
+            isDark ? "#6CC28F" : "#2C7A4C", // Outras entradas
+            isDark ? "rgba(36,65,73,0.85)" : "#D0DFDB" // Pendente mais suave e discreto
+          ] : [isDark ? "#244149" : "#D0DFDB"],
+          borderWidth: 2,
+          borderColor: isDark ? "#122830" : "#FFFFFF"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "68%",
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: {
+              boxWidth: 12,
+              color: isDark ? "#E4EFED" : "#0F2A33",
+              font: { size: 11, weight: 600 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                const val = ctx.raw || 0;
+                const p = entTotal ? Math.round((val / entTotal) * 100) : 0;
+                return " " + ctx.label + ": " + fmt(val) + " (" + p + "%)";
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
 function renderResumo(){
-  const c=calc(), A=S.acampantes;
-  const entTotal=c.recPrev+c.entPrev, entJa=c.recRec+c.entRec;
-  const pct = entTotal>0 ? Math.min(100,Math.round(entJa/entTotal*100)) : 0;
-  const semValor = S.config.opcoes.every(o=>!o.valor);
-  let h = semValor ? `<div class="banner">Os valores da inscrição ainda não foram definidos. Preencha em <a href="#" onclick="goTab('ajustes');return false">Ajustes</a> para o sistema calcular as parcelas.</div>`:"";
-  h+=`<div class="lake">
-    <div class="lake-head"><div><p>Saldo previsto ao fim do acampamento</p><div class="lake-value" style="color:${c.saldoProj<0?"var(--coral)":"var(--ink)"}">${fmt(c.saldoProj)}</div></div>
-    <div style="text-align:right"><p>Em caixa hoje</p><div style="font-size:22px;font-weight:700">${fmt(c.saldoHoje)}</div></div></div>
-    <div class="tank" role="img" aria-label="${pct}% das entradas previstas já recebidas"><div class="tank-fill" style="width:${pct}%"></div>
-      <div class="tank-label"><span>${pct}% recebido</span><span>${fmt(entTotal-entJa)} a receber</span></div></div>
-    <div class="legend"><span>Já entrou ${fmt(entJa)}</span><span>Total previsto ${fmt(entTotal)}</span></div>
-  </div>
-  <div class="grid">
-    <div class="stat"><h3>Acampantes</h3><div class="big">${A.length}${S.config.vagas?` <span class="sub">de ${S.config.vagas} vagas</span>`:""}</div>
-      <div class="counts">${c.st.pago?`<span class="pill pago">${c.st.pago} pagos</span>`:""}${c.st.parcial?`<span class="pill parcial">${c.st.parcial} parciais</span>`:""}${c.st.pendente?`<span class="pill pendente">${c.st.pendente} pendentes</span>`:""}${c.st.atrasado?`<span class="pill atrasado">${c.st.atrasado} atrasados</span>`:""}</div></div>
-    <div class="stat"><h3>Inscrições</h3><div class="big">${fmt(c.recRec)}</div><div class="sub">recebido de ${fmt(c.recPrev)}</div></div>
-    <div class="stat"><h3>Outras entradas</h3><div class="big">${fmt(c.entRec)}</div><div class="sub">recebido de ${fmt(c.entPrev)}</div></div>
-    <div class="stat"><h3>Gastos</h3><div class="big">${fmt(c.despPrev)}</div><div class="sub">${fmt(c.despPago)} já pago</div></div>
-    <div class="stat"><h3>Ponto de equilíbrio</h3>${c.minInscritos===null?`<div class="sub">Defina os valores da inscrição para calcular.</div>`:
-      `<div class="big">${c.minInscritos} inscritos</div><div class="sub">${c.minInscritos<=A.length?"Gastos cobertos pelas inscrições atuais":`faltam ${c.minInscritos-A.length} para cobrir os gastos`}</div>`}</div>
+  const c = calc(), A = S.acampantes;
+  const entTotal = c.recPrev + c.entPrev;
+  const entJa = c.recRec + c.entRec;
+  const entPendente = Math.max(0, entTotal - entJa);
+  const pct = entTotal > 0 ? Math.min(100, Math.round(entJa / entTotal * 100)) : 0;
+  const semValor = S.config.opcoes.every(o => !o.valor);
+
+  const equipantes = A.filter(isEquipante);
+  const acampantes = A.filter(a => !isEquipante(a));
+  const nEquip = equipantes.length;
+  const nAcamp = acampantes.length;
+  const cuponsEq = getCuponsEquipe();
+
+  let h = semValor ? `<div class="banner">Os valores da inscrição ainda não foram definidos. Preencha em <a href="#" onclick="goTab('ajustes');return false">Ajustes</a> para o sistema calcular as parcelas.</div>` : "";
+
+  // 1. Visão Geral do Saldo do Acampamento
+  h += `<div class="lake">
+    <div class="lake-head">
+      <div>
+        <p>Saldo previsto ao fim do acampamento</p>
+        <div class="lake-value" style="color:${c.saldoProj < 0 ? "var(--coral)" : "var(--ink)"}">${fmt(c.saldoProj)}</div>
+      </div>
+      <div style="text-align:right">
+        <p>Em caixa hoje</p>
+        <div style="font-size:22px;font-weight:700">${fmt(c.saldoHoje)}</div>
+      </div>
+    </div>
+    <div class="tank" role="img" aria-label="${pct}% das entradas previstas já recebidas">
+      <div class="tank-fill" style="width:${pct}%"></div>
+      <div class="tank-label">
+        <span>${pct}% recebido</span>
+        <span style="font-size:12px;opacity:0.9">${fmt(entPendente)} a receber</span>
+      </div>
+    </div>
+    <div class="legend">
+      <span>Já entrou <b>${fmt(entJa)}</b></span>
+      <span style="font-size:12px;opacity:0.85">Total previsto ${fmt(entTotal)}</span>
+    </div>
+  </div>`;
+
+  // 2. HERO FINANCEIRO: Destaque máximo aos valores que já entraram e valor pendente menor
+  h += `<div class="fin-hero">
+    <div class="fin-hero-head">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="fin-hero-title">✓ Total Já Arrecadado</span>
+          <span class="pill pago" style="font-size:11px">${pct}% do valor previsto</span>
+        </div>
+        <div class="fin-val-ja">${fmt(entJa)}</div>
+        <div class="fin-sub-ja">Valor total que <b>já entrou</b> em caixa (inscrições pagas + outras entradas)</div>
+      </div>
+      <div class="fin-pendente-box">
+        <div class="fin-pendente-lbl">Ainda pendente a entrar:</div>
+        <div class="fin-pendente-val">${fmt(entPendente)} <small style="font-weight:400;font-size:12px;color:var(--muted)">(${100 - pct}%)</small></div>
+      </div>
+    </div>
+  </div>`;
+
+  // 3. GRADE DE GRÁFICOS (Acampantes vs Equipantes, Linha do Tempo, Distribuição de Valores)
+  h += `<div class="charts-grid">
+    <!-- Gráfico 1: Acampantes vs Equipantes -->
+    <div class="chart-card">
+      <div>
+        <h3>Acampantes vs. Equipantes</h3>
+        <p class="hint">Divisão dos inscritos entre comissão/equipe e acampantes gerais.</p>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chartAcampantes"></canvas>
+      </div>
+      <div class="chart-stats">
+        <div class="chart-stat-box" style="border-left:4px solid var(--water)">
+          <div class="cs-val" style="color:var(--water)">${nAcamp} <small style="font-size:13px;font-weight:600;color:var(--muted)">(${A.length ? Math.round(nAcamp/A.length*100) : 0}%)</small></div>
+          <div class="cs-lbl">Acampantes</div>
+        </div>
+        <div class="chart-stat-box" style="border-left:4px solid var(--sun)">
+          <div class="cs-val" style="color:var(--sun)">${nEquip} <small style="font-size:13px;font-weight:600;color:var(--muted)">(${A.length ? Math.round(nEquip/A.length*100) : 0}%)</small></div>
+          <div class="cs-lbl">Equipantes (Comissão)</div>
+        </div>
+      </div>
+
+      <!-- Gestor de Cupons que definem os Equipantes -->
+      <div class="tag-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <span style="font-size:13px;font-weight:700">Cupons de Equipantes:</span>
+          <button class="btn ghost small" style="padding:2px 8px;font-size:11px" onclick="resetCuponsEquipe()" title="Restaurar padrão">Padrão</button>
+        </div>
+        <div class="tag-list">
+          ${cuponsEq.map(cp => `
+            <span class="tag-badge">
+              <span>${esc(cp)}</span>
+              <button class="tag-del" onclick="removerCupomEquipe('${esc(cp)}')" title="Remover cupom ${esc(cp)}">×</button>
+            </span>
+          `).join("")}
+          ${!cuponsEq.length ? `<span style="font-size:12px;color:var(--muted)">Nenhum cupom ativo</span>` : ""}
+        </div>
+        <div class="tag-input-row">
+          <input id="inputNewCupomEq" placeholder="Código (ex: COMISSAO27)" onkeydown="if(event.key==='Enter'){event.preventDefault();addCupomEquipeFromInput();}">
+          <button class="btn small" onclick="addCupomEquipeFromInput()">+ Adicionar</button>
+        </div>
+        <p class="hint" style="margin:6px 0 0;font-size:12px">Quem tiver esses cupons é comissão/equipante. O restante é acampante.</p>
+      </div>
+    </div>
+
+    <!-- Gráfico 2: Inscrições ao longo do tempo -->
+    <div class="chart-card">
+      <div>
+        <h3>Inscrições ao Longo do Tempo</h3>
+        <p class="hint">Evolução do ritmo de inscrições e novos cadastros por dia.</p>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chartTempo"></canvas>
+      </div>
+      <div class="chart-stats">
+        <div class="chart-stat-box">
+          <div class="cs-val">${A.length}</div>
+          <div class="cs-lbl">Total acumulado</div>
+        </div>
+        <div class="chart-stat-box">
+          <div class="cs-val" id="valMediaDia">-</div>
+          <div class="cs-lbl">Média / dia</div>
+        </div>
+        <div class="chart-stat-box">
+          <div class="cs-val" id="valPicoDia">-</div>
+          <div class="cs-lbl">Pico em 1 dia</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico 3: Valores Recebidos vs Pendentes -->
+    <div class="chart-card">
+      <div>
+        <h3>Valores Recebidos vs. Pendentes</h3>
+        <p class="hint">Valores já em caixa com maior destaque e pendentes reduzidos.</p>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chartFinanceiro"></canvas>
+      </div>
+      <div class="chart-stats">
+        <div class="chart-stat-box" style="border-left:4px solid var(--water)">
+          <div class="cs-val" style="color:var(--water);font-size:17px">${fmt(c.recRec)}</div>
+          <div class="cs-lbl">Inscrições recebidas</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">pendente: ${fmt(Math.max(0, c.recPrev - c.recRec))}</div>
+        </div>
+        <div class="chart-stat-box" style="border-left:4px solid var(--ok)">
+          <div class="cs-val" style="color:var(--ok);font-size:17px">${fmt(c.entRec)}</div>
+          <div class="cs-lbl">Outras entradas</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">pendente: ${fmt(Math.max(0, c.entPrev - c.entRec))}</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <span style="font-size:11px;text-transform:uppercase;color:var(--muted);display:block">Ainda a entrar (pendente)</span>
+          <span style="font-size:15px;font-weight:700;color:var(--ink)">${fmt(entPendente)}</span>
+        </div>
+        <span class="pill pendente" style="font-size:11px">${100 - pct}% pendente</span>
+      </div>
+    </div>
+  </div>`;
+
+  // 4. Grid de Estatísticas Rápidas
+  h += `<div class="grid">
+    <div class="stat">
+      <h3>Inscritos no Total</h3>
+      <div class="big">${A.length}${S.config.vagas ? ` <span class="sub">de ${S.config.vagas} vagas</span>` : ""}</div>
+      <div class="counts">
+        <span class="pill acampante" style="font-size:11px">${nAcamp} acampantes</span>
+        <span class="pill equipante" style="font-size:11px">★ ${nEquip} equipantes</span>
+      </div>
+      <div class="counts" style="margin-top:4px">
+        ${c.st.pago ? `<span class="pill pago">${c.st.pago} pagos</span>` : ""}
+        ${c.st.parcial ? `<span class="pill parcial">${c.st.parcial} parciais</span>` : ""}
+        ${c.st.pendente ? `<span class="pill pendente">${c.st.pendente} pendentes</span>` : ""}
+        ${c.st.atrasado ? `<span class="pill atrasado">${c.st.atrasado} atrasados</span>` : ""}
+      </div>
+    </div>
+    <div class="stat">
+      <h3>Inscrições</h3>
+      <div class="big" style="color:var(--ok)">${fmt(c.recRec)}</div>
+      <div class="sub" style="font-size:12px;margin-top:2px">pendente a entrar: <b>${fmt(Math.max(0, c.recPrev - c.recRec))}</b> (total ${fmt(c.recPrev)})</div>
+    </div>
+    <div class="stat">
+      <h3>Outras entradas</h3>
+      <div class="big" style="color:var(--ok)">${fmt(c.entRec)}</div>
+      <div class="sub" style="font-size:12px;margin-top:2px">pendente a entrar: <b>${fmt(Math.max(0, c.entPrev - c.entRec))}</b> (total ${fmt(c.entPrev)})</div>
+    </div>
+    <div class="stat">
+      <h3>Gastos</h3>
+      <div class="big">${fmt(c.despPrev)}</div>
+      <div class="sub">${fmt(c.despPago)} já pago</div>
+    </div>
+    <div class="stat">
+      <h3>Ponto de equilíbrio</h3>
+      ${c.minInscritos === null ? `<div class="sub">Defina os valores da inscrição para calcular.</div>` :
+        `<div class="big">${c.minInscritos} inscritos</div><div class="sub">${c.minInscritos <= A.length ? "Gastos cobertos pelas inscrições atuais" : `faltam ${c.minInscritos - A.length} para cobrir os gastos`}</div>`}
+    </div>
   </div>`;
 
   // Fluxo mensal
@@ -472,43 +1031,78 @@ function renderResumo(){
     <span class="meta">Parcela ${p.n} de ${a.parcelas.length}, vence ${fmtDate(p.venc)}</span><span class="right"><span class="amount">${fmt(p.valor-p.pago)}</span>${pill(s==="atrasado"?"atrasado":"pendente")}</span></button>`).join("")+`</div>`
     : `<div class="empty"><strong>Tudo em dia</strong>Nenhuma parcela atrasada ou vencendo nos próximos 15 dias.</div>`;
   h+=`</div>`;
+
   $("#sec-resumo").innerHTML=h;
+  renderCharts();
 }
 
 function renderAcampantes(){
   const busca=norm(S.busca);
   let L=S.acampantes.slice().sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
-  if(S.filtro!=="todos") L=L.filter(a=>statusAcampante(a)===S.filtro);
-  if(busca) L=L.filter(a=>norm(a.nome).includes(busca)||String(a.telefone||"").includes(busca)||norm(a.codigo).includes(busca));
-  const chips=["todos","pendente","parcial","pago","atrasado"].map(f=>`<button class="chip" aria-pressed="${S.filtro===f}" onclick="setFiltro('${f}')">${f==="todos"?"Todos":ROTULO[f]}</button>`).join("");
+  if(S.filtro==="acampantes") L=L.filter(a=>!isEquipante(a));
+  else if(S.filtro==="equipantes") L=L.filter(a=>isEquipante(a));
+  else if(S.filtro!=="todos") L=L.filter(a=>statusAcampante(a)===S.filtro);
+
+  if(busca) L=L.filter(a=>norm(a.nome).includes(busca)||String(a.telefone||"").includes(busca)||norm(a.codigo).includes(busca)||norm(a.obs).includes(busca));
+
+  const filtros=[
+    {id:"todos", label:"Todos"},
+    {id:"acampantes", label:"🏕️ Acampantes"},
+    {id:"equipantes", label:"★ Equipantes"},
+    {id:"pago", label:"Pagos"},
+    {id:"parcial", label:"Parciais"},
+    {id:"pendente", label:"Pendentes"},
+    {id:"atrasado", label:"Atrasados"}
+  ];
+  const chips=filtros.map(f=>`<button class="chip" aria-pressed="${S.filtro===f.id}" onclick="setFiltro('${f.id}')">${f.label}</button>`).join("");
   const tot=S.acampantes.reduce((a,x)=>{const t=totais(x);a.t+=t.total;a.p+=t.pago;return a},{t:0,p:0});
-  let h=`<div class="toolbar"><input type="search" placeholder="Buscar por nome, telefone ou código" value="${esc(S.busca)}" oninput="S.busca=this.value;renderAcampantesList()" aria-label="Buscar acampante">
+  const totEq = S.acampantes.filter(isEquipante).length;
+  const totAc = S.acampantes.length - totEq;
+
+  let h=`<div class="toolbar"><input type="search" placeholder="Buscar por nome, telefone, cupom ou código" value="${esc(S.busca)}" oninput="S.busca=this.value;renderAcampantesList()" aria-label="Buscar acampante">
     ${canEdit()?`<button class="btn" onclick="formAcampante()">Adicionar acampante</button><button class="btn ghost" onclick="formImport()">Importar planilha</button>`:""}
     <button class="btn ghost" onclick="exportAcampantes()">Exportar</button></div>
     <div class="chips">${chips}</div>
-    <div class="totals"><span><b>${S.acampantes.length}</b> inscritos</span><span>Recebido <b>${fmt(tot.p)}</b></span><span>Falta <b>${fmt(tot.t-tot.p)}</b></span></div>
+    <div class="totals">
+      <span><b>${S.acampantes.length}</b> inscritos (<b>${totAc}</b> acampantes • <b>${totEq}</b> equipantes)</span>
+      <span>Recebido <b style="color:var(--ok)">${fmt(tot.p)}</b></span>
+      <span style="font-size:13px;opacity:0.85">Pendente a entrar <b>${fmt(tot.t-tot.p)}</b></span>
+    </div>
     <div id="acList"></div>`;
   $("#sec-acampantes").innerHTML=h; renderAcampantesList(L);
 }
+
 function renderAcampantesList(L){
   if(!L){
     const busca=norm(S.busca);
     L=S.acampantes.slice().sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
-    if(S.filtro!=="todos") L=L.filter(a=>statusAcampante(a)===S.filtro);
-    if(busca) L=L.filter(a=>norm(a.nome).includes(busca)||String(a.telefone||"").includes(busca)||norm(a.codigo).includes(busca)||String(a.cpf||"").includes(busca)||norm(a.lote||"").includes(busca));
+    if(S.filtro==="acampantes") L=L.filter(a=>!isEquipante(a));
+    else if(S.filtro==="equipantes") L=L.filter(a=>isEquipante(a));
+    else if(S.filtro!=="todos") L=L.filter(a=>statusAcampante(a)===S.filtro);
+
+    if(busca) L=L.filter(a=>norm(a.nome).includes(busca)||String(a.telefone||"").includes(busca)||norm(a.codigo).includes(busca)||String(a.cpf||"").includes(busca)||norm(a.lote||"").includes(busca)||norm(a.obs||"").includes(busca));
   }
   const el=$("#acList"); if(!el)return;
   if(!S.acampantes.length){el.innerHTML=`<div class="empty"><strong>Nenhum acampante ainda</strong>As inscrições feitas pelo site ou adicionadas manualmente aparecerão aqui.</div>`;return}
   if(!L.length){el.innerHTML=`<div class="empty"><strong>Ninguém neste filtro</strong>Tente outro filtro ou termo de busca.</div>`;return}
+
   el.innerHTML=`<div class="list">`+L.map(a=>{
     const t=totais(a);
     const s=statusAcampante(a);
-    const cpfFmt = a.cpf ? a.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : "";
+    const cpfFmt = a.cpf ? a.cpf.replace(/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/, "$1.$2.$3-$4") : "";
+    const eq = isEquipante(a);
+    const badgeTipo = eq
+      ? `<span class="pill equipante" style="font-size:11px">★ Equipante</span>`
+      : `<span class="pill acampante" style="font-size:11px">Acampante</span>`;
+    const cupCode = a.cupom || extractCupomFromObs(a.obs);
+
     return`<button class="item" onclick="abrirAcampante('${a.id}')" style="align-items:flex-start">
       <div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span class="name">${esc(a.nome)}</span>
+          ${badgeTipo}
           ${a.codigo ? `<span style="background:var(--water-soft);color:var(--ink);font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:monospace">${esc(a.codigo)}</span>` : ''}
+          ${cupCode ? `<span style="background:var(--sun-soft);color:var(--ink);font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:monospace">Cupom: ${esc(cupCode)}</span>` : ''}
           ${a.lote ? `<span style="font-size:11px;color:var(--muted);border:1px solid var(--line);padding:2px 6px;border-radius:4px">${esc(a.lote)}</span>` : ''}
           ${a.camiseta ? `<span style="font-size:11px;color:var(--muted);border:1px solid var(--line);padding:2px 6px;border-radius:4px">Camiseta: ${esc(a.camiseta)}</span>` : ''}
         </div>
@@ -529,7 +1123,7 @@ function renderLista(col){
   const isG=col==="despesas"; const L=S[col].slice().sort((a,b)=>(a.data||"").localeCompare(b.data||""));
   const tot=sum(L,x=>x.valor), feito=sum(L,x=>(isG?x.pago:x.recebido)?x.valor:0);
   let h=`<div class="toolbar">${canEdit()?`<button class="btn" onclick="formMov('${col}')">${isG?"Adicionar gasto":"Adicionar entrada"}</button>`:""}<button class="btn ghost" onclick="exportFinanceiro()">Exportar financeiro</button></div>
-    <div class="totals"><span>Total <b>${fmt(tot)}</b></span><span>${isG?"Pago":"Recebido"} <b>${fmt(feito)}</b></span><span>${isG?"A pagar":"A receber"} <b>${fmt(tot-feito)}</b></span></div>`;
+    <div class="totals"><span>Total <b>${fmt(tot)}</b></span><span>${isG?"Pago":"Recebido"} <b style="color:var(--ok)">${fmt(feito)}</b></span><span style="font-size:13px;opacity:0.85">${isG?"A pagar":"A receber"} <b>${fmt(tot-feito)}</b></span></div>`;
   if(!L.length) h+= isG?`<div class="empty"><strong>Nenhum gasto lançado</strong>Lance chácara, transporte, alimentação, limpeza e o que mais for previsto. Pode marcar como pago depois.</div>`
     :`<div class="empty"><strong>Nenhuma entrada extra</strong>Ofertas, doações, cantina e patrocínios entram aqui. As inscrições ficam em Acampantes.</div>`;
   else h+=`<div class="list">`+L.map(x=>{const ok=isG?x.pago:x.recebido;const atras=!ok&&x.data&&x.data<todayISO();
@@ -542,6 +1136,8 @@ function renderLista(col){
 function renderAjustes(){
   if(document.activeElement && $("#sec-ajustes").contains(document.activeElement)) return;
   const c=S.config, ro=canEdit()?"":"disabled";
+  const cuponsEq = getCuponsEquipe();
+
   let h=`<div class="block" style="margin-top:0"><h2>Evento</h2><div class="panel" style="padding:16px">
     <label>Nome<input id="cfNome" value="${esc(c.nome)}" ${ro}></label>
     <label>Descrição curta<input id="cfSub" value="${esc(c.subtitulo)}" ${ro}></label>
@@ -549,6 +1145,29 @@ function renderAjustes(){
     <label>Local<input id="cfLocal" value="${esc(c.local)}" placeholder="Endereço da chácara" ${ro}></label>
     <label>Vagas<input type="number" min="0" inputmode="numeric" id="cfVagas" value="${c.vagas||""}" placeholder="Opcional" ${ro}></label>
   </div></div>
+
+  <!-- Bloco Equipantes vs Acampantes -->
+  <div class="block"><h2>Equipantes vs. Acampantes</h2><p class="hint">Defina os códigos de cupons que identificam os membros da equipe de trabalho (comissão). Quem se inscrever com um desses cupons é classificado automaticamente como Equipante nos relatórios e gráficos. Todos os demais são Acampantes.</p>
+  <div class="panel" style="padding:16px">
+    <div style="font-weight:600;font-size:14px;margin-bottom:6px">Cupons de Equipantes ativos:</div>
+    <div class="tag-list">
+      ${cuponsEq.map(cp => `
+        <span class="tag-badge">
+          <span>${esc(cp)}</span>
+          ${canEdit() ? `<button class="tag-del" onclick="removerCupomEquipe('${esc(cp)}')">×</button>` : ''}
+        </span>
+      `).join('')}
+      ${!cuponsEq.length ? `<span style="font-size:13px;color:var(--muted)">Nenhum cupom ativo</span>` : ''}
+    </div>
+    ${canEdit() ? `
+      <div class="tag-input-row" style="margin-top:12px">
+        <input id="inputNewCupomEqAjustes" placeholder="Código (ex: COMISSAO27)" onkeydown="if(event.key==='Enter'){event.preventDefault();addCupomEquipeFromAjustes();}">
+        <button class="btn small" onclick="addCupomEquipeFromAjustes()">Adicionar cupom</button>
+        <button class="btn ghost small" onclick="resetCuponsEquipe()">Restaurar padrão</button>
+      </div>
+    ` : ''}
+  </div></div>
+
   <div class="block"><h2>Formas de pagamento</h2><p class="hint">Usadas quando você cadastra alguém aqui pelo painel. Quem se inscreve pela landing page já chega com a forma e as parcelas que escolheu lá. Cada opção gera as parcelas do acampante. O valor total pode ser diferente (desconto à vista, por exemplo). As parcelas vencem mês a mês a partir do primeiro vencimento.</p>
   <div id="opts">${c.opcoes.map((o,i)=>optRow(o,i,ro)).join("")}</div>
   ${canEdit()?`<button class="btn ghost" onclick="addOpcao()">Adicionar forma de pagamento</button>`:""}
@@ -558,6 +1177,16 @@ function renderAjustes(){
   h+=blocoCupons(ro)+blocoLinks(ro);
   $("#sec-ajustes").innerHTML=h;
 }
+
+function addCupomEquipeFromAjustes(){
+  const inp = $("#inputNewCupomEqAjustes");
+  if(!inp) return;
+  const val = inp.value.trim();
+  if(!val) return toast("Digite o código do cupom.");
+  addCupomEquipe(val);
+  inp.value = "";
+}
+
 const optRow=(o,i,ro)=>`<div class="opt" data-id="${esc(o.id)}"><div class="opt-grid">
   <label>Nome<input class="oNome" value="${esc(o.nome)}" ${ro}></label>
   <label>Parcelas<input class="oParc" type="number" min="1" max="24" inputmode="numeric" value="${o.parcelas}" ${ro}></label>
@@ -570,12 +1199,11 @@ function salvarConfig(){
   if(!opcoes.length) return $("#cfErr").textContent="Mantenha pelo menos uma forma de pagamento.";
   if(opcoes.some(o=>!o.nome)) return $("#cfErr").textContent="Dê um nome a cada forma de pagamento.";
   if(opcoes.some(o=>isNaN(o.valor))) return $("#cfErr").textContent="Confira os valores: use o formato 350,00.";
-  const cfg={...S.config,nome:$("#cfNome").value.trim()||"Acampamento",subtitulo:$("#cfSub").value.trim(),dataInicio:$("#cfIni").value,dataFim:$("#cfFim").value,local:$("#cfLocal").value.trim(),vagas:parseInt($("#cfVagas").value)||0,opcoes};
+  const cfg={...S.config,nome:$("#cfNome").value.trim()||"Acampamento",subtitulo:$("#cfSub").value.trim(),dataInicio:$("#cfIni").value,dataFim:$("#cfFim").value,local:$("#cfLocal").value.trim(),vagas:parseInt($("#cfVagas").value)||0,opcoes,cuponsEquipe:getCuponsEquipe()};
   document.activeElement?.blur(); saveDoc("config","main",cfg); toast("Ajustes salvos");
 }
 
 /* ---------- Cupons (tabela cupons) ---------- */
-const normCod = t => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 const cupomDesc = c => c.tipo==="percent" ? c.valor+"% de desconto" : c.tipo==="off" ? fmt(c.valor)+" de desconto" : "valor final de "+fmt(c.valor);
 function blocoCupons(ro){
   let h=`<div class="block"><h2>Cupons de desconto</h2><p class="hint">Cada igreja recebe o seu código. Quem digitar o cupom na página de inscrição ganha o desconto na hora, sem precisar subir o site de novo. Para ver quanto fica o valor com desconto em cada lote, use a lista de links de cartão logo abaixo.</p>`;
@@ -609,7 +1237,6 @@ async function toggleCupom(id){const c=S.cupons.find(x=>x.id===id);if(!c)return;
 async function delCupom(id){const c=S.cupons.find(x=>x.id===id);if(!c||!confirm("Remover o cupom "+c.codigo+"? Quem já se inscreveu com ele não é afetado."))return;
   const {error}=await sb.from("cupons").delete().eq("id",id);
   if(error)return falhou(error); S.cupons=S.cupons.filter(x=>x.id!==id); document.activeElement?.blur(); renderAjustes(); toast("Cupom removido")}
-
 
 /* ---------- Tela Dedicada de Cupons ---------- */
 function renderCupons(){
@@ -803,13 +1430,18 @@ function formAcampante(id){
   const a=id?S.acampantes.find(x=>x.id===id):null;
   const op=S.config.opcoes; const sel=a?.opcaoId||op[0]?.id;
   const o0=opcaoById(sel);
+  const cupomVal = a?.cupom || extractCupomFromObs(a?.obs) || "";
+
   openDlg(a?"Editar acampante":"Novo acampante",`
     <label>Nome completo<input id="fNome" value="${esc(a?.nome)}" autocomplete="off"></label>
     <div class="row2"><label>WhatsApp<input id="fTel" inputmode="tel" value="${esc(a?.telefone)}" placeholder="(19) 99999-9999"></label>
     <label>E-mail<input id="fEmail" type="email" inputmode="email" value="${esc(a?.email)}"></label>
     <label>Idade<input id="fIdade" type="number" min="0" inputmode="numeric" value="${a?.idade||""}"></label></div>
     <label>Responsável (se menor)<input id="fResp" value="${esc(a?.responsavel)}"></label>
-    <label>Forma de pagamento<select id="fOp" onchange="opChange()">${op.map(o=>`<option value="${esc(o.id)}" ${o.id===sel?"selected":""}>${esc(o.nome)} ${o.valor?"("+fmt(o.valor)+")":""}</option>`).join("")}</select></label>
+    <div class="row2">
+      <label>Forma de pagamento<select id="fOp" onchange="opChange()">${op.map(o=>`<option value="${esc(o.id)}" ${o.id===sel?"selected":""}>${esc(o.nome)} ${o.valor?"("+fmt(o.valor)+")":""}</option>`).join("")}</select></label>
+      <label>Cupom (opcional)<input id="fCupom" value="${esc(cupomVal)}" placeholder="Ex.: COMISSAO27, NT180" style="text-transform:uppercase;font-family:monospace"></label>
+    </div>
     <div class="row2"><label>Valor total (R$)<input id="fTotal" inputmode="decimal" value="${moneyIn(a?totais(a).total:o0?.valor)}" placeholder="0,00"></label>
     <label>1º vencimento<input id="fVenc" type="date" value="${esc(a?.parcelas?.[0]?.venc||o0?.primeiroVenc||todayISO())}"></label></div>
     <p class="note">Ajuste o valor se houver desconto ou bolsa.${a&&totais(a).pago?" Ao mudar forma ou valor, o que já foi pago é redistribuído nas novas parcelas.":""}</p>
@@ -824,23 +1456,41 @@ function salvarAcampante(id){
   const nome=$("#fNome").value.trim(); if(!nome) return $("#fErr").textContent="Informe o nome do acampante.";
   const total=parseMoney($("#fTotal").value); if(isNaN(total)) return $("#fErr").textContent="Valor inválido. Use o formato 350,00.";
   const o=opcaoById($("#fOp").value); const venc=$("#fVenc").value||todayISO();
+  const cupomVal = normCod($("#fCupom")?.value || "");
+  let obs = $("#fObs").value.trim();
+
+  // Mantém ou atualiza o cupom nas observações
+  if(cupomVal){
+    if(/Cupom:\s*[^·]+/i.test(obs)){
+      obs = obs.replace(/Cupom:\s*[^·]+/i, "Cupom: " + cupomVal);
+    } else {
+      obs = (obs ? obs + " · " : "") + "Cupom: " + cupomVal;
+    }
+  }
+
   let parcelas=a?.parcelas;
   const mudou=!a||a.opcaoId!==o.id||totais(a).total!==total||(a.parcelas?.[0]?.venc!==venc);
   if(mudou) parcelas=gerarParcelas(total,o.parcelas,venc,a?totais(a).pago:0);
-  const doc={...(a?strip(a):{}),nome,telefone:$("#fTel").value.trim(),email:$("#fEmail").value.trim().toLowerCase(),idade:parseInt($("#fIdade").value)||null,responsavel:$("#fResp").value.trim(),obs:$("#fObs").value.trim(),
-    opcaoId:o.id,opcaoNome:o.nome,parcelas,criadoEm:a?.criadoEm||new Date().toISOString()};
+  const doc={...(a?strip(a):{}),nome,telefone:$("#fTel").value.trim(),email:$("#fEmail").value.trim().toLowerCase(),idade:parseInt($("#fIdade").value)||null,responsavel:$("#fResp").value.trim(),obs,
+    cupom:cupomVal||null,opcaoId:o.id,opcaoNome:o.nome,parcelas,criadoEm:a?.criadoEm||new Date().toISOString()};
   const nid=id||newId(); saveDoc("acampantes",nid,doc); toast(id?"Acampante atualizado":"Acampante adicionado"); abrirAcampante(nid);
 }
 function abrirAcampante(id){
   const a=S.acampantes.find(x=>x.id===id); if(!a) return closeDlg();
   const t=totais(a), s=statusAcampante(a);
+  const eq = isEquipante(a);
+  const cupCode = a.cupom || extractCupomFromObs(a.obs);
+
   const ps=(a.parcelas||[]).map((p,i)=>{const sp=statusParcela(p);
     const wa=waLink(a.telefone,`Olá, ${a.nome.split(" ")[0]}! Passando para lembrar da parcela ${p.n} de ${a.parcelas.length} do ${S.config.nome}, no valor de ${fmt(p.valor-p.pago)}, com vencimento em ${fmtDate(p.venc)}. Qualquer dúvida é só chamar!`);
     return`<div class="parc"><div><div class="pt">Parcela ${p.n} de ${a.parcelas.length}, ${fmt(p.valor)}</div><div class="pd">Vence ${fmtDate(p.venc)}${p.pago?`, pago ${fmt(p.pago)}${p.dataPag?" em "+fmtDate(p.dataPag):""}`:""}</div></div>${pill(sp)}
     ${canEdit()?`<div class="parc-actions">${sp!=="pago"?`<button class="btn small" onclick="quitar('${a.id}',${i})">Marcar como paga</button>`:""}${p.pago>0?`<button class="btn ghost small" onclick="desfazer('${a.id}',${i})">Desfazer pagamento</button>`:""}
       ${sp!=="pago"?`<input inputmode="decimal" placeholder="Valor pago" aria-label="Valor pago" id="pp${i}"><button class="btn ghost small" onclick="parcial('${a.id}',${i})">Registrar valor pago</button>`:""}
       ${sp!=="pago"&&wa?`<a class="btn ghost small" href="${wa}" target="_blank" rel="noopener" style="text-decoration:none">Lembrar no WhatsApp</a>`:""}</div>`:""}</div>`}).join("");
-  openDlg(a.nome,`<dl class="kv"><dt>Situação</dt><dd>${pill(s)}</dd><dt>Forma</dt><dd>${esc(a.opcaoNome)}</dd><dt>Pago</dt><dd>${fmt(t.pago)} de ${fmt(t.total)}</dd>
+  openDlg(a.nome,`<dl class="kv"><dt>Situação</dt><dd>${pill(s)}</dd>
+    <dt>Tipo</dt><dd>${eq ? '<span class="pill equipante" style="font-weight:700">★ Equipante (Comissão)</span>' : '<span class="pill acampante">Acampante</span>'}</dd>
+    ${cupCode ? `<dt>Cupom</dt><dd><span style="font-family:monospace;font-weight:700;background:var(--sun-soft);color:var(--ink);padding:2px 8px;border-radius:6px;border:1px solid var(--sun)">${esc(cupCode)}</span></dd>` : ''}
+    <dt>Forma</dt><dd>${esc(a.opcaoNome)}</dd><dt>Pago</dt><dd><b style="color:var(--ok)">${fmt(t.pago)}</b> de ${fmt(t.total)} <span style="font-size:12px;color:var(--muted);font-weight:400">(falta ${fmt(t.falta)})</span></dd>
     ${a.codigo?`<dt>Código</dt><dd>${esc(a.codigo)}</dd>`:""}${a.telefone?`<dt>WhatsApp</dt><dd>${esc(a.telefone)}</dd>`:""}${a.email?`<dt>E-mail</dt><dd>${esc(a.email)}</dd>`:""}${a.nascimento?`<dt>Nascimento</dt><dd>${fmtDate(a.nascimento)}</dd>`:""}${a.idade?`<dt>Idade</dt><dd>${a.idade}</dd>`:""}${a.responsavel?`<dt>Responsável</dt><dd>${esc(a.responsavel)}${a.responsavelTel?", "+esc(a.responsavelTel):""}</dd>`:""}${a.camiseta?`<dt>Camiseta</dt><dd>${esc(a.camiseta)}</dd>`:""}${a.lote?`<dt>Lote</dt><dd>${esc(a.lote)}</dd>`:""}${a.origem==="site"?`<dt>Origem</dt><dd>Inscrição pelo site</dd>`:""}${a.obs?`<dt>Obs.</dt><dd style="font-weight:400">${esc(a.obs)}</dd>`:""}</dl>
     ${t.total===0?`<div class="banner">Este acampante está com valor zerado. Edite a ficha para definir o valor.</div>`:""}
     ${t.falta > 0 && a.codigo ? `<div style="background:rgba(0,208,156,0.12);border:1px solid rgba(0,208,156,0.3);padding:10px 14px;border-radius:10px;margin:12px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
@@ -961,8 +1611,13 @@ function baixar(nome,linhas){
   setTimeout(()=>URL.revokeObjectURL(url),1500); toast("Arquivo baixado");
 }
 function exportAcampantes(){
-  const L=[["Nome","WhatsApp","E-mail","Idade","Responsável","Forma","Total","Pago","Falta","Situação"]];
-  S.acampantes.slice().sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome))).forEach(a=>{const t=totais(a);L.push([a.nome,a.telefone,a.email||"",a.idade||"",a.responsavel,a.opcaoNome,reais(t.total),reais(t.pago),reais(t.falta),ROTULO[statusAcampante(a)]])});
+  const L=[["Nome","Tipo","Cupom","WhatsApp","E-mail","Idade","Responsável","Forma","Total","Pago","Falta","Situação"]];
+  S.acampantes.slice().sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome))).forEach(a=>{
+    const t=totais(a);
+    const tipo = isEquipante(a) ? "Equipante" : "Acampante";
+    const cup = a.cupom || extractCupomFromObs(a.obs) || "";
+    L.push([a.nome,tipo,cup,a.telefone,a.email||"",a.idade||"",a.responsavel,a.opcaoNome,reais(t.total),reais(t.pago),reais(t.falta),ROTULO[statusAcampante(a)]]);
+  });
   baixar("acampantes.csv",L);
 }
 function exportFinanceiro(){
@@ -974,8 +1629,13 @@ function exportFinanceiro(){
 }
 
 /* ---------- Navegação ---------- */
-function goTab(t){S.tab=t;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
-  document.querySelectorAll("main section").forEach(s=>s.hidden=s.id!=="sec-"+t);window.scrollTo({top:0})}
+function goTab(t){
+  S.tab=t;
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  document.querySelectorAll("main section").forEach(s=>s.hidden=s.id!=="sec-"+t);
+  window.scrollTo({top:0});
+  if(t==="resumo") renderCharts();
+}
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.tab)));
 init();
 </script>
