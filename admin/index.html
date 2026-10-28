@@ -443,6 +443,7 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
       <button class="tab" role="tab" data-tab="checkin" aria-selected="false">Check-in</button>
       <button class="tab" role="tab" data-tab="acampantes" aria-selected="false">Acampantes</button>
       <button class="tab" role="tab" data-tab="cupons" aria-selected="false">Cupons</button>
+      <button class="tab" role="tab" data-tab="repasses" aria-selected="false">Repasses</button>
       <button class="tab" role="tab" data-tab="gastos" aria-selected="false">Gastos</button>
       <button class="tab" role="tab" data-tab="entradas" aria-selected="false">Outras entradas</button>
       <button class="tab" role="tab" data-tab="ajustes" aria-selected="false">Ajustes</button>
@@ -457,6 +458,7 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
   <section id="sec-checkin" hidden></section>
   <section id="sec-acampantes" hidden></section>
   <section id="sec-cupons" hidden></section>
+  <section id="sec-repasses" hidden></section>
   <section id="sec-gastos" hidden></section>
   <section id="sec-entradas" hidden></section>
   <section id="sec-ajustes" hidden></section>
@@ -497,7 +499,7 @@ const sum = (arr,f) => arr.reduce((a,x)=>a+(f(x)||0),0);
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2200)}
 
 const CAT_GASTOS=["Local (chácara)","Transporte","Alimentação","Limpeza","Material e decoração","Som e mídia","Camisetas e brindes","Seguro","Outros"];
-const CAT_ENTRADAS=["Ofertas","Doações","Cantina","Patrocínio","Bazar","Outros"];
+const CAT_ENTRADAS=["Repasse de Igreja","Subsídio de Inscrição","Ofertas","Doações","Cantina","Patrocínio","Bazar","Outros"];
 const DEFAULT_CONFIG={nome:"Imersos",subtitulo:"Acampamento de Carnaval 2027",dataInicio:"",dataFim:"",local:"",vagas:0,whatsapp:"",
   opcoes:[{id:"avista",nome:"PIX à vista",parcelas:1,valor:45000,primeiroVenc:""}],
   cuponsEquipe:["COMISSAO27","NT180"]};
@@ -728,7 +730,7 @@ function renderAll(){
   $("#evNome").textContent=S.config.nome||"Acampamento";
   const dt = S.config.dataInicio ? fmtDate(S.config.dataInicio)+(S.config.dataFim?" a "+fmtDate(S.config.dataFim):"") : "";
   $("#evSub").textContent=[S.config.subtitulo,dt,S.config.local].filter(Boolean).join(", ");
-  renderResumo(); renderCheckin(); renderAcampantes(); renderCupons(); renderLista("despesas"); renderLista("entradas"); renderAjustes();
+  renderResumo(); renderCheckin(); renderAcampantes(); renderCupons(); renderRepasses(); renderLista("despesas"); renderLista("entradas"); renderAjustes();
 }
 
 function calc(){
@@ -1328,7 +1330,7 @@ function setFiltro(f){S.filtro=f;renderAcampantes()}
 function renderLista(col){
   const isG=col==="despesas"; const L=S[col].slice().sort((a,b)=>(a.data||"").localeCompare(b.data||""));
   const tot=sum(L,x=>x.valor), feito=sum(L,x=>(isG?x.pago:x.recebido)?x.valor:0);
-  let h=`<div class="toolbar">${canEdit()?`<button class="btn" onclick="formMov('${col}')">${isG?"Adicionar gasto":"Adicionar entrada"}</button>`:""}<button class="btn ghost" onclick="exportFinanceiro()">Exportar financeiro</button></div>
+  let h=`<div class="toolbar">${canEdit()?`<button class="btn" onclick="formMov('${col}')">${isG?"Adicionar gasto":"Adicionar entrada"}</button>`:""}${!isG?`<button class="btn ghost" onclick="goTab('repasses')">🏛️ Repasses de Igrejas</button>`:""}<button class="btn ghost" onclick="exportFinanceiro()">Exportar financeiro</button></div>
     <div class="totals"><span>Total <b>${fmt(tot)}</b></span><span>${isG?"Pago":"Recebido"} <b style="color:var(--ok)">${fmt(feito)}</b></span><span style="font-size:13px;opacity:0.85">${isG?"A pagar":"A receber"} <b>${fmt(tot-feito)}</b></span></div>`;
   if(!L.length) h+= isG?`<div class="empty"><strong>Nenhum gasto lançado</strong>Lance chácara, transporte, alimentação, limpeza e o que mais for previsto. Pode marcar como pago depois.</div>`
     :`<div class="empty"><strong>Nenhuma entrada extra</strong>Ofertas, doações, cantina e patrocínios entram aqui. As inscrições ficam em Acampantes.</div>`;
@@ -2434,6 +2436,394 @@ async function reenviarEmailModal(codigo){
 }
 
 
+/* ---------- Lógica e Renderização de Repasses de Igrejas e Subsídios ---------- */
+function isCupomEquipeOuComissao(c){
+  if(!c) return false;
+  const cod = normCod(c.codigo || "");
+  if(cod.includes("COMISSAO") || cod.includes("EQUIPE")) return true;
+  const cuponsEq = getCuponsEquipe();
+  return cuponsEq.includes(cod);
+}
+
+function getPrecoBaseInscricao(){
+  if(S.config && S.config.opcoes && S.config.opcoes[0] && S.config.opcoes[0].valor){
+    return S.config.opcoes[0].valor;
+  }
+  return 45000;
+}
+
+function calcularDescontoUnitario(c, precoBase){
+  if(c.tipo === "percent") return Math.round(precoBase * c.valor / 100);
+  if(c.tipo === "off") return c.valor;
+  if(c.tipo === "price") return Math.max(0, precoBase - c.valor);
+  return 0;
+}
+
+function getEntradasRepasse(){
+  return S.entradas.filter(e => {
+    const cat = e.categoria || "";
+    const obs = (e.obs || "").toUpperCase();
+    return cat === "Repasse de Igreja" || cat === "Subsídio de Inscrição" || obs.includes("REPASSE");
+  });
+}
+
+function renderRepasses(){
+  const sec = document.getElementById("sec-repasses");
+  if(!sec) return;
+
+  const repasses = getEntradasRepasse();
+  const totRepasses = sum(repasses, x => x.valor);
+  const recRepasses = sum(repasses, x => x.recebido ? x.valor : 0);
+  const pendRepasses = Math.max(0, totRepasses - recRepasses);
+
+  // Cupons elegíveis para sugestão (exceto COMISSAO27 / equipe)
+  const todosCupons = S.cupons || [];
+  const cuponsIgreja = todosCupons.filter(c => !isCupomEquipeOuComissao(c));
+
+  const precoBase = getPrecoBaseInscricao();
+
+  // Mapeia estatísticas por cupom
+  let totalInscricoesSubsidiadas = 0;
+  let totalEstimadoTodosCupons = 0;
+
+  const dadosCupons = cuponsIgreja.map(c => {
+    const codNorm = normCod(c.codigo);
+    const inscritos = S.acampantes.filter(a => {
+      if(isEquipante(a)) return false;
+      const cupomInsc = extractCupomFromObs(a.obs);
+      if(cupomInsc === codNorm) return true;
+      if(c.igreja && c.igreja.length > 2 && norm(a.obs || "").includes(norm(c.igreja))) return true;
+      return false;
+    });
+
+    const descUn = calcularDescontoUnitario(c, precoBase);
+    const subtotalSugerido = inscritos.length * descUn;
+    totalInscricoesSubsidiadas += inscritos.length;
+    totalEstimadoTodosCupons += subtotalSugerido;
+
+    // Procura entradas já lançadas para este cupom / igreja
+    const entradasDoCupom = S.entradas.filter(e => {
+      const obs = (e.obs || "").toUpperCase();
+      const desc = norm(e.descricao);
+      return obs.includes(codNorm) || desc.includes(norm(c.codigo)) || (c.igreja && desc.includes(norm(c.igreja)));
+    });
+
+    const jaLancado = sum(entradasDoCupom, x => x.valor);
+    const jaRecebido = sum(entradasDoCupom, x => x.recebido ? x.valor : 0);
+    const saldoPendente = Math.max(0, subtotalSugerido - jaLancado);
+
+    return {
+      cupom: c,
+      inscritos,
+      descUn,
+      subtotalSugerido,
+      jaLancado,
+      jaRecebido,
+      saldoPendente,
+      entradasDoCupom
+    };
+  });
+
+  let h = `
+    <div class="block" style="margin-top:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2>Repasses de Igrejas e Subsídios</h2>
+          <p class="hint" style="margin:2px 0 0">
+            Controle e registre as contribuições e repasses das igrejas que subsidiaram inscrições com cupons de desconto ou doações diretas.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="formNovoRepasse()">+ Novo Repasse de Igreja</button>
+          <button class="btn ghost" onclick="goTab('cupons')">Ver Cupons</button>
+        </div>
+      </div>
+
+      <!-- Resumo Financeiro dos Repasses -->
+      <div class="grid" style="margin-bottom:20px">
+        <div class="stat">
+          <h3>Total em Repasses Lançados</h3>
+          <div class="big" style="color:var(--ink)">${fmt(totRepasses)}</div>
+          <div class="sub">${repasses.length} lançamento(s) em entradas</div>
+        </div>
+        <div class="stat">
+          <h3>Já Recebido em Caixa</h3>
+          <div class="big" style="color:var(--ok)">${fmt(recRepasses)}</div>
+          <div class="sub">valor confirmado e pago pelas igrejas</div>
+        </div>
+        <div class="stat">
+          <h3>A Receber (Previsto)</h3>
+          <div class="big" style="color:var(--water)">${fmt(pendRepasses)}</div>
+          <div class="sub">repasses combinados a entrar</div>
+        </div>
+        <div class="stat">
+          <h3>Inscrições com Cupom de Igreja</h3>
+          <div class="big" style="color:var(--sun)">${totalInscricoesSubsidiadas}</div>
+          <div class="sub">total de ${fmt(totalEstimadoTodosCupons)} em descontos aplicados</div>
+        </div>
+      </div>
+
+      <!-- Bloco de Sugestões de Repasses por Cupom -->
+      <div style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="font-size:19px;margin:0">💡 Sugestões de Repasses pelos Cupons das Igrejas</h3>
+            <p class="hint" style="margin:2px 0 0">
+              Calculado automaticamente a partir dos cupons ativos utilizados pelos participantes (excluídos cupons da comissão).
+            </p>
+          </div>
+        </div>`;
+
+  if(!dadosCupons.length){
+    h += `<div class="empty"><strong>Nenhum cupom de igreja encontrado</strong>Cadastre cupons na aba <b>Cupons</b> para que o sistema gere sugestões automáticas de repasses.</div>`;
+  } else {
+    h += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px">` +
+      dadosCupons.map(d => {
+        const c = d.cupom;
+        const totalEstimado = d.subtotalSugerido;
+        const temInscritos = d.inscritos.length > 0;
+        const fullyLaunched = d.jaLancado >= totalEstimado && totalEstimado > 0;
+        const partial = d.jaLancado > 0 && d.jaLancado < totalEstimado;
+
+        let statusBadge = "";
+        if(fullyLaunched){
+          statusBadge = `<span class="pill pago">✓ Repasse 100% Lançado (${fmt(d.jaRecebido)} recebido)</span>`;
+        } else if(partial){
+          statusBadge = `<span class="pill parcial">Parcial: ${fmt(d.jaLancado)} lançado (falta ${fmt(d.saldoPendente)})</span>`;
+        } else if(temInscritos){
+          statusBadge = `<span class="pill atrasado" style="background:var(--sun-soft);color:var(--ink)">Aguardando Lançamento (${fmt(totalEstimado)})</span>`;
+        } else {
+          statusBadge = `<span class="pill pendente">Nenhuma inscrição ainda</span>`;
+        }
+
+        const nomesAbrev = d.inscritos.map(a => esc(a.nome.split(" ")[0])).slice(0, 5).join(", ");
+        const mais = d.inscritos.length > 5 ? ` e mais ${d.inscritos.length - 5}` : "";
+
+        return `
+          <div class="panel" style="padding:16px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--line);border-radius:14px">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+                <div>
+                  <b style="font-size:16px;color:var(--ink)">${esc(c.igreja || "Igreja Parceira")}</b>
+                  <div style="margin-top:2px">
+                    <span style="font-family:monospace;font-size:12px;font-weight:700;background:var(--water-soft);color:var(--water-2);padding:2px 7px;border-radius:4px">
+                      ${esc(c.codigo)}
+                    </span>
+                    <span style="font-size:12px;color:var(--muted);margin-left:6px">${cupomDesc(c)}</span>
+                  </div>
+                </div>
+                <div>${statusBadge}</div>
+              </div>
+
+              <div style="background:var(--bg);border-radius:8px;padding:8px 12px;margin:10px 0;font-size:13px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span style="color:var(--muted)">Inscrições que usaram o cupom:</span>
+                  <b>${d.inscritos.length} participante(s)</b>
+                </div>
+                ${d.inscritos.length ? `
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
+                    (${nomesAbrev}${mais})
+                  </div>
+                ` : ''}
+                <div style="display:flex;justify-content:space-between;border-top:1px dashed var(--line);padding-top:4px">
+                  <span style="color:var(--muted)">Subsídio total sugerido:</span>
+                  <b style="font-size:15px;color:var(--ink)">${fmt(totalEstimado)}</b>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;display:flex;justify-content:flex-end">
+              <button class="btn small" onclick="lancarRepasseSugerido('${c.id}')" style="width:100%">
+                ${fullyLaunched ? 'Lançar Novo Repasse Adicional' : '+ Lançar Repasse desta Igreja'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("") + `</div>`;
+  }
+  h += `</div>`;
+
+  // Bloco de Repasses Já Lançados
+  h += `
+    <div style="margin-top:28px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="font-size:19px;margin:0">🏛️ Repasses e Ajudas de Igrejas Já Lançados</h3>
+          <p class="hint" style="margin:2px 0 0">
+            Registrados na tabela de entradas e integrados com o fluxo de caixa.
+          </p>
+        </div>
+      </div>`;
+
+  if(!repasses.length){
+    h += `<div class="empty"><strong>Nenhum repasse de igreja registrado ainda</strong>Clique em "+ Novo Repasse de Igreja" ou lance uma das sugestões acima.</div>`;
+  } else {
+    h += `<div class="list">` + repasses.map(e => {
+      const st = e.recebido ? "recebido" : "previsto";
+      return `
+        <div class="item" style="cursor:default">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <b style="font-size:15px">${esc(e.descricao)}</b>
+              <span class="pill" style="background:var(--water-soft);color:var(--ink);font-size:11px">${esc(e.categoria)}</span>
+              ${pill(st)}
+            </div>
+            <div class="meta" style="margin-top:4px">
+              Data: <b>${fmtDate(e.data)}</b> ${e.obs ? `· Obs: ${esc(e.obs)}` : ''}
+            </div>
+          </div>
+          <div class="right">
+            <div class="amount" style="font-size:17px;color:${e.recebido ? 'var(--ok)' : 'var(--ink)'}">${fmt(e.valor)}</div>
+            <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+              ${!e.recebido ? `<button class="btn small" style="padding:4px 8px;font-size:12px" onclick="marcarRepasseRecebido('${e.id}')">Marcar Recebido</button>` : ''}
+              <button class="btn ghost small" style="padding:4px 8px;font-size:12px" onclick="formMov('entradas','${e.id}')">Editar</button>
+              <button class="btn danger small" style="padding:4px 8px;font-size:12px" onclick="excluirMov('entradas','${e.id}')">Excluir</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("") + `</div>`;
+  }
+
+  h += `</div></div>`;
+  sec.innerHTML = h;
+}
+
+function lancarRepasseSugerido(cupomId){
+  const c = (S.cupons || []).find(x => x.id === cupomId);
+  if(!c) return toast("Cupom não encontrado.");
+
+  const precoBase = getPrecoBaseInscricao();
+  const codNorm = normCod(c.codigo);
+
+  const inscritos = S.acampantes.filter(a => {
+    if(isEquipante(a)) return false;
+    const cupomInsc = extractCupomFromObs(a.obs);
+    if(cupomInsc === codNorm) return true;
+    if(c.igreja && c.igreja.length > 2 && norm(a.obs || "").includes(norm(c.igreja))) return true;
+    return false;
+  });
+
+  const descUn = calcularDescontoUnitario(c, precoBase);
+  const subtotalSugerido = inscritos.length * descUn;
+
+  const entradasDoCupom = S.entradas.filter(e => {
+    const obs = (e.obs || "").toUpperCase();
+    const desc = norm(e.descricao);
+    return obs.includes(codNorm) || desc.includes(norm(c.codigo)) || (c.igreja && desc.includes(norm(c.igreja)));
+  });
+
+  const jaLancado = sum(entradasDoCupom, x => x.valor);
+  const saldoPendente = Math.max(0, subtotalSugerido - jaLancado);
+  const valorSugerido = saldoPendente > 0 ? saldoPendente : (subtotalSugerido > 0 ? subtotalSugerido : descUn);
+
+  const nomes = inscritos.map(a => a.nome).slice(0, 10).join(", ");
+  const descPadrao = `Repasse ${c.igreja || c.codigo} - Cupom ${c.codigo}` + (inscritos.length ? ` (${inscritos.length} inscrições)` : "");
+  const obsPadrao = `[REPASSE_IGREJA: ${c.igreja || c.codigo} | CUPOM: ${c.codigo}]` + (nomes ? ` Inscrições: ${nomes}` : "");
+
+  formRepasseModal({
+    descricao: descPadrao,
+    categoria: "Repasse de Igreja",
+    valor: valorSugerido,
+    data: todayISO(),
+    recebido: true,
+    obs: obsPadrao
+  });
+}
+
+function formNovoRepasse(){
+  formRepasseModal({
+    descricao: "Repasse / Ajuda de Custo - ",
+    categoria: "Repasse de Igreja",
+    valor: 0,
+    data: todayISO(),
+    recebido: true,
+    obs: ""
+  });
+}
+
+function formRepasseModal(prefill){
+  const cats = CAT_ENTRADAS;
+  const ro = !canEdit();
+
+  openDlg("Lançar Repasse / Ajuda de Igreja", `
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.45">
+      Este repasse será registrado diretamente nas <b>Entradas financeiras</b> do acampamento e constará no cálculo de caixa hoje, projeção e nos gráficos do painel.
+    </div>
+    <label>Descrição do Repasse / Ajuda
+      <input id="repDesc" value="${esc(prefill.descricao)}" placeholder="Ex.: Repasse IPI Parque Itajaí - Cupom CRISTOREI" ${ro ? "disabled" : ""}>
+    </label>
+    <div class="row2">
+      <label>Categoria da Entrada
+        <select id="repCat" ${ro ? "disabled" : ""}>
+          ${cats.map(c => `<option value="${c}" ${prefill.categoria === c ? "selected" : ""}>${c}</option>`).join("")}
+        </select>
+      </label>
+      <label>Valor do Repasse (R$)
+        <input id="repVal" inputmode="decimal" value="${moneyIn(prefill.valor)}" placeholder="0,00" ${ro ? "disabled" : ""}>
+      </label>
+    </div>
+    <div class="row2" style="margin-top:8px">
+      <label>Data
+        <input type="date" id="repData" value="${esc(prefill.data || todayISO())}" ${ro ? "disabled" : ""}>
+      </label>
+      <div style="display:flex;align-items:center;padding-top:22px">
+        <label class="check" style="margin:0">
+          <input type="checkbox" id="repOk" ${prefill.recebido ? "checked" : ""} ${ro ? "disabled" : ""}>
+          <span>Já foi recebido (caiu na conta)</span>
+        </label>
+      </div>
+    </div>
+    <label style="margin-top:8px">Observações (opcional: acampantes subsidiados, comprovante PIX, etc.)
+      <textarea id="repObs" style="min-height:70px" ${ro ? "disabled" : ""}>${esc(prefill.obs)}</textarea>
+    </label>
+    <p class="err" id="repErr"></p>
+    ${ro ? "" : `
+      <div class="form-actions" style="margin-top:14px">
+        <button class="btn ghost" onclick="closeDlg()">Cancelar</button>
+        <button class="btn" onclick="salvarRepasse()">Salvar Repasse em Entradas</button>
+      </div>
+    `}
+  `);
+}
+
+async function salvarRepasse(){
+  const descricao = $("#repDesc").value.trim();
+  if(!descricao) return $("#repErr").textContent = "Informe a descrição do repasse.";
+
+  const valor = parseMoney($("#repVal").value);
+  if(!valor || isNaN(valor) || valor <= 0) return $("#repErr").textContent = "Informe o valor do repasse (ex: 500,00).";
+
+  const categoria = $("#repCat").value;
+  const data = $("#repData").value || todayISO();
+  const recebido = $("#repOk").checked;
+  const obs = $("#repObs").value.trim();
+
+  const novaEntrada = {
+    descricao,
+    categoria,
+    valor,
+    data,
+    recebido,
+    obs
+  };
+
+  await saveDoc("entradas", newId(), novaEntrada);
+  closeDlg();
+  toast("Repasse registrado nas entradas com sucesso!");
+  renderRepasses();
+}
+
+async function marcarRepasseRecebido(id){
+  const e = S.entradas.find(x => x.id === id);
+  if(!e) return;
+  e.recebido = true;
+  await saveDoc("entradas", id, e);
+  toast("Repasse marcado como recebido!");
+  renderRepasses();
+}
+
+
 /* ---------- Navegação ---------- */
 function goTab(t){
   if(S.tab === "checkin" && t !== "checkin"){
@@ -2445,6 +2835,7 @@ function goTab(t){
   window.scrollTo({top:0});
   if(t==="resumo") renderCharts();
   if(t==="checkin") renderCheckin();
+  if(t==="repasses") renderRepasses();
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.tab)));
 init();

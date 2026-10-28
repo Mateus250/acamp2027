@@ -37,8 +37,8 @@ const CONFIG = {
 };
 /* ================================================================== */
 /* banco de dados (Supabase): as inscrições caem direto no painel /admin */
-const SB_URL = 'https://xhtnhhdpiuqdquacooau.supabase.co', SB_KEY = 'sb_publishable_stUBkyPTyqHtCla_seKJRw_k_LW2S_i';
-const SB = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } }) : null;
+/* Todas as consultas e gravações são realizadas com segurança através da API backend (/api/*) */
+const SB = null;
 let sending = false;
 const $ = (s, r) => (r || document).querySelector(s);
 const brl = (c) => 'R$ ' + Math.floor(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(c % 100).padStart(2, '0');
@@ -94,8 +94,26 @@ const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').i
     if (!SB) { say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
     cBtn.disabled = true; say('Conferindo…');
     let c = null;
-    try { const { data, error } = await SB.rpc('validar_cupom', { p_codigo: code }); if (error) throw error; const r = Array.isArray(data) ? data[0] : data; if (r) c = { code, church: r.igreja, type: r.tipo, value: r.valor }; }
-    catch (e) { console.error(e); cBtn.disabled = false; say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad'); return; }
+    try {
+      const res = await fetch('/api/cupom?codigo=' + encodeURIComponent(code));
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.cupom) {
+          c = data.cupom;
+        } else {
+          cBtn.disabled = false;
+          say(data.error || 'Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad');
+          return;
+        }
+      } else {
+        throw new Error('HTTP ' + res.status);
+      }
+    } catch (e) {
+      console.error('Falha ao validar cupom via API:', e);
+      cBtn.disabled = false;
+      say('Não foi possível conferir o cupom agora. Tente de novo em instantes.', 'bad');
+      return;
+    }
     cBtn.disabled = false;
     if (!c) { say('Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad'); return; }
     setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say('Cupom de ' + c.church + ' aplicado: ' + couponLabel(c) + '.', 'ok');
@@ -233,30 +251,33 @@ f.addEventListener('submit', async (ev) => {
   }
   errBox.textContent = '';
 
-  /* Verifica se já existe alguém com esse documento (CPF) cadastrado */
-  if (SB && cpfDig) {
+  /* Verifica se já existe alguém com esse documento (CPF) cadastrado via API */
+  if (cpfDig) {
     sending = true;
     btn.disabled = true;
     btn.textContent = 'Verificando inscrição anterior…';
     try {
-      const { data: existRows } = await SB.from('acampantes').select('*').ilike('obs', '%CPF: ' + cpfDig + '%');
-      if (existRows && existRows.length > 0) {
-        sending = false;
-        btn.disabled = false;
-        btn.textContent = oldTxt;
-        const ja = existRows[0];
-        errBox.innerHTML = 'Já existe uma inscrição com este CPF (<b>' + esc(ja.nome) + '</b> - Código: <b>' + ja.codigo + '</b>). Redirecionando para a consulta...';
-        if ($('#csDoc')) $('#csDoc').value = maskCPF(v.cpf);
-        setTimeout(() => {
-          const csSec = $('#consulta');
-          if (csSec) csSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          const csBtn = $('#csBtn');
-          if (csBtn) csBtn.click();
-        }, 1200);
-        return;
+      const chkRes = await fetch('/api/verificar-cpf?cpf=' + encodeURIComponent(cpfDig));
+      if (chkRes.ok) {
+        const chkData = await chkRes.json();
+        if (chkData && chkData.exists && chkData.jaInscrito) {
+          sending = false;
+          btn.disabled = false;
+          btn.textContent = oldTxt;
+          const ja = chkData.jaInscrito;
+          errBox.innerHTML = 'Já existe uma inscrição com este CPF (<b>' + esc(ja.nome) + '</b> - Código: <b>' + esc(ja.codigo) + '</b>). Redirecionando para a consulta...';
+          if ($('#csDoc')) $('#csDoc').value = maskCPF(v.cpf);
+          setTimeout(() => {
+            const csSec = $('#consulta');
+            if (csSec) csSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const csBtn = $('#csBtn');
+            if (csBtn) csBtn.click();
+          }, 1200);
+          return;
+        }
       }
     } catch (eDup) {
-      console.warn('Aviso ao conferir duplicidade:', eDup);
+      console.warn('Aviso ao conferir duplicidade via API:', eDup);
     }
     sending = false;
     btn.disabled = false;
@@ -281,7 +302,26 @@ f.addEventListener('submit', async (ev) => {
   sending = true; btn.disabled = true; btn.textContent = 'Enviando…';
   errBox.textContent = '';
   let salvo = false;
-  try { if (SB) { const { error } = await SB.from('acampantes').insert(row); salvo = !error; if (error) console.error(error); } } catch (e) { console.error(e); }
+  try {
+    const saveRes = await fetch('/api/inscricoes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(row)
+    });
+    if (saveRes.ok) {
+      const saveData = await saveRes.json();
+      if (saveData && saveData.ok) {
+        salvo = true;
+      }
+    } else if (saveRes.status === 409) {
+      const conflictData = await saveRes.json();
+      sending = false; btn.disabled = false; btn.textContent = oldTxt;
+      errBox.innerHTML = esc(conflictData.error || 'Já existe uma inscrição com este CPF.');
+      return;
+    }
+  } catch (e) {
+    console.error('Falha ao enviar inscrição para API:', e);
+  }
   sending = false; btn.disabled = false; btn.textContent = oldTxt;
   if (!salvo) {
     errBox.innerHTML = 'Não conseguimos registrar sua inscrição agora. Confira sua internet e toque em <b>Enviar inscrição</b> de novo. Se continuar, <a target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">mande sua inscrição pelo WhatsApp</a>.';
@@ -532,18 +572,7 @@ function lanterna(track) {
         console.warn('Consulta na API de status:', apiErr);
       }
 
-      // 2. Se a API backend não respondeu (ex: falha de rede), tenta fallback no Supabase se cliente estiver carregado
-      if (!r && SB) {
-        try {
-          const { data, error } = await SB.from('acampantes').select('*').ilike('obs', '%CPF: ' + cpfNum + '%').order('criado_em', { ascending: false });
-          if (!error && data && data.length) {
-            r = data[0];
-          }
-        } catch (sbErr) {
-          console.warn('Fallback Supabase:', sbErr);
-        }
-      }
-    } catch (err) {
+      } catch (err) {
       console.error(err);
       btn.disabled = false;
       return say('Não foi possível consultar agora. Tente de novo em instantes.', true);

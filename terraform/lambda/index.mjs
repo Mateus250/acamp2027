@@ -1,5 +1,5 @@
 // Lambda Function Principal - Acampamento IMERSOS 2027
-// Roteador modular para Checkout, Webhook, Status e Inscrições
+// Roteador modular para Checkout, Webhook, Status, Inscrições, Cupons, CPF e E-mail
 
 import { log, logError } from './utils/logger.mjs';
 import { handleOptions, json } from './utils/response.mjs';
@@ -7,9 +7,11 @@ import { parseBody, getPath } from './utils/parser.mjs';
 import { getEnv, maskSecret } from './config/env.mjs';
 import { handleCheckout } from './routes/checkout.mjs';
 import { handleWebhook } from './routes/webhook.mjs';
-import { handleInscricoes } from './routes/inscricoes.mjs';
+import { handleInscricoes, handleCreateInscricao } from './routes/inscricoes.mjs';
 import { handleStatus } from './routes/status.mjs';
 import { handleSendEmail } from './routes/send-email.mjs';
+import { handleCupom } from './routes/cupom.mjs';
+import { handleVerificarCpf } from './routes/verificar-cpf.mjs';
 
 export const handler = async (event) => {
   const method = (event.requestContext?.http?.method || event.httpMethod || 'GET').toUpperCase();
@@ -35,13 +37,33 @@ export const handler = async (event) => {
 
   // -------------------------------------------------------------------------
   // ROTA 1: GET /inscricoes (ou /api/inscricoes, /teste, /health)
+  //         POST /inscricoes (ou /api/inscricoes) -> Criar nova inscrição
   // -------------------------------------------------------------------------
   if (method === 'GET' && (path === '/inscricoes' || path === '/teste' || path === '/health')) {
     return await handleInscricoes(env, requestId);
   }
 
+  if (method === 'POST' && (path === '/inscricoes' || path === '/inscricao')) {
+    const body = parseBody(event);
+    return await handleCreateInscricao(body, env, requestId);
+  }
+
   // -------------------------------------------------------------------------
-  // ROTA 2: POST /checkout (ou /api/checkout) -> Cria link na API da InfinitePay
+  // ROTA 2: GET /cupom (ou /api/cupom?codigo=XYZ) -> Validação de cupom no servidor
+  // -------------------------------------------------------------------------
+  if (method === 'GET' && path === '/cupom') {
+    return await handleCupom(event.queryStringParameters, env, requestId);
+  }
+
+  // -------------------------------------------------------------------------
+  // ROTA 3: GET /verificar-cpf (ou /api/verificar-cpf?cpf=123...) -> Checar duplicidade
+  // -------------------------------------------------------------------------
+  if (method === 'GET' && (path === '/verificar-cpf' || path === '/cpf')) {
+    return await handleVerificarCpf(event.queryStringParameters, env, requestId);
+  }
+
+  // -------------------------------------------------------------------------
+  // ROTA 4: POST /checkout (ou /api/checkout) -> Cria link na API da InfinitePay
   // -------------------------------------------------------------------------
   if (method === 'POST' && (path === '/checkout' || path === '')) {
     const body = parseBody(event);
@@ -49,7 +71,7 @@ export const handler = async (event) => {
   }
 
   // -------------------------------------------------------------------------
-  // ROTA 3: POST /webhook ou /webhook/:codigo -> Recebe notificação da InfinitePay
+  // ROTA 5: POST /webhook ou /webhook/:codigo -> Recebe notificação da InfinitePay
   // -------------------------------------------------------------------------
   if (method === 'POST' && (path === '/webhook' || path.startsWith('/webhook/'))) {
     const body = parseBody(event);
@@ -58,14 +80,14 @@ export const handler = async (event) => {
   }
 
   // -------------------------------------------------------------------------
-  // ROTA 4: GET /status (ou /api/status?codigo=IMR-XXXX ou ?documento=123...)
+  // ROTA 6: GET /status (ou /api/status?codigo=IMR-XXXX ou ?documento=123...)
   // -------------------------------------------------------------------------
   if (method === 'GET' && path === '/status') {
     return await handleStatus(event.queryStringParameters, env, requestId);
   }
 
   // -------------------------------------------------------------------------
-  // ROTA 5: POST /send-email (ou /api/send-email) -> Envio manual/reenvio de e-mail com QR Code
+  // ROTA 7: POST /send-email (ou /api/send-email) -> Envio manual/reenvio de e-mail com QR Code
   // -------------------------------------------------------------------------
   if (method === 'POST' && (path === '/send-email' || path === '/email')) {
     const body = parseBody(event);
@@ -79,6 +101,9 @@ export const handler = async (event) => {
   return json(404, {
     error: `Rota não encontrada: ${method} ${path}`,
     rotas_disponiveis: [
+      'GET /api/cupom?codigo=CODIGO',
+      'GET /api/verificar-cpf?cpf=00000000000',
+      'POST /api/inscricoes',
       'GET /api/inscricoes',
       'POST /api/checkout',
       'POST /api/webhook',

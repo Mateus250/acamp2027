@@ -89,3 +89,90 @@ export async function updateAcampante({ supabaseUrl, authKey, codigo, updateData
 
   return { ok: updateRes.ok, status: updateRes.status, data: resData };
 }
+
+export async function insertAcampante({ supabaseUrl, authKey, acampanteData, requestId }) {
+  const insertUrl = `${supabaseUrl}/rest/v1/acampantes`;
+  log('SUPABASE', `[${requestId}] Inserindo novo acampante:`, { codigo: acampanteData.codigo, nome: acampanteData.nome });
+
+  const insertRes = await fetch(insertUrl, {
+    method: 'POST',
+    headers: {
+      apikey: authKey,
+      Authorization: `Bearer ${authKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(acampanteData)
+  });
+
+  if (!insertRes.ok) {
+    const errBody = await insertRes.text();
+    logError('SUPABASE', `[${requestId}] Falha ao inserir acampante: HTTP ${insertRes.status}`, errBody);
+    return { ok: false, status: insertRes.status, error: errBody };
+  }
+
+  const list = await insertRes.json().catch(() => []);
+  return { ok: true, data: Array.isArray(list) && list.length ? list[0] : null };
+}
+
+export async function validateCupom({ supabaseUrl, authKey, codigo, requestId }) {
+  const normCod = String(codigo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!normCod) return null;
+
+  // 1. Tenta chamar o RPC 'validar_cupom' se existir no banco
+  try {
+    const rpcUrl = `${supabaseUrl}/rest/v1/rpc/validar_cupom`;
+    const rpcRes = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: {
+        apikey: authKey,
+        Authorization: `Bearer ${authKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_codigo: normCod })
+    });
+    if (rpcRes.ok) {
+      const data = await rpcRes.json();
+      const r = Array.isArray(data) ? data[0] : data;
+      if (r && (r.codigo || r.igreja)) {
+        return {
+          code: r.codigo || normCod,
+          church: r.igreja,
+          type: r.tipo,
+          value: Number(r.valor)
+        };
+      }
+    }
+  } catch (eRpc) {
+    log('SUPABASE', `[${requestId}] RPC validar_cupom falhou, tentando fallback na tabela cupons:`, eRpc.message);
+  }
+
+  // 2. Fallback: consulta direta na tabela 'cupons'
+  const searchUrl = `${supabaseUrl}/rest/v1/cupons?codigo=eq.${encodeURIComponent(normCod)}&select=*`;
+  const searchRes = await fetch(searchUrl, {
+    headers: {
+      apikey: authKey,
+      Authorization: `Bearer ${authKey}`
+    }
+  });
+
+  if (!searchRes.ok) {
+    logError('SUPABASE', `[${requestId}] Erro ao buscar cupom na tabela cupons: HTTP ${searchRes.status}`, await searchRes.text());
+    return null;
+  }
+
+  const list = await searchRes.json();
+  if (!Array.isArray(list) || !list.length) return null;
+
+  const c = list[0];
+  const hoje = new Date().toISOString().slice(0, 10);
+  if (c.ativo === false) return { invalid: true, reason: 'Cupom pausado/desativado' };
+  if (c.validade && c.validade < hoje) return { invalid: true, reason: 'Cupom expirado' };
+
+  return {
+    code: c.codigo,
+    church: c.igreja,
+    type: c.tipo,
+    value: Number(c.valor)
+  };
+}
