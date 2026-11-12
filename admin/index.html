@@ -424,6 +424,18 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
   white-space: nowrap;
 }
 
+
+/* acampantes por situação de pagamento */
+.pg-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 12px}
+@media (max-width:640px){.pg-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pg-card{text-align:left;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;cursor:pointer;min-height:44px;font:inherit}
+.pg-card b{font-size:30px;line-height:1.05;color:var(--c)}
+.pg-card span{font-weight:700;font-size:14px}
+.pg-card small{font-size:12px;color:var(--muted)}
+.pg-card.on{background:var(--b);border-color:var(--c);box-shadow:inset 0 0 0 1.5px var(--c)}
+.pg-card:focus-visible{outline:3px solid var(--water);outline-offset:2px}
+.pg-titulo{display:flex;align-items:center;gap:8px;font-size:17px;margin:14px 0 8px}
+.pg-titulo span{font-size:13px;font-weight:700;background:var(--water-soft);color:var(--ink);border-radius:99px;padding:2px 10px}
 </style>
 </head>
 <body>
@@ -676,6 +688,8 @@ async function fazerLogin(){
   const { data: authData, error } = await sb.auth.signInWithPassword({email,password:pw});
   if(error) {
     $("#lgBtn").disabled=false;
+    /* sem internet / servidor fora do ar não é senha errada */
+    if(/fetch|network|Failed/i.test(String(error.message||error))) return $("#lgErr").textContent="Sem conexão com o servidor. Confira a internet e tente de novo (no preview do Claude o login não funciona; teste no site).";
     return $("#lgErr").textContent="Usuário ou senha incorretos.";
   }
 
@@ -1244,55 +1258,57 @@ function renderResumo(){
   renderCharts();
 }
 
+/* ===== Acampantes: separados por situação de pagamento, com números gerais ===== */
+const GRUPOS_PAG=[
+  {id:"confirmados",label:"Confirmados",sub:"pagaram tudo",cor:"var(--ok)",bg:"var(--ok-soft)"},
+  {id:"parte",label:"Pagaram parte",sub:"falta completar",cor:"var(--sun)",bg:"var(--sun-soft)"},
+  {id:"aguardando",label:"Aguardando pagamento",sub:"ainda não pagaram",cor:"var(--water)",bg:"var(--water-soft)"},
+  {id:"todos",label:"Todos",sub:"inscritos",cor:"var(--ink)",bg:"var(--surface)"}
+];
+/* confirmado = pagou tudo (ou é isento, total R$ 0); parte = pagou algo; aguardando = nada pago */
+function grupoPag(a){const t=totais(a);if(t.total<=0||t.pago>=t.total)return"confirmados";return t.pago>0?"parte":"aguardando"}
+function porTipo(L){const tp=S.tipo||"todos";return tp==="acampantes"?L.filter(a=>!isEquipante(a)):tp==="equipantes"?L.filter(a=>isEquipante(a)):L}
+function listaAcampantesFiltrada(){
+  const busca=norm(S.busca), g=S.pag||"confirmados";
+  let L=porTipo(S.acampantes.slice()).sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
+  if(g!=="todos") L=L.filter(a=>grupoPag(a)===g);
+  if(busca) L=L.filter(a=>norm(a.nome).includes(busca)||String(a.telefone||"").includes(busca)||norm(a.codigo).includes(busca)||String(a.cpf||"").includes(busca)||norm(a.lote||"").includes(busca)||norm(a.obs||"").includes(busca));
+  return L;
+}
 function renderAcampantes(){
-  const busca=norm(S.busca);
-  let L=S.acampantes.slice().sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
-  if(S.filtro==="acampantes") L=L.filter(a=>!isEquipante(a));
-  else if(S.filtro==="equipantes") L=L.filter(a=>isEquipante(a));
-  else if(S.filtro!=="todos") L=L.filter(a=>statusAcampante(a)===S.filtro);
-
-  if(busca) L=L.filter(a=>norm(a.nome).includes(busca)||String(a.telefone||"").includes(busca)||norm(a.codigo).includes(busca)||norm(a.obs).includes(busca));
-
-  const filtros=[
-    {id:"todos", label:"Todos"},
-    {id:"acampantes", label:"🏕️ Acampantes"},
-    {id:"equipantes", label:"★ Equipantes"},
-    {id:"pago", label:"Pagos"},
-    {id:"parcial", label:"Parciais"},
-    {id:"pendente", label:"Pendentes"},
-    {id:"atrasado", label:"Atrasados"}
-  ];
-  const chips=filtros.map(f=>`<button class="chip" aria-pressed="${S.filtro===f.id}" onclick="setFiltro('${f.id}')">${f.label}</button>`).join("");
-  const tot=S.acampantes.reduce((a,x)=>{const t=totais(x);a.t+=t.total;a.p+=t.pago;return a},{t:0,p:0});
-  const totEq = S.acampantes.filter(isEquipante).length;
-  const totAc = S.acampantes.length - totEq;
-
-  let h=`<div class="toolbar"><input type="search" placeholder="Buscar por nome, telefone, cupom ou código" value="${esc(S.busca)}" oninput="S.busca=this.value;renderAcampantesList()" aria-label="Buscar acampante">
+  if(!S.pag) S.pag="confirmados";
+  if(!S.tipo) S.tipo="todos";
+  const base=porTipo(S.acampantes);
+  const n={confirmados:0,parte:0,aguardando:0,todos:base.length}; let atrasados=0;
+  base.forEach(a=>{n[grupoPag(a)]++; if(statusAcampante(a)==="atrasado") atrasados++;});
+  const tot=base.reduce((s,x)=>{const t=totais(x);s.t+=t.total;s.p+=t.pago;return s},{t:0,p:0});
+  const totEq=S.acampantes.filter(a=>isEquipante(a)).length, totAc=S.acampantes.length-totEq;
+  const cards=GRUPOS_PAG.map(g=>`<button class="pg-card${S.pag===g.id?" on":""}" style="--c:${g.cor};--b:${g.bg}" aria-pressed="${S.pag===g.id}" onclick="setPag('${g.id}')"><b>${n[g.id]}</b><span>${g.label}</span><small>${g.sub}</small></button>`).join("");
+  const tipos=[{id:"todos",label:`Todos (${S.acampantes.length})`},{id:"acampantes",label:`🏕️ Acampantes (${totAc})`},{id:"equipantes",label:`★ Equipantes (${totEq})`}]
+    .map(t=>`<button class="chip" aria-pressed="${S.tipo===t.id}" onclick="setTipo('${t.id}')">${t.label}</button>`).join("");
+  const gAtual=GRUPOS_PAG.find(g=>g.id===S.pag);
+  let h=`<div class="pg-cards" role="group" aria-label="Situação de pagamento">${cards}</div>
+    <div class="chips" role="group" aria-label="Tipo de inscrito">${tipos}</div>
+    <div class="totals">
+      <span>Recebido <b style="color:var(--ok)">${fmt(tot.p)}</b></span>
+      <span>A receber <b>${fmt(tot.t-tot.p)}</b></span>
+      ${atrasados?`<span style="color:var(--coral);font-weight:700">⚠ ${atrasados} com parcela atrasada</span>`:""}
+    </div>
+    <div class="toolbar"><input type="search" placeholder="Buscar por nome, telefone, CPF, cupom ou código" value="${esc(S.busca)}" oninput="S.busca=this.value;renderAcampantesList()" aria-label="Buscar acampante">
     ${canEdit()?`<button class="btn" onclick="formAcampante()">Adicionar acampante</button><button class="btn ghost" onclick="formImport()">Importar planilha</button>`:""}
     <button class="btn ghost" onclick="exportAcampantes()">Exportar</button></div>
-    <div class="chips">${chips}</div>
-    <div class="totals">
-      <span><b>${S.acampantes.length}</b> inscritos (<b>${totAc}</b> acampantes • <b>${totEq}</b> equipantes)</span>
-      <span>Recebido <b style="color:var(--ok)">${fmt(tot.p)}</b></span>
-      <span style="font-size:13px;opacity:0.85">Pendente a entrar <b>${fmt(tot.t-tot.p)}</b></span>
-    </div>
+    <h3 class="pg-titulo">${gAtual.label} <span>${n[S.pag]}</span></h3>
     <div id="acList"></div>`;
-  $("#sec-acampantes").innerHTML=h; renderAcampantesList(L);
+  $("#sec-acampantes").innerHTML=h; renderAcampantesList();
 }
+function setPag(g){S.pag=g;renderAcampantes()}
+function setTipo(t){S.tipo=t;renderAcampantes()}
 
 function renderAcampantesList(L){
-  if(!L){
-    const busca=norm(S.busca);
-    L=S.acampantes.slice().sort((a,b)=>norm(a.nome).localeCompare(norm(b.nome)));
-    if(S.filtro==="acampantes") L=L.filter(a=>!isEquipante(a));
-    else if(S.filtro==="equipantes") L=L.filter(a=>isEquipante(a));
-    else if(S.filtro!=="todos") L=L.filter(a=>statusAcampante(a)===S.filtro);
-
-    if(busca) L=L.filter(a=>norm(a.nome).includes(busca)||String(a.telefone||"").includes(busca)||norm(a.codigo).includes(busca)||String(a.cpf||"").includes(busca)||norm(a.lote||"").includes(busca)||norm(a.obs||"").includes(busca));
-  }
+  if(!L) L=listaAcampantesFiltrada();
   const el=$("#acList"); if(!el)return;
   if(!S.acampantes.length){el.innerHTML=`<div class="empty"><strong>Nenhum acampante ainda</strong>As inscrições feitas pelo site ou adicionadas manualmente aparecerão aqui.</div>`;return}
-  if(!L.length){el.innerHTML=`<div class="empty"><strong>Ninguém neste filtro</strong>Tente outro filtro ou termo de busca.</div>`;return}
+  if(!L.length){el.innerHTML=`<div class="empty"><strong>Ninguém aqui</strong>${S.busca?"Nenhum resultado para essa busca.":"Ninguém nesta situação por enquanto."}</div>`;return}
 
   el.innerHTML=`<div class="list">`+L.map(a=>{
     const t=totais(a);
