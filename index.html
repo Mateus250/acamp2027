@@ -15,7 +15,7 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
 <link rel="preload" href="fontes/figtree-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="stylesheet" href="estilo.css?v=20261027f">
+<link rel="stylesheet" href="estilo.css?v=20261116">
 </head>
 <body>
 <div id="preview" hidden><b>PRÉVIA com dados de exemplo.</b> Antes de divulgar, troque no arquivo app.js: datas, valores e WhatsApp. Depois desligue este aviso.</div>
@@ -147,6 +147,18 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
           <label class="f" style="grid-column: 1 / -1;">Celular / WhatsApp do 2º responsável<input type="tel" name="resp2_phone" inputmode="tel" placeholder="(19) 99999-9999"><div class="err" data-e="resp2_phone"></div></label>
         </div>
       </div>
+      <fieldset class="modo" id="modoBox">
+        <legend>Como você vai participar?</legend>
+        <div class="opts modo-opts">
+          <label class="opt"><input type="radio" name="modo" value="completo" checked><span class="b">Acampamento completo<small id="modoCompleto"></small></span></label>
+          <label class="opt"><input type="radio" name="modo" value="dayuse"><span class="b">Day use<small id="modoDay"></small></span></label>
+        </div>
+        <div class="dias hide" id="diasBox">
+          <p class="dias-t">Quais dias você vai? <span id="diasMax"></span></p>
+          <div class="dias-row" id="diasRow" role="group" aria-label="Dias do day use"></div>
+          <div class="err" data-e="dias"></div>
+        </div>
+      </fieldset>
       <div class="grid2">
                 <label class="f">Tamanho da camiseta<select name="shirt"><option value="">Escolha</option><option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option></select><div class="err" data-e="shirt"></div></label>
         <label class="chk noshirt"><input type="checkbox" name="noshirt"><span>Não quero camiseta agora</span></label>
@@ -243,6 +255,6 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
 <div class="lb hide" id="lb" role="dialog" aria-modal="true" aria-label="Foto da chácara"><button type="button" class="lb-x" aria-label="Fechar">×</button><button type="button" class="lb-p" aria-label="Foto anterior">‹</button><figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure><button type="button" class="lb-n" aria-label="Próxima foto">›</button></div>
 <div id="bar"><a class="btn" href="#inscricao">Quero me inscrever</a></div>
 
-<script defer src="app.js?v=20261027f"></script>
+<script defer src="app.js?v=20261116"></script>
 </body>
 </html>

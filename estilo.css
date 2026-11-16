@@ -361,3 +361,26 @@ footer a:not(.btn){color:#fff;text-decoration:underline;text-underline-offset:3p
 @keyframes spKick{0%{transform:rotate(-14deg)}100%{transform:rotate(14deg)}}
 @media (max-width:760px){.sp-track.is-sealed{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.sp-track.is-sealed .sp-info h3{font-size:1rem}.sp-track.is-sealed .sp-info p{font-size:.8rem}}
 @media (prefers-reduced-motion:reduce){.sp-soon b,.sp-diver .kf{animation:none}.sp-fx{display:none}}
+
+/* ===== day use ===== */
+.lot .pr small{font:700 .95rem var(--f-body);letter-spacing:0;opacity:.8}
+.modo{border:0;margin:6px 0 10px;padding:0;min-width:0}
+.modo legend{font-weight:700;margin-bottom:8px;padding:0}
+.modo-opts{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));margin:0 0 6px}
+.dias{background:#fff;border:2px solid #9CC3CB;border-radius:16px;padding:14px 16px;margin:4px 0 18px}
+.dias-t{font-weight:700;margin:0 0 10px}.dias-t span{font-weight:400;color:#3D5A66;font-size:.9rem;margin-left:4px}
+.dias-row{display:flex;flex-wrap:wrap;gap:8px}
+.dia{position:relative}
+.dia input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.dia span{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:99px;border:2px solid #9CC3CB;background:#F4F9FA;font-weight:700;transition:background .15s,border-color .15s}
+.dia input:checked+span{background:var(--lagoon);border-color:var(--lagoon);color:#fff}
+.dia input:focus-visible+span{outline:3px solid var(--ray);outline-offset:2px}
+.dia input:disabled+span{opacity:.45}
+.dia input:disabled{cursor:not-allowed}
+.dias .err{margin-top:8px}
+.sum .nw{white-space:nowrap}
+.dia-unico{background:#FFF7E3;border-color:#F0D58C}
+.dia-unico .dias-t{margin:0;line-height:1.5}
+.dia-unico .dias-t span{display:block;margin:4px 0 0}
+/* cartões intercalados: lote aberto e day use claros, o outro lote no fundo do mar */
+.lot.lot-day{background:var(--foam);color:var(--ink);border-color:var(--foam)}

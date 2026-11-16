@@ -21,7 +21,12 @@ const CONFIG = {
     { name: '(19) 99254-7677', number: '5519992547677' }
   ],
   maxInstallments: 1,
-  lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 49500, until: '2027-01-20' } ],  // preço em centavos
+  dayUse: {                                        // Day use: quem vai só alguns dias, sem pernoite
+    price: 7500,                                   // preço POR DIA, em centavos (7500 = R$ 75,00)
+    maxDays: 1,                                    // quantos dias a pessoa pode escolher
+    days: [ { id: '2027-02-07', label: 'Domingo, 7/2' } ]   // dias abertos para day use (hoje: só o domingo)
+  },
+  lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 46500, until: '2027-01-20' } ],  // preço em centavos
   bring: 'Roupas leves e de frio, toalha, itens de higiene, Bíblia, caderno, tênis e protetor solar.',
   includes: 'Hospedagem, alimentação, camiseta e todas as atividades.',
   speakersRevealed: false,                         // false = cartões embaçados com aviso "em breve"; mude para true quando os preletores forem definidos
@@ -69,7 +74,7 @@ $('#lots').innerHTML = CONFIG.lots.map((l, i) => {
   const tg = on ? '<div class="tagnow">Aberto agora</div>' : past ? '<div class="tagnow off">Encerrado</div>' : '<div class="tagnow next">Em breve</div>';
   const sub = on || past ? 'Até ' + fmtD(l.until) : prev ? 'A partir de ' + fmtD(dayAfter(prev.until)) : 'Até ' + fmtD(l.until);
   return '<div class="lot' + (on ? ' on' : '') + '">' + tg + '<div class="nm">' + l.name + '</div><div class="pr">' + brl(l.price) + '</div><div class="sub">' + sub + '</div></div>';
-}).join('');
+}).join('') + (CONFIG.dayUse ? '<div class="lot lot-day"><div class="tagnow">Só alguns dias</div><div class="nm">Day use</div><div class="pr">' + brl(CONFIG.dayUse.price) + '<small> /dia</small></div></div>' : '');
 $('#consentTxt').textContent = 'Concordo em enviar meus dados à organização do acampamento apenas para cuidar da minha inscrição e da minha estadia no acampamento. Se tenho menos de 18 anos, meu responsável sabe e concorda.';
 const faqs = [['Posso pagar em parcelas?', 'Sim! Pela InfinitePay você pode parcelar no cartão de crédito em até 12 vezes ou pagar via PIX à vista gerado na hora pela plataforma. Todos os pagamentos são feitos exclusivamente pela InfinitePay com baixa automática.'], ['Quando minha vaga está garantida?', 'Assim que o pagamento for aprovado pela InfinitePay. A confirmação da inscrição é automática.'], ['Menor de 18 anos pode ir?', 'Pode. No formulário, preencha o nome e o celular do pai ou da mãe.'], ['E se eu não puder mais ir?', 'Avise a organização pelo WhatsApp o quanto antes. Cada caso é combinado diretamente com a liderança.'], ['Já fiz a inscrição, e agora?', 'Você será direcionado para o pagamento seguro na InfinitePay para concluir o pagamento e garantir sua vaga imediatamente. Guarde o seu código de inscrição.']];
 $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></details>').join('');
@@ -80,11 +85,18 @@ $('#faq').innerHTML = faqs.map((q) => '<details><summary></summary><p></p></deta
 let coupon = null;
 const normCode = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (100 - c.value) / 100) : c.type === 'off' ? Math.max(0, price - c.value) : c.type === 'price' ? c.value : price);
-const finalPrice = () => (coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
+/* day use */
+const isDayUse = () => { const r = document.querySelector('input[name=modo]:checked'); return !!(CONFIG.dayUse && r && r.value === 'dayuse'); };
+const diasSel = () => [...document.querySelectorAll('#diasRow input:checked')].map((i) => CONFIG.dayUse.days.find((d) => d.id === i.value)).filter(Boolean);
+const juntaDias = (L) => (L.length < 2 ? L.join('') : L.slice(0, -1).join(', ') + ' e ' + L[L.length - 1]);
+const loteNome = () => (isDayUse() ? 'Day use · ' + diasSel().map((d) => d.label).join(', ') : activeLot().name);
+const finalPrice = () => (isDayUse() ? CONFIG.dayUse.price * diasSel().length : coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
 const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
 const P = [{ id: 'infinitepay', t: 'InfinitePay', first: 0, n: 1 }];   // pagamento é feito no checkout (InfinitePay)
 const curPlan = () => ({ ...P[0], first: finalPrice() });
-const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : ''); };
+const renderSum = () => { const l = activeLot(), tot = finalPrice();
+  if (isDayUse()) { const d = diasSel(); $('#sum').innerHTML = d.length ? '<div>Day use: <b>' + juntaDias(d.map((x) => x.label)) + '</b>' + (d.length > 1 ? ' · ' + d.length + ' dias × ' + brl(CONFIG.dayUse.price) : '') + '</div><div>Total: <b class="nw">' + brl(tot) + '</b></div>' : '<div>Day use: escolha os dias acima para ver o total.</div>'; return; }
+  $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : ''); };
 /* campo do cupom */
 (() => {
   const cIn = $('#cupom'), cBtn = $('#cupomBtn'), cMsg = $('#cupomMsg'); if (!cIn) return;
@@ -123,6 +135,26 @@ const renderSum = () => { const l = activeLot(), tot = finalPrice(); $('#sum').i
     setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say('Cupom de ' + c.church + ' aplicado: ' + couponLabel(c) + '.', 'ok');
   });
   cIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); cBtn.click(); } });
+})();
+/* escolha: acampamento completo ou day use */
+(() => {
+  const box = $('#modoBox'); if (!box || !CONFIG.dayUse) { if (box) box.remove(); return; }
+  $('#modoCompleto').textContent = '5 dias, com hospedagem · ' + brl(activeLot().price) + ' (' + activeLot().name + ')';
+  const unico = CONFIG.dayUse.days.length === 1;
+  $('#modoDay').textContent = (unico ? 'Só ' + CONFIG.dayUse.days[0].label.replace(/^(\w)/, (x) => x.toLowerCase()) + ' · ' : '') + brl(CONFIG.dayUse.price) + (unico ? '' : ' por dia') + ' · sem pernoite';
+  if (unico) {
+    /* um dia só: não tem escolha, só o aviso */
+    $('#diasBox').classList.add('dia-unico');
+    $('#diasBox .dias-t').innerHTML = '📅 O day use é só no <b>' + CONFIG.dayUse.days[0].label.replace(/^(\w)/, (x) => x.toLowerCase()) + '</b><span>Você participa da programação desse dia e volta para casa, sem pernoite.</span>';
+    $('#diasRow').innerHTML = '<input type="checkbox" value="' + CONFIG.dayUse.days[0].id + '" checked hidden>';
+  } else {
+    $('#diasMax').textContent = 'Escolha até ' + CONFIG.dayUse.maxDays + ' dias.';
+    $('#diasRow').innerHTML = CONFIG.dayUse.days.map((d) => '<label class="dia"><input type="checkbox" value="' + d.id + '"><span>' + d.label + '</span></label>').join('');
+  }
+  const limita = () => { const n = diasSel().length; document.querySelectorAll('#diasRow input').forEach((i) => { i.disabled = !i.checked && n >= CONFIG.dayUse.maxDays; }); };
+  const troca = () => { const day = isDayUse(); $('#diasBox').classList.toggle('hide', !day); const c = $('.cupom'); if (c) c.classList.toggle('hide', day); const e = $('[data-e=dias]'); if (e) e.textContent = ''; renderSum(); };
+  box.addEventListener('change', (ev) => { if (ev.target.name === 'modo') troca(); else { limita(); const e = $('[data-e=dias]'); if (e) e.textContent = ''; renderSum(); } });
+  troca();
 })();
 renderSum();
 const step1 = $('#done .steps > li'), step1Pix = step1 ? step1.innerHTML : '';
@@ -174,6 +206,7 @@ if ($('#csDoc')) {
 f.elements.birth.addEventListener('change', () => { const b = f.elements.birth.value; if (!b) return; const a = ageAt(b, CONFIG.campStart); if (a >= 0 && a <= 110) { f.elements.adult.checked = a >= 18; syncAdult(); } });
 
 /* envio */
+const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const setErr = (k, m) => { const e = $('[data-e=' + k + ']'); if (e) e.textContent = m || ''; const el = f.elements[k]; if (el && el.classList) el.classList.toggle('bad', !!m); };
 const digits = (s) => s.replace(/\D/g, '');
 f.addEventListener('submit', async (ev) => {
@@ -217,6 +250,7 @@ f.addEventListener('submit', async (ev) => {
     }
   }
   if (!v.shirt && !f.elements.noshirt.checked) bad('shirt', 'Escolha o tamanho ou marque que não quer camiseta agora.');
+  if (isDayUse() && !diasSel().length) { setErr('dias', 'Escolha pelo menos um dia.'); first = first || $('#diasRow input'); }
   if (!f.elements.termo_financeiro.checked) bad('termo_financeiro', 'Você precisa concordar com o termo de responsabilidade financeira.');
   if (!f.elements.termo_imagem.checked) bad('termo_imagem', 'Você precisa autorizar o uso de imagem.');
   if (!f.elements.termo_bens.checked) bad('termo_bens', 'Você precisa estar ciente da responsabilidade sobre bens pessoais.');
@@ -236,7 +270,7 @@ f.addEventListener('submit', async (ev) => {
     minor && v.resp1_name ? '1º Resp: ' + v.resp1_name + ' (CPF: ' + maskCPF(v.resp1_cpf) + ', Tel: ' + v.resp1_phone + ')' : null,
     minor && v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') + (v.resp2_phone ? ' (Tel: ' + v.resp2_phone + ')' : '') : null,
     'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt),
-    'Lote: ' + l.name + ' · Total ' + brl(finalPrice()) + (coupon ? ' (cupom ' + (coupon.code ? coupon.code + ' ' : '') + coupon.church + ')' : ''),
+    'Lote: ' + loteNome() + ' · Total ' + brl(finalPrice()) + (coupon && !isDayUse() ? ' (cupom ' + (coupon.code ? coupon.code + ' ' : '') + coupon.church + ')' : ''),
     'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)
   ].filter((x) => x !== null).join('\n');
 
@@ -299,10 +333,11 @@ f.addEventListener('submit', async (ev) => {
     'CPF: ' + cpfDig,
     minor && v.resp1_cpf ? 'Resp1 CPF: ' + digits(v.resp1_cpf) : '',
     minor && v.resp2_cpf ? 'Resp2 CPF: ' + digits(v.resp2_cpf) : '',
-    coupon ? 'Cupom: ' + (coupon.code ? coupon.code + ' · ' : '') + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
+    isDayUse() ? 'Day use: ' + diasSel().map((d) => d.label).join(', ') : '',
+    coupon && !isDayUse() ? 'Cupom: ' + (coupon.code ? coupon.code + ' · ' : '') + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
     'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
   ].filter(Boolean).join(' · ');
-  const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: l.name, opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
+  const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: loteNome(), opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
   sending = true; btn.disabled = true; btn.textContent = 'Enviando…';
   errBox.textContent = '';
   let salvo = false;
