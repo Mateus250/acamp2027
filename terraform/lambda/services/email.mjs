@@ -21,12 +21,12 @@ export function buildConfirmationEmailHtml({ nome, codigo, idade, menor, respons
 
   /* day use: quem vai só um dia */
   const dayUse = /^\s*day\s*use/i.test(String(lote || ''));
-  const diaDayUse = dayUse ? (String(lote).split(/[·(]/)[1] || '').replace(/[)]/g, '').trim() || 'Domingo, 7/2' : '';
+  const diaDayUse = dayUse ? ((String(lote).split('·')[1] || '').trim() || 'os dias escolhidos') : '';
   const blocoDayUse = dayUse ? `
     <div style="background-color:#FFF7E3;border-left:5px solid #D99A00;padding:16px 18px;border-radius:8px;margin:22px 0;">
       <h3 style="margin:0 0 8px;color:#8A6200;font-size:16px;font-family:sans-serif;">📅 Sua inscrição é de DAY USE</h3>
       <p style="margin:0;font-size:14px;color:#2D3748;line-height:1.55;font-family:sans-serif;">
-        Você participa <b>só no ${diaDayUse.replace(/^(\w)/, (x) => x.toLowerCase()).replace(/\/2$/, ' de fevereiro de 2027')}</b>, sem pernoite. Chegue no Espaço SET no horário que a organização vai passar e apresente este QR Code na entrada.
+        Você participa <b>só nestes dias: ${diaDayUse}</b> (fevereiro de 2027), sem pernoite. Em cada dia, chegue para o café da manhã; você pode ir embora depois da última programação da noite, após o jantar. Chegue no Espaço SET no horário que a organização vai passar e apresente este QR Code na entrada.
       </p>
     </div>
   ` : '';
@@ -85,7 +85,7 @@ export function buildConfirmationEmailHtml({ nome, codigo, idade, menor, respons
       <div style="font-size:14px;line-height:1.55;color:#566C72;margin-top:20px;">
         <h4 style="margin:0 0 8px;font-size:15px;color:#0F2A33;">Informações Importantes:</h4>
         <ul style="margin:0 0 16px;padding-left:20px;">
-          <li><b>Quando:</b> ${dayUse ? diaDayUse.replace(/\/2$/, ' de fevereiro de 2027') + ' (day use, sem pernoite)' : '5 a 9 de fevereiro de 2027 (Carnaval)'}</li>
+          <li><b>Quando:</b> ${dayUse ? diaDayUse + ' (fevereiro de 2027) · day use, sem pernoite' : '5 a 9 de fevereiro de 2027 (Carnaval)'}</li>
           <li><b>Onde:</b> Espaço SET – Indaiatuba</li>
           <li><b>O que levar:</b> Roupas leves e de frio, toalha, itens de higiene pessoal, Bíblia, caderno, caneta, tênis e protetor solar.</li>
         </ul>
