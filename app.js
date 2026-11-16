@@ -141,11 +141,11 @@ const renderSum = () => { const l = activeLot(), tot = finalPrice();
   const box = $('#modoBox'); if (!box || !CONFIG.dayUse) { if (box) box.remove(); return; }
   $('#modoCompleto').textContent = '5 dias, com hospedagem · ' + brl(activeLot().price) + ' (' + activeLot().name + ')';
   const unico = CONFIG.dayUse.days.length === 1;
-  $('#modoDay').textContent = (unico ? 'Só ' + CONFIG.dayUse.days[0].label.replace(/^(\w)/, (x) => x.toLowerCase()) + ' · ' : '') + brl(CONFIG.dayUse.price) + (unico ? '' : ' por dia') + ' · sem pernoite';
+  $('#modoDay').textContent = (unico ? CONFIG.dayUse.days[0].label + ' · ' : '') + brl(CONFIG.dayUse.price) + (unico ? '' : ' por dia') + ' · sem pernoite';
   if (unico) {
     /* um dia só: não tem escolha, só o aviso */
     $('#diasBox').classList.add('dia-unico');
-    $('#diasBox .dias-t').innerHTML = '📅 O day use é só no <b>' + CONFIG.dayUse.days[0].label.replace(/^(\w)/, (x) => x.toLowerCase()) + '</b><span>Você participa da programação desse dia e volta para casa, sem pernoite.</span>';
+    $('#diasBox .dias-t').innerHTML = 'Day use é somente no <b>' + CONFIG.dayUse.days[0].label.replace(/^(\w)/, (x) => x.toLowerCase()) + '</b><span>Você chega para o café da manhã e pode ir embora depois da última programação da noite, após o jantar.</span>';
     $('#diasRow').innerHTML = '<input type="checkbox" value="' + CONFIG.dayUse.days[0].id + '" checked hidden>';
   } else {
     $('#diasMax').textContent = 'Escolha até ' + CONFIG.dayUse.maxDays + ' dias.';
