@@ -26,7 +26,7 @@ const CONFIG = {
     maxDays: 5,                                    // quantos dias a pessoa pode escolher
     days: [ { id: '2027-02-05', label: 'Sex 5/2' }, { id: '2027-02-06', label: 'Sáb 6/2' }, { id: '2027-02-07', label: 'Dom 7/2', price: 10000 }, { id: '2027-02-08', label: 'Seg 8/2' }, { id: '2027-02-09', label: 'Ter 9/2' } ]   // dias abertos para day use
   },
-  lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 46500, until: '2027-01-20' } ],  // preço em centavos
+  lots: [ { name: '1º lote promocional', price: 43000, until: '2026-11-30' }, { name: '2º lote', price: 49500, until: '2027-01-20' } ],  // preço em centavos
   bring: 'Roupas leves e de frio, toalha, itens de higiene, Bíblia, caderno, tênis e protetor solar.',
   includes: 'Hospedagem, alimentação, camiseta e todas as atividades.',
   speakersRevealed: false,                         // false = cartões embaçados com aviso "em breve"; mude para true quando os preletores forem definidos
