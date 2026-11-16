@@ -384,3 +384,5 @@ footer a:not(.btn){color:#fff;text-decoration:underline;text-underline-offset:3p
 .dia-unico .dias-t span{display:block;margin:4px 0 0}
 /* cartões intercalados: lote aberto e day use claros, o outro lote no fundo do mar */
 .lot.lot-day{background:var(--foam);color:var(--ink);border-color:var(--foam)}
+.dias-info{margin:12px 0 0;font-size:.9rem;color:#3D5A66;line-height:1.5}
+.dia span small{font-weight:700;font-size:.78rem;margin-left:6px;opacity:.85}
