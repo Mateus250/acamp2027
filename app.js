@@ -21,7 +21,7 @@ const CONFIG = {
     { name: '(19) 99254-7677', number: '5519992547677' }
   ],
   maxInstallments: 1,
-  shirts: [                                        // camisetas: preço em centavos, imagens em fotos/camisetas/
+  shirts: [                                        // camisetas: preço em centavos, imagens na pasta fotos/
     { id: 'tradicional-estilizada-preta', model: 'Tradicional', art: 'Estilizada', color: 'Preta', price: 6599, img: 'basica-estilizada-preta' },
     { id: 'tradicional-estilizada-branca', model: 'Tradicional', art: 'Estilizada', color: 'Branca', price: 6599, img: 'basica-estilizada-branca' },
     { id: 'tradicional-simples-preta', model: 'Tradicional', art: 'Simples', color: 'Preta', price: 6599, img: 'basica-simples-preta' },
@@ -180,7 +180,7 @@ const renderSum0 = () => { const l = activeLot(), tot = finalPrice();
 /* escolha da camiseta: miniaturas, imagem grande e tela cheia */
 (() => {
   const box = $('#camBox'); if (!box || !CONFIG.shirts) return;
-  const S = CONFIG.shirts, src = (c, mini) => 'fotos/camisetas/' + c.img + (mini ? '-mini' : '') + '.webp';
+  const S = CONFIG.shirts, src = (c, mini) => 'fotos/' + c.img + (mini ? '-mini' : '') + '.webp';
   const grid = $('#camGrid'), big = $('#camGrande'), lb = $('#camLb');
   grid.innerHTML = S.map((c, i) => '<button type="button" class="cam-op" data-i="' + i + '" aria-pressed="false"><img src="' + src(c, true) + '" alt="Camiseta ' + camisaNome(c) + '" loading="lazy" width="180" height="120"><span><b>' + c.model + '</b> ' + c.art + ' · ' + c.color + '</span><em>' + brl(c.price) + '</em></button>').join('');
   const mostra = (i) => {
