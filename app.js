@@ -21,6 +21,16 @@ const CONFIG = {
     { name: '(19) 99254-7677', number: '5519992547677' }
   ],
   maxInstallments: 1,
+  shirts: [                                        // camisetas: preço em centavos, imagens em fotos/camisetas/
+    { id: 'tradicional-estilizada-preta', model: 'Tradicional', art: 'Estilizada', color: 'Preta', price: 6599, img: 'basica-estilizada-preta' },
+    { id: 'tradicional-estilizada-branca', model: 'Tradicional', art: 'Estilizada', color: 'Branca', price: 6599, img: 'basica-estilizada-branca' },
+    { id: 'tradicional-simples-preta', model: 'Tradicional', art: 'Simples', color: 'Preta', price: 6599, img: 'basica-simples-preta' },
+    { id: 'tradicional-simples-branca', model: 'Tradicional', art: 'Simples', color: 'Branca', price: 6599, img: 'basica-simples-branca' },
+    { id: 'oversized-estilizada-preta', model: 'Oversized', art: 'Estilizada', color: 'Preta', price: 7999, img: 'oversize-estilizada-preta' },
+    { id: 'oversized-estilizada-branca', model: 'Oversized', art: 'Estilizada', color: 'Branca', price: 7999, img: 'oversize-estilizada-branca' },
+    { id: 'oversized-simples-preta', model: 'Oversized', art: 'Simples', color: 'Preta', price: 7999, img: 'oversize-simples-preta' },
+    { id: 'oversized-simples-branca', model: 'Oversized', art: 'Simples', color: 'Branca', price: 7999, img: 'oversize-simples-branca' }
+  ],
   dayUse: {                                        // Day use: quem vai só alguns dias, sem pernoite
     price: 12500,                                  // preço POR DIA, em centavos (12500 = R$ 125,00). O total é o preço × dias escolhidos
     maxDays: 5,                                    // quantos dias a pessoa pode escolher
@@ -92,11 +102,19 @@ const juntaDias = (L) => (L.length < 2 ? L.join('') : L.slice(0, -1).join(', ') 
 const loteNome = () => (isDayUse() ? 'Day use · ' + diasSel().map((d) => d.label).join(', ') : activeLot().name);
 const precoDia = (d) => (d && d.price != null ? d.price : CONFIG.dayUse.price);   /* dia com preço próprio (ex.: domingo) */
 const diasEspeciais = () => (CONFIG.dayUse ? CONFIG.dayUse.days.filter((d) => d.price != null && d.price !== CONFIG.dayUse.price) : []);
-const finalPrice = () => (isDayUse() ? diasSel().reduce((t, d) => t + precoDia(d), 0) : coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
+const precoInscricao = () => (isDayUse() ? diasSel().reduce((t, d) => t + precoDia(d), 0) : coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
+/* camiseta escolhida (o cupom não vale para a camiseta) */
+let camisaSel = null;
+const semCamisa = () => { const c = document.querySelector('input[name=noshirt]'); return !!(c && c.checked); };
+const camisaNome = (c) => c.model + ' · ' + c.art + ' · ' + c.color;
+const precoCamisa = () => (camisaSel && !semCamisa() ? camisaSel.price : 0);
+const finalPrice = () => precoInscricao() + precoCamisa();
 const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
 const P = [{ id: 'infinitepay', t: 'InfinitePay', first: 0, n: 1 }];   // pagamento é feito no checkout (InfinitePay)
 const curPlan = () => ({ ...P[0], first: finalPrice() });
-const renderSum = () => { const l = activeLot(), tot = finalPrice();
+const renderSum = () => { renderSum0(); if (precoCamisa()) { const t = document.querySelector('input[name=shirt]:checked, select[name=shirt]'); $('#sum').insertAdjacentHTML('afterbegin', '<div>Camiseta: <b>' + camisaNome(camisaSel) + (f0shirt() ? ' · ' + f0shirt() : '') + '</b> · ' + brl(camisaSel.price) + '</div>'); } };
+const f0shirt = () => { const s = document.querySelector('select[name=shirt]'); return s ? s.value : ''; };
+const renderSum0 = () => { const l = activeLot(), tot = finalPrice();
   if (isDayUse()) { const d = diasSel(); $('#sum').innerHTML = d.length ? '<div>Day use: <b>' + juntaDias(d.map((x) => x.label)) + '</b></div>' + (d.length > 1 ? '<div>' + d.map((x) => x.label + ' ' + brl(precoDia(x))).join(' + ') + '</div>' : '') + '<div>Total: <b class="nw">' + brl(tot) + '</b></div>' : '<div>Day use: escolha os dias acima para ver o total.</div>'; return; }
   $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : ''); };
 /* campo do cupom */
@@ -158,6 +176,39 @@ const renderSum = () => { const l = activeLot(), tot = finalPrice();
   const troca = () => { const day = isDayUse(); $('#diasBox').classList.toggle('hide', !day); const c = $('.cupom'); if (c) c.classList.toggle('hide', day); const e = $('[data-e=dias]'); if (e) e.textContent = ''; renderSum(); };
   box.addEventListener('change', (ev) => { if (ev.target.name === 'modo') troca(); else { limita(); const e = $('[data-e=dias]'); if (e) e.textContent = ''; renderSum(); } });
   troca();
+})();
+/* escolha da camiseta: miniaturas, imagem grande e tela cheia */
+(() => {
+  const box = $('#camBox'); if (!box || !CONFIG.shirts) return;
+  const S = CONFIG.shirts, src = (c, mini) => 'fotos/camisetas/' + c.img + (mini ? '-mini' : '') + '.webp';
+  const grid = $('#camGrid'), big = $('#camGrande'), lb = $('#camLb');
+  grid.innerHTML = S.map((c, i) => '<button type="button" class="cam-op" data-i="' + i + '" aria-pressed="false"><img src="' + src(c, true) + '" alt="Camiseta ' + camisaNome(c) + '" loading="lazy" width="180" height="120"><span><b>' + c.model + '</b> ' + c.art + ' · ' + c.color + '</span><em>' + brl(c.price) + '</em></button>').join('');
+  const mostra = (i) => {
+    camisaSel = S[i];
+    grid.querySelectorAll('.cam-op').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+    big.classList.remove('hide'); big.dataset.i = i;
+    $('#camGrandeImg').src = src(S[i]); $('#camGrandeImg').alt = 'Camiseta ' + camisaNome(S[i]) + ', frente e costas';
+    $('#camGrandeNome').textContent = camisaNome(S[i]); $('#camGrandePreco').textContent = brl(S[i].price);
+    const nc = $('input[name=noshirt]'); if (nc && nc.checked) { nc.checked = false; nc.dispatchEvent(new Event('change')); }
+    const e = $('[data-e=shirt]'); if (e && /modelo/.test(e.textContent)) e.textContent = '';
+    renderSum();
+  };
+  grid.addEventListener('click', (ev) => { const b = ev.target.closest('.cam-op'); if (b) mostra(+b.dataset.i); });
+  /* tela cheia, com setas e arrastar */
+  let atual = 0;
+  const abre = (i) => { atual = (i + S.length) % S.length; $('#camLbImg').src = src(S[atual]); $('#camLbImg').alt = 'Camiseta ' + camisaNome(S[atual]); $('#camLbNome').textContent = camisaNome(S[atual]) + ' · ' + brl(S[atual].price); lb.classList.remove('hide'); document.body.style.overflow = 'hidden'; };
+  const fecha = () => { lb.classList.add('hide'); document.body.style.overflow = ''; };
+  $('#camGrandeBtn').addEventListener('click', () => abre(+big.dataset.i || 0));
+  $('#camLbFechar').addEventListener('click', fecha);
+  $('#camLbAnt').addEventListener('click', () => abre(atual - 1));
+  $('#camLbProx').addEventListener('click', () => abre(atual + 1));
+  $('#camLbEscolher').addEventListener('click', () => { mostra(atual); fecha(); });
+  lb.addEventListener('click', (ev) => { if (ev.target === lb) fecha(); });
+  document.addEventListener('keydown', (ev) => { if (lb.classList.contains('hide')) return; if (ev.key === 'Escape') fecha(); if (ev.key === 'ArrowLeft') abre(atual - 1); if (ev.key === 'ArrowRight') abre(atual + 1); });
+  let x0 = null; lb.addEventListener('touchstart', (ev) => { x0 = ev.touches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', (ev) => { if (x0 === null) return; const dx = ev.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) abre(atual + (dx < 0 ? 1 : -1)); x0 = null; });
+  const sel = $('select[name=shirt]'); if (sel) sel.addEventListener('change', renderSum);
+  const nc = $('input[name=noshirt]'); if (nc) nc.addEventListener('change', () => { if (nc.checked) { camisaSel = null; big.classList.add('hide'); grid.querySelectorAll('.cam-op').forEach((b) => b.setAttribute('aria-pressed', 'false')); } renderSum(); });
 })();
 renderSum();
 const step1 = $('#done .steps > li'), step1Pix = step1 ? step1.innerHTML : '';
@@ -252,7 +303,8 @@ f.addEventListener('submit', async (ev) => {
       if (v.resp2_phone && (resp2Dig.length < 10 || resp2Dig.length > 11)) bad('resp2_phone', 'Informe o celular do 2º responsável com DDD (10 ou 11 dígitos).');
     }
   }
-  if (!v.shirt && !f.elements.noshirt.checked) bad('shirt', 'Escolha o tamanho ou marque que não quer camiseta agora.');
+  if (!f.elements.noshirt.checked && !camisaSel) bad('shirt', 'Escolha o modelo da camiseta (toque numa das fotos) ou marque que não quer camiseta agora.');
+  else if (!v.shirt && !f.elements.noshirt.checked) bad('shirt', 'Escolha o tamanho ou marque que não quer camiseta agora.');
   if (isDayUse() && !diasSel().length) { setErr('dias', 'Escolha pelo menos um dia.'); first = first || $('#diasRow input'); }
   if (!f.elements.termo_financeiro.checked) bad('termo_financeiro', 'Você precisa concordar com o termo de responsabilidade financeira.');
   if (!f.elements.termo_imagem.checked) bad('termo_imagem', 'Você precisa autorizar o uso de imagem.');
@@ -272,7 +324,7 @@ f.addEventListener('submit', async (ev) => {
     'Nascimento: ' + fmtD(v.birth),
     minor && v.resp1_name ? '1º Resp: ' + v.resp1_name + ' (CPF: ' + maskCPF(v.resp1_cpf) + ', Tel: ' + v.resp1_phone + ')' : null,
     minor && v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') + (v.resp2_phone ? ' (Tel: ' + v.resp2_phone + ')' : '') : null,
-    'Camiseta: ' + (f.elements.noshirt.checked ? 'não quero agora (decido depois, pessoalmente)' : v.shirt),
+    'Camiseta: ' + (f.elements.noshirt.checked || !camisaSel ? 'não quero agora (decido depois, pessoalmente)' : camisaNome(camisaSel) + ' · ' + v.shirt + ' · ' + brl(camisaSel.price)),
     'Lote: ' + loteNome() + ' · Total ' + brl(finalPrice()) + (coupon && !isDayUse() ? ' (cupom ' + (coupon.code ? coupon.code + ' ' : '') + coupon.church + ')' : ''),
     'Pagamento: ' + p.t + ' · hoje ' + brl(p.first)
   ].filter((x) => x !== null).join('\n');
@@ -338,9 +390,10 @@ f.addEventListener('submit', async (ev) => {
     minor && v.resp2_cpf ? 'Resp2 CPF: ' + digits(v.resp2_cpf) : '',
     isDayUse() ? 'Day use: ' + diasSel().map((d) => d.label).join(', ') : '',
     coupon && !isDayUse() ? 'Cupom: ' + (coupon.code ? coupon.code + ' · ' : '') + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
+    precoCamisa() ? 'Camiseta: ' + camisaNome(camisaSel) + ' · ' + v.shirt + ' · ' + brl(camisaSel.price) + ' (incluída no total)' : '',
     'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
   ].filter(Boolean).join(' · ');
-  const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked ? 'Não quer agora' : v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: loteNome(), opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
+  const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked || !camisaSel ? 'Não quer agora' : camisaNome(camisaSel) + ' · ' + v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: loteNome(), opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
   sending = true; btn.disabled = true; btn.textContent = 'Enviando…';
   errBox.textContent = '';
   let salvo = false;

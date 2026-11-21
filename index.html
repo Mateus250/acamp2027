@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
 <script>
@@ -15,7 +15,7 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
 <link rel="preload" href="fontes/figtree-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="stylesheet" href="estilo.css?v=20261116d">
+<link rel="stylesheet" href="estilo.css?v=20261121">
 </head>
 <body>
 <div id="preview" hidden><b>PRÉVIA com dados de exemplo.</b> Antes de divulgar, troque no arquivo app.js: datas, valores e WhatsApp. Depois desligue este aviso.</div>
@@ -159,6 +159,15 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
           <div class="err" data-e="dias"></div>
         </div>
       </fieldset>
+      <fieldset class="cam" id="camBox">
+        <legend>Camiseta do acampamento</legend>
+        <p class="cam-sub">Toque numa camiseta para escolher. Ela é opcional e o valor entra no total.</p>
+        <div class="cam-grande hide" id="camGrande">
+          <button type="button" class="cam-grande-btn" id="camGrandeBtn" aria-label="Ver a camiseta em tela cheia"><img id="camGrandeImg" alt=""><span class="cam-zoom">Toque para ampliar</span></button>
+          <div class="cam-grande-info"><b id="camGrandeNome"></b><span id="camGrandePreco"></span></div>
+        </div>
+        <div class="cam-grid" id="camGrid" role="group" aria-label="Modelos de camiseta"></div>
+      </fieldset>
       <div class="grid2">
                 <label class="f">Tamanho da camiseta<select name="shirt"><option value="">Escolha</option><option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option></select><div class="err" data-e="shirt"></div></label>
         <label class="chk noshirt"><input type="checkbox" name="noshirt"><span>Não quero camiseta agora</span></label>
@@ -255,6 +264,13 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
 <div class="lb hide" id="lb" role="dialog" aria-modal="true" aria-label="Foto da chácara"><button type="button" class="lb-x" aria-label="Fechar">×</button><button type="button" class="lb-p" aria-label="Foto anterior">‹</button><figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure><button type="button" class="lb-n" aria-label="Próxima foto">›</button></div>
 <div id="bar"><a class="btn" href="#inscricao">Quero me inscrever</a></div>
 
-<script defer src="app.js?v=20261116e"></script>
+<div class="cam-lb hide" id="camLb" role="dialog" aria-modal="true" aria-label="Camiseta em tela cheia">
+  <button type="button" class="cam-lb-x" id="camLbFechar" aria-label="Fechar">×</button>
+  <button type="button" class="cam-lb-seta ant" id="camLbAnt" aria-label="Camiseta anterior">‹</button>
+  <img id="camLbImg" alt="">
+  <button type="button" class="cam-lb-seta prox" id="camLbProx" aria-label="Próxima camiseta">›</button>
+  <div class="cam-lb-rodape"><span id="camLbNome"></span><button type="button" class="btn" id="camLbEscolher">Escolher esta</button></div>
+</div>
+<script defer src="app.js?v=20261121"></script>
 </body>
 </html>
