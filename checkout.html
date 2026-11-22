@@ -220,20 +220,30 @@ label.ck-lbl{display:block;font-weight:700;margin-bottom:14px}
     return { total, pago, falta: Math.max(0, total - pago) };
   };
 
+  /* compra só de camiseta: troca os textos de "inscrição" */
+  const soCam = (d) => /^\s*só camiseta/i.test(String((d && d.lote) || ''));
+  function textosCamisa(d) {
+    if (!soCam(d)) return;
+    document.querySelectorAll('.ck-res li > span').forEach((s) => { if (s.textContent === 'Inscrição') s.textContent = 'Pedido'; if (s.textContent === 'Total da inscrição') s.textContent = 'Total da camiseta'; if (s.textContent === 'Lote') s.textContent = 'Camiseta'; });
+    const h = $('#vPago h1'); if (h) h.textContent = 'Camiseta confirmada!';
+    if (d.camiseta) $('#rLote').textContent = d.camiseta;
+  }
   function telaPago(d) {
     const v = valores(d); passo(3); show('vPago');
     $('#pagoTxt').textContent = (primeiroNome(d.nome) ? primeiroNome(d.nome) + ', o' : 'O') + ' seu pagamento foi recebido e a sua vaga está garantida.';
     $('#pCodigo').textContent = d.codigo || codigo; $('#pValor').textContent = brl(v.pago || v.total);
+    if (soCam(d)) { $('#pagoTxt').textContent = (primeiroNome(d.nome) ? primeiroNome(d.nome) + ', o' : 'O') + ' pagamento da sua camiseta foi recebido. A organização avisa pelo WhatsApp quando retirar.'; textosCamisa(d); }
   }
   function telaPagar(d) {
     const v = valores(d); passo(1);
     if (!v.total) { show('vErro'); $('#erroTxt').textContent = 'Não conseguimos calcular o valor desta inscrição. Chame a equipe no WhatsApp para resolver.'; return; }
     show('vPagar');
     $('#rCodigo').textContent = d.codigo || codigo; $('#rNome').textContent = primeiroNome(d.nome) || '—'; $('#rLote').textContent = d.lote || '—';
+    textosCamisa(d);
     $('#rTotal').textContent = brl(v.total);
     $('#rPagoLi').classList.toggle('hide', !v.pago); $('#rPago').textContent = brl(v.pago);
     $('#rAPagar').textContent = brl(v.falta);
-    if (v.pago > 0) { $('#pagTitulo').textContent = 'Pagamento recebido!'; $('#pagSub').textContent = 'Já recebemos ' + brl(v.pago) + '. Falta o restante para completar a inscrição.'; }
+    if (v.pago > 0) { $('#pagTitulo').textContent = 'Pagamento recebido!'; $('#pagSub').textContent = 'Já recebemos ' + brl(v.pago) + (soCam(d) ? '. Falta o restante da camiseta.' : '. Falta o restante para completar a inscrição.'); }
     const btn = $('#btnPagar');
     btn.onclick = async () => {
       $('#pagErro').classList.add('hide'); btn.disabled = true; btn.textContent = 'Abrindo a InfinitePay…';

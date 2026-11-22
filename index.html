@@ -15,7 +15,7 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
 <link rel="preload" href="fontes/figtree-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="stylesheet" href="estilo.css?v=20261121">
+<link rel="stylesheet" href="estilo.css?v=20261122b">
 </head>
 <body>
 <div id="preview" hidden><b>PRÉVIA com dados de exemplo.</b> Antes de divulgar, troque no arquivo app.js: datas, valores e WhatsApp. Depois desligue este aviso.</div>
@@ -152,6 +152,7 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
         <div class="opts modo-opts">
           <label class="opt"><input type="radio" name="modo" value="completo" checked><span class="b">Acampamento completo<small id="modoCompleto"></small></span></label>
           <label class="opt"><input type="radio" name="modo" value="dayuse"><span class="b">Day use<small id="modoDay"></small></span></label>
+          <label class="opt"><input type="radio" name="modo" value="camiseta"><span class="b">Só quero a camiseta<small>Para quem já se inscreveu ou só quer a camiseta</small></span></label>
         </div>
         <div class="dias hide" id="diasBox">
           <p class="dias-t">Quais dias você vai? <span id="diasMax"></span></p>
@@ -271,6 +272,6 @@ if (window.location.hostname && window.location.hostname.indexOf('acampimersos.c
   <button type="button" class="cam-lb-seta prox" id="camLbProx" aria-label="Próxima camiseta">›</button>
   <div class="cam-lb-rodape"><span id="camLbNome"></span><button type="button" class="btn" id="camLbEscolher">Escolher esta</button></div>
 </div>
-<script defer src="app.js?v=20261121b"></script>
+<script defer src="app.js?v=20261122b"></script>
 </body>
 </html>

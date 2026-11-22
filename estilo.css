@@ -413,3 +413,7 @@ footer a:not(.btn){color:#fff;text-decoration:underline;text-underline-offset:3p
 .cam-lb-seta.ant{left:8px}.cam-lb-seta.prox{right:8px}
 .cam-lb-rodape{position:absolute;left:0;right:0;bottom:max(16px,env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;color:#fff;font-weight:700;padding:0 16px;text-align:center}
 .cam-lb-rodape .btn{min-height:44px}
+
+/* compra só de camiseta */
+form.so-camisa .nao-camisa{display:none!important}
+.cupom.cupom-mini{max-width:340px}.cupom.cupom-mini .f{font-size:13px}.cupom.cupom-mini input{padding-top:9px;padding-bottom:9px}.cupom.cupom-mini .btn{padding:9px 16px}

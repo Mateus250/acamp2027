@@ -99,22 +99,27 @@ const applyCoupon = (price, c) => (c.type === 'percent' ? Math.round(price * (10
 const isDayUse = () => { const r = document.querySelector('input[name=modo]:checked'); return !!(CONFIG.dayUse && r && r.value === 'dayuse'); };
 const diasSel = () => [...document.querySelectorAll('#diasRow input:checked')].map((i) => CONFIG.dayUse.days.find((d) => d.id === i.value)).filter(Boolean);
 const juntaDias = (L) => (L.length < 2 ? L.join('') : L.slice(0, -1).join(', ') + ' e ' + L[L.length - 1]);
-const loteNome = () => (isDayUse() ? 'Day use · ' + diasSel().map((d) => d.label).join(', ') : activeLot().name);
+const soCamisa = () => { const r = document.querySelector('input[name=modo]:checked'); return !!(r && r.value === 'camiseta'); };   /* compra só de camiseta */
+const loteNome = () => (soCamisa() ? 'Só camiseta' : isDayUse() ? 'Day use · ' + diasSel().map((d) => d.label).join(', ') : activeLot().name);
 const precoDia = (d) => (d && d.price != null ? d.price : CONFIG.dayUse.price);   /* dia com preço próprio (ex.: domingo) */
 const diasEspeciais = () => (CONFIG.dayUse ? CONFIG.dayUse.days.filter((d) => d.price != null && d.price !== CONFIG.dayUse.price) : []);
-const precoInscricao = () => (isDayUse() ? diasSel().reduce((t, d) => t + precoDia(d), 0) : coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
+const precoInscricao = () => (soCamisa() ? 0 : isDayUse() ? diasSel().reduce((t, d) => t + precoDia(d), 0) : coupon ? applyCoupon(activeLot().price, coupon) : activeLot().price);
 /* camiseta escolhida (o cupom não vale para a camiseta) */
 let camisaSel = null;
 const semCamisa = () => { const c = document.querySelector('input[name=noshirt]'); return !!(c && c.checked); };
 const camisaNome = (c) => c.model + ' · ' + c.art + ' · ' + c.color;
-const precoCamisa = () => (camisaSel && !semCamisa() ? camisaSel.price : 0);
+/* cupom de camiseta: cadastrado no painel com "Vale para: Camiseta" (a igreja fica com o prefixo "Camiseta · ") */
+const cupomDeCamisa = (c) => /^\s*camiseta\b/i.test((c && c.church) || '');
+const nomeCupom = (c) => { const n = String(c.church || '').replace(/^\s*camiseta\s*·?\s*/i, ''); return n && n.toLowerCase() !== 'geral' ? n : (c.code || n); };
+const precoCamisa = () => (camisaSel && !semCamisa() ? (soCamisa() && coupon ? applyCoupon(camisaSel.price, coupon) : camisaSel.price) : 0);
 const finalPrice = () => precoInscricao() + precoCamisa();
 const couponLabel = (c) => (c.type === 'percent' ? c.value + '% de desconto' : c.type === 'off' ? brl(c.value) + ' de desconto' : 'valor especial de ' + brl(c.value));
 const P = [{ id: 'infinitepay', t: 'InfinitePay', first: 0, n: 1 }];   // pagamento é feito no checkout (InfinitePay)
 const curPlan = () => ({ ...P[0], first: finalPrice() });
-const renderSum = () => { renderSum0(); if (precoCamisa()) { const t = document.querySelector('input[name=shirt]:checked, select[name=shirt]'); $('#sum').insertAdjacentHTML('afterbegin', '<div>Camiseta: <b>' + camisaNome(camisaSel) + (f0shirt() ? ' · ' + f0shirt() : '') + '</b> · ' + brl(camisaSel.price) + '</div>'); } };
+const renderSum = () => { renderSum0(); if (camisaSel && !semCamisa() && (precoCamisa() || soCamisa())) { const t = document.querySelector('input[name=shirt]:checked, select[name=shirt]'); $('#sum').insertAdjacentHTML('afterbegin', '<div>Camiseta: <b>' + camisaNome(camisaSel) + (f0shirt() ? ' · ' + f0shirt() : '') + '</b>' + (soCamisa() ? '' : ' · ' + brl(camisaSel.price)) + '</div>'); } };
 const f0shirt = () => { const s = document.querySelector('select[name=shirt]'); return s ? s.value : ''; };
 const renderSum0 = () => { const l = activeLot(), tot = finalPrice();
+  if (soCamisa()) { $('#sum').innerHTML = camisaSel ? '<div>Total: ' + (coupon ? '<s>' + brl(camisaSel.price) + '</s> ' : '') + '<b class="nw">' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + nomeCupom(coupon) + '</b> (' + couponLabel(coupon) + ')</div>' : '') : '<div>Escolha a camiseta e o tamanho acima para ver o total.</div>'; return; }
   if (isDayUse()) { const d = diasSel(); $('#sum').innerHTML = d.length ? '<div>Day use: <b>' + juntaDias(d.map((x) => x.label)) + '</b></div>' + (d.length > 1 ? '<div>' + d.map((x) => x.label + ' ' + brl(precoDia(x))).join(' + ') + '</div>' : '') + '<div>Total: <b class="nw">' + brl(tot) + '</b></div>' : '<div>Day use: escolha os dias acima para ver o total.</div>'; return; }
   $('#sum').innerHTML = '<div>Lote: <b>' + l.name + '</b> · Total: ' + (coupon ? '<s>' + brl(l.price) + '</s> ' : '') + '<b>' + brl(tot) + '</b></div>' + (coupon ? '<div>Cupom: <b>' + coupon.church + '</b> (' + couponLabel(coupon) + ')</div>' : ''); };
 /* campo do cupom */
@@ -152,7 +157,9 @@ const renderSum0 = () => { const l = activeLot(), tot = finalPrice();
     }
     cBtn.disabled = false;
     if (!c) { say('Cupom não encontrado. Confira com a liderança da sua igreja.', 'bad'); return; }
-    setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say('Cupom de ' + c.church + ' aplicado: ' + couponLabel(c) + '.', 'ok');
+    if (soCamisa() && !cupomDeCamisa(c)) { say('Esse cupom é da inscrição do acampamento e não vale para a camiseta.', 'bad'); return; }
+    if (!soCamisa() && cupomDeCamisa(c)) { say('Esse cupom é só para a compra da camiseta (opção "Só quero a camiseta").', 'bad'); return; }
+    setC(c); cIn.disabled = true; cBtn.textContent = 'Remover'; say((soCamisa() ? 'Cupom aplicado na camiseta: ' : 'Cupom de ' + c.church + ' aplicado: ') + couponLabel(c) + '.', 'ok');
   });
   cIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); cBtn.click(); } });
 })();
@@ -209,6 +216,34 @@ const renderSum0 = () => { const l = activeLot(), tot = finalPrice();
   lb.addEventListener('touchend', (ev) => { if (x0 === null) return; const dx = ev.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) abre(atual + (dx < 0 ? 1 : -1)); x0 = null; });
   const sel = $('select[name=shirt]'); if (sel) sel.addEventListener('change', renderSum);
   const nc = $('input[name=noshirt]'); if (nc) nc.addEventListener('change', () => { if (nc.checked) { camisaSel = null; big.classList.add('hide'); grid.querySelectorAll('.cam-op').forEach((b) => b.setAttribute('aria-pressed', 'false')); } renderSum(); });
+})();
+/* modo "Só quero a camiseta": esconde o que é do acampamento */
+(() => {
+  const form = $('#f'); if (!form || !$('#modoBox')) return;
+  const marca = (el) => { if (el) el.classList.add('nao-camisa'); };
+  marca(form.elements.birth && form.elements.birth.closest('label'));
+  marca($('.chk.adult')); marca($('#pais')); marca($('#diasBox')); marca($('.chk.noshirt')); marca($('.termos-card h4'));
+  ['termo_financeiro', 'termo_imagem', 'termo_bens'].forEach((n) => { const i = form.elements[n]; if (i) { marca(i.closest('label')); marca($('[data-e=' + n + ']')); } });
+  const cupLbl = $('.cupom label'), cupTxt = cupLbl ? cupLbl.textContent : '';
+  let modoAntes = soCamisa();
+  const txt = { leg: $('#camBox legend').textContent, sub: $('#camBox .cam-sub').textContent, btn: $('#submit').textContent, cons: $('#consentTxt').textContent };
+  const aplica = () => {
+    const on = soCamisa();
+    form.classList.toggle('so-camisa', on);
+    if (on) { const nc = form.elements.noshirt; if (nc && nc.checked) { nc.checked = false; nc.dispatchEvent(new Event('change')); } }
+    if (form.elements.birth) form.elements.birth.required = !on;
+    $('#camBox legend').textContent = on ? 'Escolha sua camiseta' : txt.leg;
+    $('#camBox .cam-sub').textContent = on ? 'Toque numa camiseta para escolher e depois escolha o tamanho. Já se inscreveu no acampamento? Pode comprar aqui com o mesmo CPF.' : txt.sub;
+    $('#submit').textContent = on ? 'Comprar camiseta' : txt.btn;
+    if (cupLbl) cupLbl.textContent = on ? 'Cupom da camiseta (opcional)' : cupTxt;
+    $('.cupom') && $('.cupom').classList.toggle('cupom-mini', on);
+    if (on !== modoAntes && coupon) $('#cupomBtn').click();   /* cupom de inscrição não vale na camiseta e vice-versa */
+    modoAntes = on;
+    $('#consentTxt').textContent = on ? 'Concordo em enviar meus dados para a organização registrar e entregar minha camiseta.' : txt.cons;
+    renderSum();
+  };
+  $('#modoBox').addEventListener('change', (ev) => { if (ev.target.name === 'modo') aplica(); });
+  aplica();
 })();
 renderSum();
 const step1 = $('#done .steps > li'), step1Pix = step1 ? step1.innerHTML : '';
@@ -286,7 +321,8 @@ f.addEventListener('submit', async (ev) => {
   const phoneDig = digits(v.phone);
   if (phoneDig.length < 10 || phoneDig.length > 11) bad('phone', 'Digite o WhatsApp com DDD (10 ou 11 dígitos).');
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.email)) bad('email', 'Digite um e-mail válido. É para lá que vão a confirmação e o seu código.');
-  if (!v.birth) bad('birth', 'Informe a data de nascimento.');
+  if (soCamisa()) { /* só camiseta: sem nascimento nem responsáveis */ }
+  else if (!v.birth) bad('birth', 'Informe a data de nascimento.');
   else {
     const a = ageAt(v.birth, CONFIG.campStart);
     if (a < 0 || a > 110) bad('birth', 'Confira a data de nascimento.');
@@ -303,12 +339,16 @@ f.addEventListener('submit', async (ev) => {
       if (v.resp2_phone && (resp2Dig.length < 10 || resp2Dig.length > 11)) bad('resp2_phone', 'Informe o celular do 2º responsável com DDD (10 ou 11 dígitos).');
     }
   }
-  if (!f.elements.noshirt.checked && !camisaSel) bad('shirt', 'Escolha o modelo da camiseta (toque numa das fotos) ou marque que não quer camiseta agora.');
+  if (soCamisa() && !camisaSel) bad('shirt', 'Escolha o modelo da camiseta (toque numa das fotos).');
+  else if (soCamisa() && !v.shirt) bad('shirt', 'Escolha o tamanho da camiseta.');
+  else if (!f.elements.noshirt.checked && !camisaSel) bad('shirt', 'Escolha o modelo da camiseta (toque numa das fotos) ou marque que não quer camiseta agora.');
   else if (!v.shirt && !f.elements.noshirt.checked) bad('shirt', 'Escolha o tamanho ou marque que não quer camiseta agora.');
   if (isDayUse() && !diasSel().length) { setErr('dias', 'Escolha pelo menos um dia.'); first = first || $('#diasRow input'); }
+  if (!soCamisa()) {
   if (!f.elements.termo_financeiro.checked) bad('termo_financeiro', 'Você precisa concordar com o termo de responsabilidade financeira.');
   if (!f.elements.termo_imagem.checked) bad('termo_imagem', 'Você precisa autorizar o uso de imagem.');
   if (!f.elements.termo_bens.checked) bad('termo_bens', 'Você precisa estar ciente da responsabilidade sobre bens pessoais.');
+  }
   if (!f.elements.consent.checked) bad('consent', 'Marque a caixa para continuar.');
   if (first) { first.focus(); return; }
   const p = curPlan(), l = activeLot();
@@ -321,7 +361,7 @@ f.addEventListener('submit', async (ev) => {
     'Nome: ' + v.name,
     'CPF: ' + maskCPF(v.cpf),
     'WhatsApp: ' + v.phone,
-    'Nascimento: ' + fmtD(v.birth),
+    soCamisa() ? 'Pedido: só camiseta' : 'Nascimento: ' + fmtD(v.birth),
     minor && v.resp1_name ? '1º Resp: ' + v.resp1_name + ' (CPF: ' + maskCPF(v.resp1_cpf) + ', Tel: ' + v.resp1_phone + ')' : null,
     minor && v.resp2_name ? '2º Resp: ' + v.resp2_name + (v.resp2_cpf ? ' (CPF: ' + maskCPF(v.resp2_cpf) + ')' : '') + (v.resp2_phone ? ' (Tel: ' + v.resp2_phone + ')' : '') : null,
     'Camiseta: ' + (f.elements.noshirt.checked || !camisaSel ? 'não quero agora (decido depois, pessoalmente)' : camisaNome(camisaSel) + ' · ' + v.shirt + ' · ' + brl(camisaSel.price)),
@@ -345,7 +385,7 @@ f.addEventListener('submit', async (ev) => {
   errBox.textContent = '';
 
   /* Verifica se já existe alguém com esse documento (CPF) cadastrado via API */
-  if (cpfDig) {
+  if (cpfDig && !soCamisa()) {   /* quem compra só a camiseta pode já estar inscrito */
     sending = true;
     btn.disabled = true;
     btn.textContent = 'Verificando inscrição anterior…';
@@ -385,15 +425,15 @@ f.addEventListener('submit', async (ev) => {
   ].filter(Boolean).join(' / ') : '';
   const respTel = minor ? [v.resp1_phone, v.resp2_phone].filter(Boolean).join(' / ') : '';
   const obs = [
-    'CPF: ' + cpfDig,
+    soCamisa() ? 'Doc (camiseta): ' + cpfDig : 'CPF: ' + cpfDig,   /* compra de camiseta não conta como inscrição repetida */
     minor && v.resp1_cpf ? 'Resp1 CPF: ' + digits(v.resp1_cpf) : '',
     minor && v.resp2_cpf ? 'Resp2 CPF: ' + digits(v.resp2_cpf) : '',
     isDayUse() ? 'Day use: ' + diasSel().map((d) => d.label).join(', ') : '',
     coupon && !isDayUse() ? 'Cupom: ' + (coupon.code ? coupon.code + ' · ' : '') + coupon.church + ' (' + couponLabel(coupon) + ')' : '',
-    precoCamisa() ? 'Camiseta: ' + camisaNome(camisaSel) + ' · ' + v.shirt + ' · ' + brl(camisaSel.price) + ' (incluída no total)' : '',
-    'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
+    camisaSel && !semCamisa() ? 'Camiseta: ' + camisaNome(camisaSel) + ' · ' + v.shirt + ' · ' + brl(precoCamisa()) + (precoCamisa() !== camisaSel.price ? ' (com cupom, cheia ' + brl(camisaSel.price) + ')' : '') + ' (incluída no total)' : '',
+    soCamisa() ? 'Compra só de camiseta' : 'Termos aceitos: Financeiro (30 dias), Imagem, Bens'
   ].filter(Boolean).join(' · ');
-  const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: v.birth, idade: ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked || !camisaSel ? 'Não quer agora' : camisaNome(camisaSel) + ' · ' + v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: loteNome(), opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
+  const row = { codigo: code, nome: v.name, telefone: v.phone, email: v.email, nascimento: soCamisa() ? null : v.birth, idade: soCamisa() ? null : ageAt(v.birth, CONFIG.campStart), camiseta: f.elements.noshirt.checked || !camisaSel ? 'Não quer agora' : camisaNome(camisaSel) + ' · ' + v.shirt, responsavel: resp || null, responsavel_tel: respTel || null, obs: obs || null, lote: loteNome(), opcao_id: p.id, opcao_nome: p.t, parcelas, origem: 'site' };
   sending = true; btn.disabled = true; btn.textContent = 'Enviando…';
   errBox.textContent = '';
   let salvo = false;
