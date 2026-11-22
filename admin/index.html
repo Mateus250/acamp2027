@@ -158,6 +158,23 @@ section[hidden]{display:none}
 .pill.atrasado{background:var(--coral-soft);color:var(--coral)}
 .pill.equipante{background:var(--sun-soft);color:var(--ink);border:1px solid var(--sun)}
 .pill.acampante{background:var(--water-soft);color:var(--ink)}
+/* aba Camisetas */
+.cm-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 14px}
+.cm-card{background:var(--card,#fff);border:1px solid var(--line,#e5e5e5);border-radius:14px;padding:12px 14px}
+.cm-card .n{font-size:28px;font-weight:800;line-height:1.1}.cm-card .l{font-size:12px;color:var(--muted);font-weight:600}
+.cm-card .v{font-size:12px;color:var(--muted);margin-top:2px}
+.cm-card.pg .n{color:var(--ok)}.cm-card.ag .n{color:var(--coral)}
+.cm-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
+.cm-tbl th,.cm-tbl td{padding:6px 8px;border-bottom:1px solid var(--line,#eee);text-align:center}
+.cm-tbl th:first-child,.cm-tbl td:first-child{text-align:left}
+.cm-tbl td.z{color:#bbb}
+.cm-row{display:flex;gap:12px;align-items:center;width:100%;text-align:left}
+.cm-row img{width:56px;height:56px;object-fit:contain;border-radius:10px;background:#f3f1ec;flex:none}
+.cm-row .tm{font-weight:800;font-size:15px;background:var(--ink,#111);color:#fff;border-radius:8px;padding:4px 8px;flex:none;min-width:38px;text-align:center}
+.cm-row .inf{flex:1;min-width:0}.cm-row .nm{font-weight:700}.cm-row .ds{font-size:12px;color:var(--muted)}
+.pill.origem{background:#f1ece2;color:var(--ink)}
+@media(max-width:520px){.cm-card .n{font-size:22px}.cm-tbl{font-size:12px}}
+
 
 .btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;background:var(--water);color:var(--on-water)}
 .btn:hover{background:var(--water-2)}
@@ -454,6 +471,7 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
       <button class="tab" role="tab" data-tab="resumo" aria-selected="true">Resumo</button>
       <button class="tab" role="tab" data-tab="checkin" aria-selected="false">Check-in</button>
       <button class="tab" role="tab" data-tab="acampantes" aria-selected="false">Acampantes</button>
+      <button class="tab" role="tab" data-tab="camisetas" aria-selected="false">Camisetas</button>
       <button class="tab" role="tab" data-tab="cupons" aria-selected="false">Cupons</button>
       <button class="tab" role="tab" data-tab="repasses" aria-selected="false">Repasses</button>
       <button class="tab" role="tab" data-tab="gastos" aria-selected="false">Gastos</button>
@@ -469,6 +487,7 @@ dialog::backdrop{background:rgba(5,20,25,.55)}
   <section id="sec-resumo"></section>
   <section id="sec-checkin" hidden></section>
   <section id="sec-acampantes" hidden></section>
+  <section id="sec-camisetas" hidden></section>
   <section id="sec-cupons" hidden></section>
   <section id="sec-repasses" hidden></section>
   <section id="sec-gastos" hidden></section>
@@ -521,7 +540,11 @@ const SUPABASE_URL="https://xhtnhhdpiuqdquacooau.supabase.co";
 const SUPABASE_KEY="sb_publishable_stUBkyPTyqHtCla_seKJRw_k_LW2S_i";
 const DOMINIO="@acampamentoipi.com.br";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const S={config:structuredClone(DEFAULT_CONFIG),acampantes:[],despesas:[],entradas:[],cupons:[],tab:"resumo",filtro:"todos",busca:"",readOnly:false};
+const S={config:structuredClone(DEFAULT_CONFIG),_todos:[],despesas:[],entradas:[],cupons:[],tab:"resumo",filtro:"todos",busca:"",readOnly:false};
+/* Pedidos "Só camiseta" ficam fora das contas de acampantes; aparecem na aba Camisetas */
+const isSoCamisa = a => /^só camiseta/i.test(a.lote||"");
+Object.defineProperty(S,"acampantes",{get(){return S._todos.filter(a=>!isSoCamisa(a))},set(v){S._todos=v}});
+const acharA = id => S._todos.find(x=>x.id===id);
 const MAP={
   acampantes:{
     toDb:a=>({nome:a.nome,telefone:a.telefone||null,email:a.email||null,idade:a.idade||null,responsavel:a.responsavel||null,responsavel_tel:a.responsavelTel||null,opcao_id:a.opcaoId||null,opcao_nome:a.opcaoNome||null,obs:a.obs||null,parcelas:a.parcelas||[],codigo:a.codigo||null,nascimento:a.nascimento||null,camiseta:a.camiseta||null,lote:a.lote||null,origem:a.origem||"painel"}),
@@ -647,14 +670,14 @@ async function saveDoc(col,id,data){
     const {error}=await sb.from("config").update({dados:data,atualizado_em:new Date().toISOString()}).eq("id",1);
     if(error) falhou(error); return;
   }
-  const local=S[col]; const i=local.findIndex(x=>x.id===id); const row={...data,id};
+  const local=col==="acampantes"?S._todos:S[col]; const i=local.findIndex(x=>x.id===id); const row={...data,id};
   if(i>=0) local[i]=row; else local.push(row);
   renderAll();
   const {error}=await sb.from(col).upsert({id,...MAP[col].toDb(data)});
   if(error) falhou(error);
 }
 async function deleteDoc(col,id){
-  S[col]=S[col].filter(x=>x.id!==id); renderAll();
+  if(col==="acampantes") S._todos=S._todos.filter(x=>x.id!==id); else S[col]=S[col].filter(x=>x.id!==id); renderAll();
   const {error}=await sb.from(col).delete().eq("id",id);
   if(error) falhou(error);
 }
@@ -744,12 +767,12 @@ function renderAll(){
   $("#evNome").textContent=S.config.nome||"Acampamento";
   const dt = S.config.dataInicio ? fmtDate(S.config.dataInicio)+(S.config.dataFim?" a "+fmtDate(S.config.dataFim):"") : "";
   $("#evSub").textContent=[S.config.subtitulo,dt,S.config.local].filter(Boolean).join(", ");
-  renderResumo(); renderCheckin(); renderAcampantes(); renderCupons(); renderRepasses(); renderLista("despesas"); renderLista("entradas"); renderAjustes();
+  renderResumo(); renderCheckin(); renderAcampantes(); renderCamisetas(); renderCupons(); renderRepasses(); renderLista("despesas"); renderLista("entradas"); renderAjustes();
 }
 
 function calc(){
   const A=S.acampantes, D=S.despesas, E=S.entradas;
-  const recPrev=sum(A,a=>totais(a).total), recRec=sum(A,a=>totais(a).pago);
+  const recPrev=sum(S._todos,a=>totais(a).total), recRec=sum(S._todos,a=>totais(a).pago);   /* inclui pedidos só de camiseta */
   const entPrev=sum(E,e=>e.valor), entRec=sum(E,e=>e.recebido?e.valor:0);
   const despPrev=sum(D,d=>d.valor), despPago=sum(D,d=>d.pago?d.valor:0);
   const st={pago:0,parcial:0,pendente:0,atrasado:0}; A.forEach(a=>st[statusAcampante(a)]++);
@@ -1503,6 +1526,15 @@ function renderCupons(){
         <label>Valor do desconto<input id="cpValTab" inputmode="decimal" placeholder="Ex.: 20 (para 20%)"></label>
       </div>
       <div class="row2" style="margin-top:8px">
+        <label>Vale para
+          <select id="cpAplTab">
+            <option value="inscricao">Inscrição do acampamento</option>
+            <option value="camiseta">Só compra da camiseta</option>
+          </select>
+        </label>
+        <div class="hint" style="align-self:flex-end;font-size:12px">Cupom de camiseta só funciona na opção "Só quero a camiseta" do site; o de inscrição não vale para a camiseta.</div>
+      </div>
+      <div class="row2" style="margin-top:8px">
         <label>Data de validade (opcional)<input type="date" id="cpValidadeTab"></label>
         <div style="display:flex;align-items:flex-end">
           <button class="btn" onclick="addCupomTab()" style="width:100%;height:44px;font-size:15px">Cadastrar Cupom</button>
@@ -1559,7 +1591,10 @@ async function addCupomTab(){
   const err = t => { const el = $("#cpErrTab"); if(el) el.textContent = t; };
   err("");
   const codInput = $("#cpCodTab"), igrInput = $("#cpIgrTab"), tipoInput = $("#cpTipoTab"), valInput = $("#cpValTab"), validadeInput = $("#cpValidadeTab");
-  const codigo = normCod(codInput?.value || ""), igreja = (igrInput?.value || "").trim(), tipo = tipoInput?.value || "percent", raw = valInput?.value || "";
+  const paraCamisa = ($("#cpAplTab")?.value || "inscricao") === "camiseta";
+  const codigo = normCod(codInput?.value || ""), tipo = tipoInput?.value || "percent", raw = valInput?.value || "";
+  let igreja = (igrInput?.value || "").trim();
+  if(paraCamisa) igreja = "Camiseta · " + (igreja.replace(/^camiseta\s*·?\s*/i,"") || "geral");   /* o site reconhece pelo prefixo */
 
   if(codigo.length < 3) return err("O código precisa ter pelo menos 3 letras ou números.");
   if(!igreja) return err("Informe o nome da igreja ou parceiro.");
@@ -1651,7 +1686,7 @@ function closeDlg(){$("#dlg").close()}
 
 /* ---------- Acampante ---------- */
 function formAcampante(id){
-  const a=id?S.acampantes.find(x=>x.id===id):null;
+  const a=id?acharA(id):null;
   const op=S.config.opcoes; const sel=a?.opcaoId||op[0]?.id;
   const o0=opcaoById(sel);
   const cupomVal = a?.cupom || extractCupomFromObs(a?.obs) || "";
@@ -1676,7 +1711,7 @@ function formAcampante(id){
 }
 function opChange(){const o=opcaoById($("#fOp").value);if(!o)return;$("#fTotal").value=moneyIn(o.valor);if(o.primeiroVenc)$("#fVenc").value=o.primeiroVenc}
 function salvarAcampante(id){
-  const a=id?S.acampantes.find(x=>x.id===id):null;
+  const a=id?acharA(id):null;
   const nome=$("#fNome").value.trim(); if(!nome) return $("#fErr").textContent="Informe o nome do acampante.";
   const total=parseMoney($("#fTotal").value); if(isNaN(total)) return $("#fErr").textContent="Valor inválido. Use o formato 350,00.";
   const o=opcaoById($("#fOp").value); const venc=$("#fVenc").value||todayISO();
@@ -1700,7 +1735,7 @@ function salvarAcampante(id){
   const nid=id||newId(); saveDoc("acampantes",nid,doc); toast(id?"Acampante atualizado":"Acampante adicionado"); abrirAcampante(nid);
 }
 function abrirAcampante(id){
-  const a=S.acampantes.find(x=>x.id===id); if(!a) return closeDlg();
+  const a=acharA(id); if(!a) return closeDlg();
   const t=totais(a), s=statusAcampante(a);
   const eq = isEquipante(a);
   const cupCode = a.cupom || extractCupomFromObs(a.obs);
@@ -1724,7 +1759,7 @@ function abrirAcampante(id){
     <h3 style="font-size:17px;margin:6px 0 2px">Parcelas</h3>${ps}
     ${canEdit()?`<div class="form-actions" style="margin-top:16px"><button class="btn danger" onclick="excluirAcampante('${a.id}')">Excluir</button><span class="spacer"></span><button class="btn ghost" onclick="formAcampante('${a.id}')">Editar ficha</button></div>`:""}`);
 }
-function mutParcela(id,i,fn){const a=S.acampantes.find(x=>x.id===id);const ps=a.parcelas.map(p=>({...p}));fn(ps[i]);saveDoc("acampantes",id,{...strip(a),parcelas:ps});abrirAcampante(id)}
+function mutParcela(id,i,fn){const a=acharA(id);const ps=a.parcelas.map(p=>({...p}));fn(ps[i]);saveDoc("acampantes",id,{...strip(a),parcelas:ps});abrirAcampante(id)}
 function quitar(id,i){mutParcela(id,i,p=>{p.pago=p.valor;p.dataPag=todayISO()});toast("Parcela marcada como paga")}
 /* Reparte o que falta do total entre as parcelas em aberto (valores em centavos) */
 function redistribuir(ps,total){
@@ -1737,11 +1772,11 @@ function redistribuir(ps,total){
   aberto.forEach((p,k)=>{ p.valor=base+(k===aberto.length-1?sobra:0); });
   return ps;
 }
-function desfazer(id,i){const a=S.acampantes.find(x=>x.id===id);const total=sum(a.parcelas,p=>p.valor);
+function desfazer(id,i){const a=acharA(id);const total=sum(a.parcelas,p=>p.valor);
   let ps=a.parcelas.map(p=>({...p}));ps[i].pago=0;ps[i].dataPag="";ps=redistribuir(ps,total);
   saveDoc("acampantes",id,{...strip(a),parcelas:ps});abrirAcampante(id);toast("Pagamento desfeito e parcelas recalculadas")}
 function parcial(id,i){const v=parseMoney($("#pp"+i).value);if(!v||isNaN(v)||v<0)return toast("Digite o valor pago, ex.: 125,00");
-  const a=S.acampantes.find(x=>x.id===id);const total=sum(a.parcelas,p=>p.valor);let ps=a.parcelas.map(p=>({...p}));
+  const a=acharA(id);const total=sum(a.parcelas,p=>p.valor);let ps=a.parcelas.map(p=>({...p}));
   const p=ps[i];p.pago+=v;p.dataPag=todayISO();
   const outrasAbertas=ps.some((q,k)=>k!==i&&!(q.valor>0&&q.pago>=q.valor));
   if(!outrasAbertas){
@@ -1753,7 +1788,7 @@ function parcial(id,i){const v=parseMoney($("#pp"+i).value);if(!v||isNaN(v)||v<0
   const extra=sum(ps,q=>q.pago)-total;
   saveDoc("acampantes",id,{...strip(a),parcelas:ps});abrirAcampante(id);
   toast(extra>0?`Registrado. A pessoa pagou ${fmt(extra)} a mais que o total`:"Pagamento registrado e parcelas recalculadas")}
-function excluirAcampante(id){const a=S.acampantes.find(x=>x.id===id);if(!confirm(`Excluir ${a.nome}? Os pagamentos registrados também serão apagados.`))return;deleteDoc("acampantes",id);closeDlg();toast("Acampante excluído")}
+function excluirAcampante(id){const a=acharA(id);if(!confirm(`Excluir ${a.nome}? Os pagamentos registrados também serão apagados.`))return;deleteDoc("acampantes",id);closeDlg();toast("Acampante excluído")}
 
 /* ---------- Gastos e entradas ---------- */
 function formMov(col,id){
@@ -2264,7 +2299,7 @@ function renderCheckin(){
 }
 
 function abrirCheckinModal(id){
-  const a = S.acampantes.find(x => x.id === id);
+  const a = acharA(id);
   if(!a) return toast("Participante não encontrado.");
 
   const checked = isCheckedIn(a);
@@ -2366,7 +2401,7 @@ function abrirCheckinModal(id){
 }
 
 async function confirmarCheckin(id){
-  const a = S.acampantes.find(x => x.id === id);
+  const a = acharA(id);
   if(!a) return toast("Participante não encontrado.");
 
   const chkTermo = document.getElementById("chkTermoMenor");
@@ -2406,7 +2441,7 @@ async function confirmarCheckin(id){
 }
 
 async function desfazerCheckin(id){
-  const a = S.acampantes.find(x => x.id === id);
+  const a = acharA(id);
   if(!a) return toast("Participante não encontrado.");
   if(!confirm("Deseja realmente desfazer o check-in de " + a.nome + "?")) return;
 
@@ -2841,6 +2876,58 @@ async function marcarRepasseRecebido(id){
 
 
 /* ---------- Navegação ---------- */
+
+/* ---------- Camisetas ---------- */
+const TAM_ORDEM=["PP","P","M","G","GG","XG","XGG","EG"];
+function camisaDe(a){
+  const t=String(a.camiseta||"").trim();
+  if(!t||/não quer|nao quer/i.test(t)) return null;
+  const p=t.split(/\s*·\s*/);
+  if(p.length<4) return null;                       /* inscrições antigas (só tamanho): fora da lista */
+  const [modelo,arte,cor,tam]=p;
+  const sem=x=>x.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+  const img=(/^over/i.test(modelo)?"oversize":"basica")+"-"+sem(arte)+"-"+sem(cor);
+  return{modelo,arte,cor,tam,img,paga:statusAcampante(a)==="pago",origem:isSoCamisa(a)?"Só camiseta":"Com inscrição",a};
+}
+function renderCamisetas(){
+  const el=$("#sec-camisetas"); if(!el) return;
+  const todas=S._todos.map(camisaDe).filter(Boolean);
+  const pagas=todas.filter(c=>c.paga);
+  const f=S.filtroCam||"todas", orig=S.origemCam||"todas";
+  let L=f==="pagas"?pagas:f==="aguardando"?todas.filter(c=>!c.paga):todas;
+  if(orig!=="todas") L=L.filter(c=>c.origem===orig);
+  L=L.slice().sort((x,y)=>norm(x.a.nome).localeCompare(norm(y.a.nome)));
+  /* contagem por modelo × tamanho (das pagas e de todas) */
+  const base=f==="pagas"?pagas:f==="aguardando"?todas.filter(c=>!c.paga):todas;
+  const tams=[...new Set(base.map(c=>c.tam))].sort((x,y)=>{const i=t=>{const k=TAM_ORDEM.indexOf(t);return k<0?99:k};return i(x)-i(y)});
+  const mods=[...new Set(base.map(c=>c.modelo+" · "+c.arte+" · "+c.cor))].sort();
+  const cel=(m,t)=>base.filter(c=>c.modelo+" · "+c.arte+" · "+c.cor===m&&(!t||c.tam===t)).length;
+  const tabela=!base.length?"":`<h3 style="margin:6px 0 8px">Quantidade por modelo e tamanho <small style="font-weight:600;color:var(--muted)">(${f==="pagas"?"só pagas":f==="aguardando"?"só aguardando":"todas"})</small></h3>
+    <div style="overflow-x:auto"><table class="cm-tbl"><thead><tr><th>Modelo</th>${tams.map(t=>`<th>${esc(t)}</th>`).join("")}<th>Total</th></tr></thead><tbody>
+    ${mods.map(m=>`<tr><td>${esc(m)}</td>${tams.map(t=>{const n=cel(m,t);return`<td class="${n?"":"z"}">${n||"–"}</td>`}).join("")}<td><b>${cel(m)}</b></td></tr>`).join("")}
+    <tr><td><b>Total</b></td>${tams.map(t=>`<td><b>${base.filter(c=>c.tam===t).length}</b></td>`).join("")}<td><b>${base.length}</b></td></tr></tbody></table></div>`;
+  const chip=(id,label,cur,fn)=>`<button class="chip" aria-pressed="${cur===id}" onclick="${fn}('${id}')">${label}</button>`;
+  const nSo=todas.filter(c=>c.origem==="Só camiseta").length;
+  el.innerHTML=`
+    <div class="cm-cards">
+      <div class="cm-card"><div class="l">Vendidas</div><div class="n">${todas.length}</div><div class="v">${nSo} só camiseta</div></div>
+      <div class="cm-card pg"><div class="l">Pagas</div><div class="n">${pagas.length}</div></div>
+      <div class="cm-card ag"><div class="l">Aguardando</div><div class="n">${todas.length-pagas.length}</div></div>
+    </div>
+    <div class="chips" style="margin-bottom:8px">${chip("todas",`Todas (${todas.length})`,f,"setFiltroCam")}${chip("pagas",`Pagas (${pagas.length})`,f,"setFiltroCam")}${chip("aguardando",`Aguardando (${todas.length-pagas.length})`,f,"setFiltroCam")}</div>
+    <div class="chips" style="margin-bottom:14px">${chip("todas","Todas as origens",orig,"setOrigemCam")}${chip("Com inscrição","Com inscrição",orig,"setOrigemCam")}${chip("Só camiseta","Só camiseta",orig,"setOrigemCam")}</div>
+    ${tabela}
+    <h3 style="margin:6px 0 8px">Pedidos (${L.length})</h3>
+    ${!L.length?`<div class="empty"><strong>Nenhuma camiseta aqui</strong>As camisetas escolhidas no site aparecem nesta lista.</div>`:
+    `<div class="list">${L.map(c=>`<button class="item" style="grid-template-columns:1fr" onclick="abrirAcampante('${c.a.id}')">
+      <span class="cm-row"><img src="../fotos/${c.img}-mini.webp" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <span class="tm">${esc(c.tam)}</span>
+      <span class="inf"><span class="nm">${esc(c.a.nome)}</span><br><span class="ds">${esc(c.modelo)} · ${esc(c.arte)} · ${esc(c.cor)}${c.a.telefone?" · "+esc(c.a.telefone):""}</span><br>
+      <span class="pill origem" style="font-size:11px">${c.origem}</span> ${c.paga?'<span class="pill pago" style="font-size:11px">Paga</span>':'<span class="pill atrasado" style="font-size:11px">Aguardando</span>'}</span></span></button>`).join("")}</div>`}`;
+}
+function setFiltroCam(v){S.filtroCam=v;renderCamisetas()}
+function setOrigemCam(v){S.origemCam=v;renderCamisetas()}
+
 function goTab(t){
   if(S.tab === "checkin" && t !== "checkin"){
     pararCamera();
