@@ -7,6 +7,28 @@ import { log, logError } from '../utils/logger.mjs';
 export function buildConfirmationEmailHtml({ nome, codigo, idade, menor, responsavel, camiseta, lote }) {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(codigo)}`;
 
+  /* compra só de camiseta: e-mail próprio, sem QR de check-in */
+  if (/^\s*só camiseta/i.test(String(lote || ''))) return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:24px 12px;background-color:#EAF2F0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F2A33;">
+  <div style="max-width:580px;margin:0 auto;background-color:#FFFFFF;border-radius:18px;overflow:hidden;border:1px solid #D0DFDB;">
+    <div style="background-color:#16707C;color:#FFFFFF;padding:28px 24px;text-align:center;">
+      <h1 style="margin:0;font-size:32px;letter-spacing:-0.02em;font-weight:800;">IMERSOS</h1>
+      <p style="margin:6px 0 0;font-size:15px;opacity:0.9;">Acampamento de Carnaval 2027 · IPI Itajaí</p>
+    </div>
+    <div style="padding:28px 24px;">
+      <h2 style="margin:0 0 12px;font-size:22px;">Camiseta confirmada! 👕</h2>
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.5;color:#566C72;">Olá, <b>${nome}</b>! Recebemos o pagamento da sua camiseta.</p>
+      <div style="background-color:#F7FAF9;border:1px solid #D0DFDB;border-radius:12px;padding:16px;margin:20px 0;font-size:14px;">
+        <div style="margin-bottom:6px;"><b>Camiseta:</b> ${camiseta || ''}</div>
+        <div style="margin-bottom:6px;"><b>Código do pedido:</b> ${codigo}</div>
+        <div><b>Status:</b> Pago</div>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.55;color:#566C72;">A organização avisa pelo WhatsApp quando e onde retirar. Este e-mail <b>não é inscrição</b> no acampamento.</p>
+    </div>
+  </div>
+</body></html>`;
+
   const blocoMenor = menor ? `
     <div style="background-color:#FDF2E9;border-left:5px solid #E06D53;padding:16px 18px;border-radius:8px;margin:22px 0;">
       <h3 style="margin:0 0 8px;color:#C0442D;font-size:16px;font-family:sans-serif;">
@@ -115,7 +137,9 @@ export async function sendConfirmationEmail({ acampante, env, requestId = '' }) 
     Boolean(acampante.responsavel && acampante.responsavel.trim().length > 1) ||
     Boolean(acampante.obs && /Resp\d/i.test(acampante.obs));
 
-  const subject = `Inscrição Confirmada · QR Code de Check-in (${acampante.codigo}) - Imersos 2027`;
+  const subject = /^\s*só camiseta/i.test(String(acampante.lote || ''))
+    ? `Camiseta confirmada (${acampante.codigo}) - Imersos 2027`
+    : `Inscrição Confirmada · QR Code de Check-in (${acampante.codigo}) - Imersos 2027`;
   const html = buildConfirmationEmailHtml({
     nome: acampante.nome,
     codigo: acampante.codigo,
